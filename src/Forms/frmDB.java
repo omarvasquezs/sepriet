@@ -66,8 +66,10 @@ public class frmDB extends javax.swing.JFrame {
         lblTitulo = new javax.swing.JLabel();
         btnTestConnection = new javax.swing.JButton();
         btnSaveSettings = new javax.swing.JButton();
+        btnRegresar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("CONFIGURACIÓN BASE DE DATOS");
 
         txtHost.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
@@ -113,6 +115,14 @@ public class frmDB extends javax.swing.JFrame {
             }
         });
 
+        btnRegresar.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnRegresar.setText("Regresar");
+        btnRegresar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRegresarActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -123,7 +133,9 @@ public class frmDB extends javax.swing.JFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(btnSaveSettings)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnTestConnection))
+                        .addComponent(btnTestConnection)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnRegresar))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblDB)
@@ -171,7 +183,8 @@ public class frmDB extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 32, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnTestConnection)
-                    .addComponent(btnSaveSettings))
+                    .addComponent(btnSaveSettings)
+                    .addComponent(btnRegresar))
                 .addGap(35, 35, 35))
         );
 
@@ -222,6 +235,13 @@ public class frmDB extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnSaveSettingsActionPerformed
 
+    private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
+        // TODO add your handling code here:
+        this.setVisible(false); // Hide frmDB
+        frmLogin loginForm = new frmLogin(); // Create an instance of frmLogin
+        loginForm.setVisible(true); // Show frmLogin
+    }//GEN-LAST:event_btnRegresarActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -248,6 +268,7 @@ public class frmDB extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnRegresar;
     private javax.swing.JButton btnSaveSettings;
     private javax.swing.JButton btnTestConnection;
     private javax.swing.JLabel lblDB;
