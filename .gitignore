@@ -40,3 +40,6 @@ desktop.ini
 target/
 .gradle/
 out/
+
+# Ignore database settings file
+db_settings.properties

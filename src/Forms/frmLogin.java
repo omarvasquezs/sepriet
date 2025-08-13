@@ -12,14 +12,14 @@ import java.awt.event.FocusListener;
  *
  * @author omarv
  */
-public class Login extends javax.swing.JFrame {
+public class frmLogin extends javax.swing.JFrame {
 
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Login.class.getName());
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(frmLogin.class.getName());
 
     /**
      * Creates new form Login
      */
-    public Login() {
+    public frmLogin() {
         initComponents();
         getContentPane().setBackground(Color.WHITE);
         // Center window on screen
@@ -30,6 +30,7 @@ public class Login extends javax.swing.JFrame {
         addPlaceholders();
         // Mouse pointer on button hover
         btnLogin.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnConfigurar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
     }
 
     private void addPlaceholders() {
@@ -100,6 +101,7 @@ public class Login extends javax.swing.JFrame {
         btnLogin = new javax.swing.JButton();
         lblTitulo = new javax.swing.JLabel();
         lblTitulo1 = new javax.swing.JLabel();
+        btnConfigurar = new javax.swing.JButton();
         imgLogin = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -123,6 +125,15 @@ public class Login extends javax.swing.JFrame {
         lblTitulo1.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
         lblTitulo1.setText("DE LAVANDERIA 1.0");
 
+        btnConfigurar.setForeground(new java.awt.Color(255, 255, 255));
+        btnConfigurar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Forms/icon_gear.png"))); // NOI18N
+        btnConfigurar.setToolTipText("");
+        btnConfigurar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnConfigurarActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -136,21 +147,26 @@ public class Login extends javax.swing.JFrame {
                     .addComponent(lblTitulo)
                     .addComponent(lblTitulo1))
                 .addContainerGap(16, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnConfigurar)
+                .addGap(16, 16, 16))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(23, 23, 23)
+                .addGap(18, 18, 18)
                 .addComponent(lblTitulo, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(lblTitulo1, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(21, 21, 21)
+                .addGap(26, 26, 26)
                 .addComponent(txtUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(27, 27, 27)
                 .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(32, 32, 32)
                 .addComponent(btnLogin, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addComponent(btnConfigurar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         imgLogin.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Forms/logo_yurivanny.jpg"))); // NOI18N
@@ -178,6 +194,13 @@ public class Login extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void btnConfigurarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConfigurarActionPerformed
+        // TODO add your handling code here:
+        this.setVisible(false); // Hide frmLogin
+        frmDB dbForm = new frmDB(); // Create an instance of frmDB
+        dbForm.setVisible(true); // Show frmDB
+    }//GEN-LAST:event_btnConfigurarActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -200,10 +223,11 @@ public class Login extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new frmLogin().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnConfigurar;
     private javax.swing.JButton btnLogin;
     private javax.swing.JLabel imgLogin;
     private javax.swing.JPanel jPanel1;
