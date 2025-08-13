@@ -25,6 +25,8 @@ public class frmDB extends javax.swing.JFrame {
         // Disable maximize button
         setResizable(false);
         loadSettings(); // Load settings when the form is opened
+        // Set window icon
+        setIconImage(new javax.swing.ImageIcon(getClass().getResource("/Forms/icon.png")).getImage());
     }
 
     private void loadSettings() {

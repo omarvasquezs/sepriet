@@ -31,6 +31,8 @@ public class frmLogin extends javax.swing.JFrame {
         // Mouse pointer on button hover
         btnLogin.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnConfigurar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        // Set window icon
+        setIconImage(new javax.swing.ImageIcon(getClass().getResource("/Forms/icon.png")).getImage());
     }
 
     private void addPlaceholders() {
