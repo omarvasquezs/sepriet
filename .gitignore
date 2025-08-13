@@ -1,0 +1,42 @@
+# NetBeans (Ant) build output
+/build/
+/dist/
+/nbbuild/
+/nbdist/
+
+# NetBeans user-specific files
+/nbproject/private/
+/nbactions.xml
+/nbactions-*.xml
+
+# Keep shared NetBeans metadata tracked (do not ignore)
+/nbproject/project.properties
+/nbproject/project.xml
+/nb-configuration.xml
+
+# Java
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# IDEs/editors
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+*~
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Other build tools (if ever used)
+target/
+.gradle/
+out/
