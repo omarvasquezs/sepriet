@@ -88,6 +88,40 @@ public class frmLogin extends javax.swing.JFrame {
         });
     }
 
+    private boolean verifyPassword(String plainPassword,
+            String encryptedPassword) {
+        try {
+            // Step 1: Hash the password using SHA-1
+            java.security.MessageDigest sha1 = java.security.MessageDigest.getInstance("SHA-1");
+            byte[] sha1Hash = sha1.digest(plainPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sha1Hex = new StringBuilder();
+            for (byte b : sha1Hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    sha1Hex.append('0');
+                }
+                sha1Hex.append(hex);
+            }
+
+            // Step 2: Hash the SHA-1 result using MD5
+            java.security.MessageDigest md5 = java.security.MessageDigest.getInstance("MD5");
+            byte[] md5Hash = md5.digest(sha1Hex.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder md5Hex = new StringBuilder();
+            for (byte b : md5Hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    md5Hex.append('0');
+                }
+                md5Hex.append(hex);
+            }
+
+            // Compare the final MD5 hash with the encrypted password from the database
+            return md5Hex.toString().equals(encryptedPassword);
+        } catch (java.security.NoSuchAlgorithmException ex) {
+            throw new RuntimeException("Error verifying password", ex);
+        }
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -120,6 +154,11 @@ public class frmLogin extends javax.swing.JFrame {
         btnLogin.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnLogin.setForeground(new java.awt.Color(255, 255, 255));
         btnLogin.setText("INGRESAR");
+        btnLogin.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLoginActionPerformed(evt);
+            }
+        });
 
         lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
         lblTitulo.setText("SISTEMA");
@@ -202,6 +241,58 @@ public class frmLogin extends javax.swing.JFrame {
         frmDB dbForm = new frmDB(); // Create an instance of frmDB
         dbForm.setVisible(true); // Show frmDB
     }//GEN-LAST:event_btnConfigurarActionPerformed
+
+    private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
+        // TODO add your handling code here:
+        String username = txtUsuario.getText();
+        String password = new String(txtPassword.getPassword());
+
+        // Load database settings from db_settings.properties
+        java.util.Properties props = new java.util.Properties();
+        try (java.io.FileInputStream fis = new java.io.FileInputStream("db_settings.properties")) {
+            props.load(fis);
+        } catch (java.io.IOException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Failed to load database settings: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Retrieve properties without hardcoding defaults
+        String host = props.getProperty("db.host");
+        String port = props.getProperty("db.port");
+        String database = props.getProperty("db.database");
+        String dbUsername = props.getProperty("db.username");
+        String dbPassword = props.getProperty("db.password");
+
+        // Validate that all required properties are present
+        if (host == null || port == null || database == null || dbUsername == null || dbPassword == null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Database settings are incomplete. Please configure them properly.", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
+
+        try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, dbUsername, dbPassword)) {
+            String query = "SELECT password FROM users WHERE username = ?";
+            try (java.sql.PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setString(1, username);
+                try (java.sql.ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        String encryptedPassword = rs.getString("password");
+                        if (verifyPassword(password, encryptedPassword)) {
+                            javax.swing.JOptionPane.showMessageDialog(this, "Login Successful!", "Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                            // Proceed to the next form or functionality
+                        } else {
+                            javax.swing.JOptionPane.showMessageDialog(this, "Invalid Username or Password!", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                        }
+                    } else {
+                        javax.swing.JOptionPane.showMessageDialog(this, "Invalid Username or Password!", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        } catch (java.sql.SQLException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_btnLoginActionPerformed
 
     /**
      * @param args the command line arguments
