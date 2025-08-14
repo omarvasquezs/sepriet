@@ -12,6 +12,16 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.DocumentFilter.FilterBypass;
 import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Properties;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -24,11 +34,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      */
     public frmRegistrarComprobante() {
         initComponents();
+        loadClientes();
+        loadMetodosPago();
+        loadServicios();
         // make all combo-boxes filter as you type
-        AutoCompleteDecorator.decorate(jComboBox1);
-        AutoCompleteDecorator.decorate(jComboBox2);
+        AutoCompleteDecorator.decorate(cbxMetodoPago);
+        AutoCompleteDecorator.decorate(cbxEstadoComprobante);
         AutoCompleteDecorator.decorate(cbxCliente);
-        AutoCompleteDecorator.decorate(jComboBox4);
+        AutoCompleteDecorator.decorate(cbxServicio);
         this.setSize(1100, 600);
         this.setTitle("REGISTRAR COMPROBANTE");
         // Set the DateTimePicker to the current date and time
@@ -76,6 +89,139 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         txtRazonSocial.setEnabled(enable);
     }
 
+    private void loadClientes() {
+        // Load DB connection info
+        Properties props = new Properties();
+        try (FileInputStream fis = new FileInputStream("db_settings.properties")) {
+            props.load(fis);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo leer db_settings.properties:\n" + ex.getMessage(),
+                    "Error de configuración", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String host = props.getProperty("db.host");
+        String port = props.getProperty("db.port");
+        String database = props.getProperty("db.database");
+        String user = props.getProperty("db.username");
+        String pass = props.getProperty("db.password");
+
+        String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
+
+        // Validate that all required properties are present
+        if (host == null || port == null || database == null || user == null || pass == null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Database settings are incomplete. Please configure them properly.", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Query the clientes table
+        String sql = "SELECT id, nombres FROM clientes ORDER BY nombres";
+        try (Connection conn = DriverManager.getConnection(url, user, pass); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            while (rs.next()) {
+                model.addElement(rs.getString("nombres"));
+            }
+            cbxCliente.setModel(model);
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error cargando clientes:\n" + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Load enabled payment methods from MariaDB and populate cbxMetodoPago.
+     */
+    private void loadMetodosPago() {
+        Properties props = new Properties();
+        try (FileInputStream fis = new FileInputStream("db_settings.properties")) {
+            props.load(fis);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo leer db_settings.properties:\n" + ex.getMessage(),
+                    "Error de configuración", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String host = props.getProperty("db.host");
+        String port = props.getProperty("db.port");
+        String database = props.getProperty("db.database");
+        String user = props.getProperty("db.username");
+        String pass = props.getProperty("db.password");
+
+        if (host == null || port == null || database == null || user == null || pass == null) {
+            JOptionPane.showMessageDialog(this,
+                    "db_settings.properties incompleto. Definir db.host, db.port,\n"
+                    + "db.database, db.username y db.password",
+                    "Configuración faltante", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
+        String sql = "SELECT nom_metodo_pago FROM metodo_pago WHERE habilitado = 1 ORDER BY nom_metodo_pago";
+
+        try (Connection conn = DriverManager.getConnection(url, user, pass); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            while (rs.next()) {
+                model.addElement(rs.getString("nom_metodo_pago"));
+            }
+            cbxMetodoPago.setModel(model);
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error cargando métodos de pago:\n" + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Load enabled servicios from MariaDB and populate cbxServicio.
+     */
+    private void loadServicios() {
+        Properties props = new Properties();
+        try (FileInputStream fis = new FileInputStream("db_settings.properties")) {
+            props.load(fis);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo leer db_settings.properties:\n" + ex.getMessage(),
+                    "Error de configuración", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String host = props.getProperty("db.host");
+        String port = props.getProperty("db.port");
+        String database = props.getProperty("db.database");
+        String user = props.getProperty("db.username");
+        String pass = props.getProperty("db.password");
+
+        if (host == null || port == null || database == null || user == null || pass == null) {
+            JOptionPane.showMessageDialog(this,
+                    "db_settings.properties incompleto. Definir db.host, db.port,\n"
+                    + "db.database, db.username y db.password",
+                    "Configuración faltante", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
+        String sql = "SELECT nom_servicio FROM servicios WHERE habilitado = 1 ORDER BY nom_servicio";
+
+        try (Connection conn = DriverManager.getConnection(url, user, pass); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            while (rs.next()) {
+                model.addElement(rs.getString("nom_servicio"));
+            }
+            cbxServicio.setModel(model);
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error cargando servicios:\n" + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -90,9 +236,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel2 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         jLabel3 = new javax.swing.JLabel();
-        jComboBox2 = new javax.swing.JComboBox<>();
+        cbxEstadoComprobante = new javax.swing.JComboBox<>();
         jLabel1 = new javax.swing.JLabel();
-        jComboBox1 = new javax.swing.JComboBox<>();
+        cbxMetodoPago = new javax.swing.JComboBox<>();
         radioFactura = new javax.swing.JRadioButton();
         radioNotaVenta = new javax.swing.JRadioButton();
         radioBoleta = new javax.swing.JRadioButton();
@@ -116,7 +262,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel12 = new javax.swing.JLabel();
         jLabel13 = new javax.swing.JLabel();
         jLabel14 = new javax.swing.JLabel();
-        jComboBox4 = new javax.swing.JComboBox<>();
+        cbxServicio = new javax.swing.JComboBox<>();
         jButton3 = new javax.swing.JButton();
         jLabel15 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
@@ -137,14 +283,13 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel3.setText("ESTADO:");
         jLabel3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "DEBE", "ABONO", "CANCELO" }));
-        jComboBox2.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
+        cbxEstadoComprobante.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "DEBE", "ABONO", "CANCELO" }));
+        cbxEstadoComprobante.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
         jLabel1.setText("CONDICIÓN DE PAGO:");
         jLabel1.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "YAPE PLIN", "EFECTIVO" }));
-        jComboBox1.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
+        cbxMetodoPago.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
         buttonGroup1.add(radioFactura);
         radioFactura.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
@@ -173,8 +318,6 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
         jLabel6.setText("CREACIÓN:");
         jLabel6.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
-
-        cbxCliente.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "item1", "item2", "item3", "item4" }));
 
         jLabel7.setText("OP. GRAVADAS:");
         jLabel7.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
@@ -209,9 +352,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel14.setText("S/. 0.00");
         jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
-        jComboBox4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cbxServicio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
-        jButton3.setText("AÑADIR SERVICIO");
+        jButton3.setText("AÑADIR AL COMPROBANTE");
         jButton3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jButton3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -274,7 +417,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(jLabel1)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addComponent(cbxMetodoPago, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jLabel3)
@@ -282,7 +425,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                        .addComponent(jComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, 227, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(cbxEstadoComprobante, javax.swing.GroupLayout.PREFERRED_SIZE, 227, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGap(18, 18, 18)
                                         .addComponent(radioNotaVenta)
                                         .addGap(19, 19, 19)
@@ -302,7 +445,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(txtRazonSocial))
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jComboBox4, javax.swing.GroupLayout.PREFERRED_SIZE, 410, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(cbxServicio, javax.swing.GroupLayout.PREFERRED_SIZE, 410, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addComponent(jLabel15)
@@ -363,14 +506,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
                                 .addComponent(jLabel3)
-                                .addComponent(jComboBox2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(cbxEstadoComprobante, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
                                 .addComponent(radioNotaVenta)
                                 .addComponent(radioBoleta)
                                 .addComponent(radioFactura)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cbxMetodoPago, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel1))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -390,7 +533,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                         .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                            .addComponent(jComboBox4, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cbxServicio, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
                         .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -410,13 +553,13 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JComboBox<String> cbxCliente;
+    private javax.swing.JComboBox<String> cbxEstadoComprobante;
+    private javax.swing.JComboBox<String> cbxMetodoPago;
+    private javax.swing.JComboBox<String> cbxServicio;
     private com.github.lgooddatepicker.components.DateTimePicker dateTimePicker1;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
-    private javax.swing.JComboBox<String> jComboBox1;
-    private javax.swing.JComboBox<String> jComboBox2;
-    private javax.swing.JComboBox<String> jComboBox4;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
