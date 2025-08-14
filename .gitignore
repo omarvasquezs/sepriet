@@ -43,3 +43,7 @@ out/
 
 # Ignore database settings file
 db_settings.properties
+
+# NetBeans metadata for tracking generated files (safe to ignore)
+nbproject/genfiles.properties
+
