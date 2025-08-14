@@ -27,6 +27,14 @@ public class frmDB extends javax.swing.JFrame {
         loadSettings(); // Load settings when the form is opened
         // Set window icon
         setIconImage(new javax.swing.ImageIcon(getClass().getResource("/Forms/icon.png")).getImage());
+        // strips LAF effects
+        btnRegresar.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+        btnSaveSettings.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+        btnTestConnection.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+        // Mouse point on hover
+        btnRegresar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnSaveSettings.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnTestConnection.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
     }
 
     private void loadSettings() {
@@ -99,24 +107,33 @@ public class frmDB extends javax.swing.JFrame {
         lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         lblTitulo.setText("DATABASE SETTINGS");
 
-        btnTestConnection.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnTestConnection.setBackground(new java.awt.Color(21, 134, 255));
+        btnTestConnection.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        btnTestConnection.setForeground(new java.awt.Color(255, 255, 255));
         btnTestConnection.setText("Test Connection");
+        btnTestConnection.setOpaque(true);
         btnTestConnection.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnTestConnectionActionPerformed(evt);
             }
         });
 
-        btnSaveSettings.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnSaveSettings.setBackground(new java.awt.Color(21, 134, 255));
+        btnSaveSettings.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        btnSaveSettings.setForeground(new java.awt.Color(255, 255, 255));
         btnSaveSettings.setText("Guardar");
+        btnSaveSettings.setOpaque(true);
         btnSaveSettings.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSaveSettingsActionPerformed(evt);
             }
         });
 
-        btnRegresar.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnRegresar.setBackground(new java.awt.Color(21, 134, 255));
+        btnRegresar.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        btnRegresar.setForeground(new java.awt.Color(255, 255, 255));
         btnRegresar.setText("Regresar");
+        btnRegresar.setOpaque(true);
         btnRegresar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRegresarActionPerformed(evt);
@@ -180,7 +197,7 @@ public class frmDB extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblUsername1)
                     .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 32, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 31, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnTestConnection)
                     .addComponent(btnSaveSettings)
@@ -202,9 +219,9 @@ public class frmDB extends javax.swing.JFrame {
         String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
 
         try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, username, password)) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Connection Successful!", "Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            javax.swing.JOptionPane.showMessageDialog(this, "Conexión Exitosa!", "Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
         } catch (java.sql.SQLException ex) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Connection Failed: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            javax.swing.JOptionPane.showMessageDialog(this, "Conexión Fallida: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnTestConnectionActionPerformed
 
