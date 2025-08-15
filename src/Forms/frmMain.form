@@ -14,6 +14,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="menuRegistrarComprobante">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Ctrl+N"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Comprobante"/>
                 <Property name="margin" type="java.awt.Insets" editor="org.netbeans.beaninfo.editors.InsetsEditor">
                   <Insets value="[3, 6, 4, 6]"/>

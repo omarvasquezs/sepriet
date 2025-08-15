@@ -146,6 +146,7 @@ public class frmMain extends javax.swing.JFrame {
         menuRegistrar.setText("Registrar");
         menuRegistrar.setMargin(new java.awt.Insets(3, 8, 3, 8));
 
+        menuRegistrarComprobante.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         menuRegistrarComprobante.setText("Comprobante");
         menuRegistrarComprobante.setMargin(new java.awt.Insets(3, 6, 4, 6));
         menuRegistrarComprobante.addActionListener(new java.awt.event.ActionListener() {
