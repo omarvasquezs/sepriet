@@ -4,8 +4,16 @@
  */
 package Forms;
 
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.time.LocalDateTime;
 import javax.swing.ImageIcon;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JTable;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
@@ -18,6 +26,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.UIManager;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.event.TableModelEvent;
+import java.util.Vector;
 
 /**
  *
@@ -84,6 +99,24 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Initialize the state of controls
         toggleRucFields();
         toggleMontoAbonado();
+        // Initialize table cell editors
+        setupTableCellEditors();
+        // Change cursor to hand when hovering over ACCIONES buttons
+        jTable1.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int col = jTable1.columnAtPoint(e.getPoint());
+                int row = jTable1.rowAtPoint(e.getPoint());
+                if (col == 4 && row >= 0) {
+                    Object servicioValue = jTable1.getValueAt(row, 0);
+                    if (servicioValue != null && !servicioValue.toString().trim().isEmpty()) {
+                        jTable1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+                        return;
+                    }
+                }
+                jTable1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+            }
+        });
     }
 
     private void toggleRucFields() {
@@ -104,9 +137,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
     private void loadClientes() {
         final String sql = "SELECT id, nombres FROM clientes ORDER BY nombres";
-        try (Connection conn = DatabaseConfig.getConnection(); 
-             PreparedStatement stmt = conn.prepareStatement(sql); 
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Seleccione un cliente --"); // Add placeholder
             while (rs.next()) {
@@ -126,9 +157,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      */
     private void loadMetodosPago() {
         final String sql = "SELECT nom_metodo_pago FROM metodo_pago WHERE habilitado = 1 ORDER BY nom_metodo_pago";
-        try (Connection conn = DatabaseConfig.getConnection(); 
-             PreparedStatement stmt = conn.prepareStatement(sql); 
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Seleccione método de pago --"); // Add placeholder
@@ -150,9 +179,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      */
     private void loadServicios() {
         final String sql = "SELECT nom_servicio FROM servicios WHERE habilitado = 1 ORDER BY nom_servicio";
-        try (Connection conn = DatabaseConfig.getConnection(); 
-             PreparedStatement stmt = conn.prepareStatement(sql); 
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Seleccione un servicio --"); // Add placeholder
@@ -171,9 +198,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
     private void loadEstadoComprobante() {
         final String sql = "SELECT nom_estado FROM estado_comprobantes WHERE habilitado = 1 AND nom_estado <> 'ANULADO' ORDER BY nom_estado";
-        try (Connection conn = DatabaseConfig.getConnection(); 
-             PreparedStatement stmt = conn.prepareStatement(sql); 
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Seleccione un estado --"); // Add placeholder
             while (rs.next()) {
@@ -519,9 +544,336 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnAgregarServicioComprobanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarServicioComprobanteActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnAgregarServicioComprobanteActionPerformed
+        // Get the selected service
+        Object selectedService = cbxServicio.getSelectedItem();
+        // Check if a valid service is selected (not the placeholder)
+        if (selectedService == null || selectedService.toString().startsWith("--")) {
+            JOptionPane.showMessageDialog(this,
+                    "Por favor seleccione un servicio válido.",
+                    "Servicio no seleccionado", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        // Get the price per kg for this service from database
+        double precioPorKg = getPrecioServicio(selectedService.toString());
+        // Add to table with empty PESO field and editable cells
+        addServiceToTable(selectedService.toString(), "", String.format("%.2f", precioPorKg), "0.00", "X");
+        // Reset the combo box to the placeholder
+        cbxServicio.setSelectedIndex(0);
+        // Set up cell editors for PESO and PRECIO columns if not already set
+        setupTableCellEditors();
+        // Set up delete button renderer/editor
+        setupTableButtons();
+    }
+//GEN-LAST:event_btnAgregarServicioComprobanteActionPerformed
 
+    /**
+     * Gets the price per kg for a given service from the database
+     *
+     * @param serviceName The name of the service
+     * @return The price per kg
+     */
+    private double getPrecioServicio(String serviceName) {
+        // Query to get the price from the database
+        final String sql = "SELECT precio_kilo FROM servicios WHERE nom_servicio = ? AND habilitado = 1";
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, serviceName);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("precio_kilo");
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error obteniendo precio del servicio:\n" + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        }
+        return 0.0; // Default price if not found
+    }
+
+    /**
+     * Adds a service to the table with editable PESO and PRECIO fields
+     * @param servicio The service name
+     * @param peso The weight in kg (as String, initially empty)
+     * @param precioPorKg The price per kg (as String)
+     * @param total The total price (as String, initially "0.00")
+     * @param acciones The value for the ACCIONES column ("X")
+     */
+    private void addServiceToTable(String servicio, String peso, String precioPorKg, String total, String acciones) {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+
+        // Find the first empty row to insert the data
+        int firstEmptyRow = -1;
+        for (int i = 0; i < model.getRowCount(); i++) {
+            Object servicioValue = model.getValueAt(i, 0);
+            if (servicioValue == null || servicioValue.toString().trim().isEmpty()) {
+                firstEmptyRow = i;
+                break;
+            }
+        }
+
+        if (firstEmptyRow != -1) {
+            // Insert into the first empty row
+            model.setValueAt(servicio, firstEmptyRow, 0);
+            model.setValueAt(peso, firstEmptyRow, 1);
+            model.setValueAt(precioPorKg, firstEmptyRow, 2);
+            model.setValueAt(total, firstEmptyRow, 3);
+            model.setValueAt(acciones, firstEmptyRow, 4);
+        } else {
+            // If no empty row found, add a new row
+            model.addRow(new Object[]{servicio, peso, precioPorKg, total, acciones});
+        }
+
+        updateTotals();
+    }
+
+    /**
+     * Sets up the table with custom cell editors for numeric columns
+     */
+    private void setupTableCellEditors() {
+        // Ensure TOTAL column (index 3) is not editable by using a custom table model
+        DefaultTableModel oldModel = (DefaultTableModel) jTable1.getModel();
+        Vector data = oldModel.getDataVector();
+        Vector cols = new Vector();
+        for (int i = 0; i < oldModel.getColumnCount(); i++) {
+            cols.add(oldModel.getColumnName(i));
+        }
+        DefaultTableModel newModel = new DefaultTableModel(data, cols) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // If the SERVICIO cell is empty for this row, make the entire row non-editable
+                Object servicioVal = null;
+                if (row >= 0 && row < getRowCount()) {
+                    servicioVal = getValueAt(row, 0);
+                }
+                if (servicioVal == null || servicioVal.toString().trim().isEmpty()) {
+                    return false;
+                }
+                // Allow editing only for PESO (1), PRECIO (2) and ACCIONES (4)
+                return column == 1 || column == 2 || column == 4;
+            }
+        };
+        jTable1.setModel(newModel);
+        // Custom editor for PESO column
+        jTable1.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(new javax.swing.JTextField()) {
+            @Override
+            public boolean stopCellEditing() {
+                try {
+                    String value = getCellEditorValue().toString();
+                    if (!value.isEmpty()) {
+                        Double.parseDouble(value);
+                    }
+                    return super.stopCellEditing();
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(jTable1,
+                            "Por favor ingrese un valor numérico válido.",
+                            "Error de formato", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+            }
+        });
+        // Custom editor for PRECIO column
+        jTable1.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(new javax.swing.JTextField()) {
+            @Override
+            public boolean stopCellEditing() {
+                try {
+                    String value = getCellEditorValue().toString();
+                    if (!value.isEmpty()) {
+                        Double.parseDouble(value);
+                    }
+                    return super.stopCellEditing();
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(jTable1,
+                            "Por favor ingrese un valor numérico válido.",
+                            "Error de formato", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+            }
+        });
+        // Add a listener to recalculate totals when cell editing stops
+        jTable1.getModel().addTableModelListener(e -> {
+            if (e.getType() == TableModelEvent.UPDATE) {
+                int row = e.getFirstRow();
+                int column = e.getColumn();
+                // Only recalculate if weight or price columns were edited
+                if (column == 1 || column == 2) {
+                    updateRowTotal(row);
+                    updateTotals();
+                }
+            }
+        });
+    }
+
+    /**
+     * Sets up the delete button renderer and editor for the table
+     */
+    private void setupTableButtons() {
+        jTable1.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
+        jTable1.getColumnModel().getColumn(4).setCellEditor(new ButtonEditor(new JCheckBox()));
+    }
+
+    /**
+     * Updates the total for a specific row based on weight and price
+     * @param row The row to update
+     */
+    private void updateRowTotal(int row) {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        try {
+            String pesoStr = model.getValueAt(row, 1).toString().trim();
+            String precioStr = model.getValueAt(row, 2).toString().trim();
+            if (!pesoStr.isEmpty() && !precioStr.isEmpty()) {
+                double peso = Double.parseDouble(pesoStr);
+                double precio = Double.parseDouble(precioStr);
+                double total = peso * precio;
+                model.setValueAt(String.format("%.2f", total), row, 3);
+            }
+        } catch (Exception ex) {
+            // If there's an error parsing numbers, leave the total as is
+        }
+    }
+
+// Class to render the delete button in the table
+    class ButtonRenderer extends JButton implements TableCellRenderer {
+
+        public ButtonRenderer() {
+            setOpaque(true);
+            setText("X");
+            setBackground(Color.RED);
+            setForeground(Color.WHITE);
+            setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 12));
+            setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table,
+                Object value,
+                boolean isSelected,
+                boolean hasFocus,
+                int row,
+                int column) {
+            Object servicioValue = table.getValueAt(row, 0);
+            if (servicioValue != null && !servicioValue.toString().trim().isEmpty()) {
+                // Return a standard JButton labeled "Borrar"
+                JButton btn = new JButton("Borrar");
+                btn.setOpaque(true);
+                btn.setFocusable(true);
+                btn.setFocusPainted(true);
+                btn.setBorderPainted(true);
+                btn.setContentAreaFilled(true);
+                // Use LAF default colors (do not force red)
+                btn.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 12));
+                btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+                return btn;
+            } else {
+                // Return an empty label for empty rows
+                return new javax.swing.JLabel("");
+            }
+        }
+    }
+
+// Class to handle the delete button click
+    class ButtonEditor extends DefaultCellEditor {
+
+        protected JButton button;
+        private String label;
+        private boolean isPushed;
+        private int targetRow;
+
+        public ButtonEditor(JCheckBox checkBox) {
+            super(checkBox);
+            button = new JButton();
+            button.setOpaque(true);
+            button.setText("X");
+            button.setBackground(Color.RED);
+            button.setForeground(Color.WHITE);
+            button.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 12));
+            button.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
+
+            button.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    fireEditingStopped();
+                }
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table,
+                Object value,
+                boolean isSelected,
+                int row,
+                int column) {
+            Object servicioValue = table.getValueAt(row, 0);
+            if (servicioValue != null && !servicioValue.toString().trim().isEmpty()) {
+                label = "Borrar";
+                button.setText(label);
+                // Reset to LAF defaults
+                button.setBackground(null);
+                button.setForeground(null);
+                button.setFocusable(true);
+                button.setFocusPainted(true);
+                button.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+                targetRow = row;
+                isPushed = true;
+                return button;
+            } else {
+                // If row empty, return an empty label to avoid showing an editor
+                isPushed = false;
+                return new javax.swing.JLabel("");
+            }
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            if (isPushed) {
+                // Clear the row instead of removing it to maintain table structure
+                DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+                model.setValueAt("", targetRow, 0); // SERVICIO
+                model.setValueAt("", targetRow, 1); // PESO EN KG
+                model.setValueAt("", targetRow, 2); // PRECIO POR KG
+                model.setValueAt("", targetRow, 3); // TOTAL
+                model.setValueAt("", targetRow, 4); // ACCIONES
+                // Update totals
+                updateTotals();
+            }
+            isPushed = false;
+            return label;
+        }
+
+        @Override
+        public boolean stopCellEditing() {
+            isPushed = false;
+            return super.stopCellEditing();
+        }
+    }
+
+    /**
+     * Updates the total amounts displayed in the UI
+     */
+    private void updateTotals() {
+        double subtotal = 0.0;
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+
+        // Sum up all totals from the table
+        for (int i = 0; i < model.getRowCount(); i++) {
+            Object totalObj = model.getValueAt(i, 3);
+            if (totalObj != null && !totalObj.toString().isEmpty()) {
+                try {
+                    subtotal += Double.parseDouble(totalObj.toString().replace("S/.", "").trim());
+                } catch (NumberFormatException e) {
+                    // Skip this value if it can't be parsed
+                }
+            }
+        }
+
+        // Calculate IGV (18%)
+        double igv = subtotal * 0.18;
+        double total = subtotal + igv;
+
+        // Update the labels
+        jLabel12.setText("S/. " + String.format("%.2f", subtotal));
+        jLabel13.setText("S/. " + String.format("%.2f", igv));
+        jLabel14.setText("S/. " + String.format("%.2f", total));
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAgregarNuevoCliente;
