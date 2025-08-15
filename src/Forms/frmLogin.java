@@ -7,6 +7,11 @@ package Forms;
 import java.awt.Color;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -273,54 +278,38 @@ public class frmLogin extends javax.swing.JFrame {
         String username = txtUsuario.getText();
         String password = new String(txtPassword.getPassword());
 
-        // Load database settings from db_settings.properties
-        java.util.Properties props = new java.util.Properties();
-        try (java.io.FileInputStream fis = new java.io.FileInputStream("db_settings.properties")) {
-            props.load(fis);
-        } catch (java.io.IOException ex) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Failed to load database settings: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Retrieve properties without hardcoding defaults
-        String host = props.getProperty("db.host");
-        String port = props.getProperty("db.port");
-        String database = props.getProperty("db.database");
-        String dbUsername = props.getProperty("db.username");
-        String dbPassword = props.getProperty("db.password");
-
-        // Validate that all required properties are present
-        if (host == null || port == null || database == null || dbUsername == null || dbPassword == null) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Database settings are incomplete. Please configure them properly.", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
-
-        try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, dbUsername, dbPassword)) {
+        // Obtain a live DB connection using DatabaseConfig
+        try (Connection conn = DatabaseConfig.getConnection()) {
             String query = "SELECT password FROM users WHERE username = ?";
-            try (java.sql.PreparedStatement stmt = conn.prepareStatement(query)) {
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
                 stmt.setString(1, username);
-                try (java.sql.ResultSet rs = stmt.executeQuery()) {
+                try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
-                        String encryptedPassword = rs.getString("password");
-                        if (verifyPassword(password, encryptedPassword)) {
-                            // Hide the login form
+                        String encrypted = rs.getString("password");
+                        if (verifyPassword(password, encrypted)) {
                             this.setVisible(false);
-
-                            // Show the main form
-                            frmMain mainForm = new frmMain();
-                            mainForm.setVisible(true);
+                            new frmMain().setVisible(true);
                         } else {
-                            javax.swing.JOptionPane.showMessageDialog(this, "Usuario o Clave invalidos!", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(this,
+                                    "Usuario o Clave inválidos!",
+                                    "Error", JOptionPane.ERROR_MESSAGE);
                         }
                     } else {
-                        javax.swing.JOptionPane.showMessageDialog(this, "Usuario o Clave invalidos!", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(this,
+                                "Usuario o Clave inválidos!",
+                                "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
-        } catch (java.sql.SQLException ex) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalStateException ex) {
+            // Missing or bad DB settings
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Error de configuración", JOptionPane.ERROR_MESSAGE);
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Database Error: " + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnLoginActionPerformed
 

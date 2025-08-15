@@ -12,14 +12,10 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.DocumentFilter.FilterBypass;
 import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Properties;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 
@@ -90,34 +86,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     }
 
     private void loadClientes() {
-        // Load DB connection info
-        Properties props = new Properties();
-        try (FileInputStream fis = new FileInputStream("db_settings.properties")) {
-            props.load(fis);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo leer db_settings.properties:\n" + ex.getMessage(),
-                    "Error de configuración", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String host = props.getProperty("db.host");
-        String port = props.getProperty("db.port");
-        String database = props.getProperty("db.database");
-        String user = props.getProperty("db.username");
-        String pass = props.getProperty("db.password");
-
-        String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
-
-        // Validate that all required properties are present
-        if (host == null || port == null || database == null || user == null || pass == null) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Database settings are incomplete. Please configure them properly.", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Query the clientes table
-        String sql = "SELECT id, nombres FROM clientes ORDER BY nombres";
-        try (Connection conn = DriverManager.getConnection(url, user, pass); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        final String sql = "SELECT id, nombres FROM clientes ORDER BY nombres";
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             while (rs.next()) {
                 model.addElement(rs.getString("nombres"));
@@ -134,34 +104,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      * Load enabled payment methods from MariaDB and populate cbxMetodoPago.
      */
     private void loadMetodosPago() {
-        Properties props = new Properties();
-        try (FileInputStream fis = new FileInputStream("db_settings.properties")) {
-            props.load(fis);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo leer db_settings.properties:\n" + ex.getMessage(),
-                    "Error de configuración", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String host = props.getProperty("db.host");
-        String port = props.getProperty("db.port");
-        String database = props.getProperty("db.database");
-        String user = props.getProperty("db.username");
-        String pass = props.getProperty("db.password");
-
-        if (host == null || port == null || database == null || user == null || pass == null) {
-            JOptionPane.showMessageDialog(this,
-                    "db_settings.properties incompleto. Definir db.host, db.port,\n"
-                    + "db.database, db.username y db.password",
-                    "Configuración faltante", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
-        String sql = "SELECT nom_metodo_pago FROM metodo_pago WHERE habilitado = 1 ORDER BY nom_metodo_pago";
-
-        try (Connection conn = DriverManager.getConnection(url, user, pass); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        final String sql = "SELECT nom_metodo_pago FROM metodo_pago WHERE habilitado = 1 ORDER BY nom_metodo_pago";
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             while (rs.next()) {
@@ -180,34 +124,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      * Load enabled servicios from MariaDB and populate cbxServicio.
      */
     private void loadServicios() {
-        Properties props = new Properties();
-        try (FileInputStream fis = new FileInputStream("db_settings.properties")) {
-            props.load(fis);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo leer db_settings.properties:\n" + ex.getMessage(),
-                    "Error de configuración", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String host = props.getProperty("db.host");
-        String port = props.getProperty("db.port");
-        String database = props.getProperty("db.database");
-        String user = props.getProperty("db.username");
-        String pass = props.getProperty("db.password");
-
-        if (host == null || port == null || database == null || user == null || pass == null) {
-            JOptionPane.showMessageDialog(this,
-                    "db_settings.properties incompleto. Definir db.host, db.port,\n"
-                    + "db.database, db.username y db.password",
-                    "Configuración faltante", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
-        String sql = "SELECT nom_servicio FROM servicios WHERE habilitado = 1 ORDER BY nom_servicio";
-
-        try (Connection conn = DriverManager.getConnection(url, user, pass); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        final String sql = "SELECT nom_servicio FROM servicios WHERE habilitado = 1 ORDER BY nom_servicio";
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             while (rs.next()) {

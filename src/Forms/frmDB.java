@@ -5,6 +5,9 @@
 package Forms;
 
 import java.awt.Color;
+import java.sql.Connection;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -227,28 +230,16 @@ public class frmDB extends javax.swing.JFrame {
 
     private void btnSaveSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveSettingsActionPerformed
         // TODO add your handling code here:
-        String host = txtHost.getText();
-        String port = txtPort.getText();
-        String database = txtDatabase.getText();
-        String username = txtUsername.getText();
-        String password = new String(txtPassword.getPassword());
-
-        try (java.io.FileOutputStream fos = new java.io.FileOutputStream("db_settings.properties")) {
-            java.util.Properties props = new java.util.Properties();
-            props.setProperty("db.host", host);
-            props.setProperty("db.port", port);
-            props.setProperty("db.database", database);
-            props.setProperty("db.username", username);
-            props.setProperty("db.password", password);
-            props.store(fos, "Database Settings");
-            javax.swing.JOptionPane.showMessageDialog(this, "Settings Saved Successfully!", "Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
-
-            // Close frmDB and return to frmLogin
-            this.setVisible(false); // Hide frmDB
-            frmLogin loginForm = new frmLogin(); // Create an instance of frmLogin
-            loginForm.setVisible(true); // Show frmLogin
-        } catch (java.io.IOException ex) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Failed to Save Settings: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            JOptionPane.showMessageDialog(this, "Conexión Exitosa!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IllegalStateException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Error de configuración", JOptionPane.ERROR_MESSAGE);
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Conexión Fallida: " + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnSaveSettingsActionPerformed
 
