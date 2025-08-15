@@ -19,7 +19,7 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.DocumentFilter.FilterBypass;
-import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator;
+// import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator; // Comentado: librería no presente actualmente
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,6 +33,7 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.event.TableModelEvent;
 import java.util.Vector;
+import javax.swing.ComboBoxModel;
 
 /**
  *
@@ -50,10 +51,11 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         loadServicios();
         loadEstadoComprobante();
         // make all combo-boxes filter as you type
-        AutoCompleteDecorator.decorate(cbxMetodoPago);
-        AutoCompleteDecorator.decorate(cbxEstadoComprobante);
-        AutoCompleteDecorator.decorate(cbxCliente);
-        AutoCompleteDecorator.decorate(cbxServicio);
+    // Si se añade SwingX al classpath, descomentar estas líneas para autocompletado:
+    // AutoCompleteDecorator.decorate(cbxMetodoPago);
+    // AutoCompleteDecorator.decorate(cbxEstadoComprobante);
+    // AutoCompleteDecorator.decorate(cbxCliente);
+    // AutoCompleteDecorator.decorate(cbxServicio);
         this.setSize(1100, 600);
         this.setTitle("REGISTRAR COMPROBANTE");
         // Set the DateTimePicker to the current date and time
@@ -553,10 +555,19 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                     "Servicio no seleccionado", JOptionPane.WARNING_MESSAGE);
             return;
         }
+    // Extra guard: avoid adding a service that is already present in the table (in case it wasn't removed from combo por algún motivo)
+    if (isServiceAlreadyInTable(selectedService.toString())) {
+        JOptionPane.showMessageDialog(this,
+            "El servicio ya fue añadido. Primero elimínelo de la tabla si desea volver a agregarlo.",
+            "Servicio duplicado", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
         // Get the price per kg for this service from database
         double precioPorKg = getPrecioServicio(selectedService.toString());
         // Add to table with empty PESO field and editable cells
         addServiceToTable(selectedService.toString(), "", String.format("%.2f", precioPorKg), "0.00", "X");
+    // Remove the added service from the combo to prevent duplicates
+    removeServiceFromCombo(selectedService.toString());
         // Reset the combo box to the placeholder
         cbxServicio.setSelectedIndex(0);
         // Set up cell editors for PESO and PRECIO columns if not already set
@@ -632,12 +643,13 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     private void setupTableCellEditors() {
         // Ensure TOTAL column (index 3) is not editable by using a custom table model
         DefaultTableModel oldModel = (DefaultTableModel) jTable1.getModel();
-        Vector data = oldModel.getDataVector();
-        Vector cols = new Vector();
+    @SuppressWarnings("unchecked")
+    Vector<Vector<Object>> data = (Vector<Vector<Object>>) (Vector<?>) oldModel.getDataVector();
+    Vector<String> cols = new Vector<>();
         for (int i = 0; i < oldModel.getColumnCount(); i++) {
             cols.add(oldModel.getColumnName(i));
         }
-        DefaultTableModel newModel = new DefaultTableModel(data, cols) {
+    DefaultTableModel newModel = new DefaultTableModel(data, cols) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 // If the SERVICIO cell is empty for this row, make the entire row non-editable
@@ -827,11 +839,20 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             if (isPushed) {
                 // Clear the row instead of removing it to maintain table structure
                 DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+                String servicioEliminado = "";
+                Object servicioObj = model.getValueAt(targetRow, 0);
+                if (servicioObj != null) {
+                    servicioEliminado = servicioObj.toString();
+                }
                 model.setValueAt("", targetRow, 0); // SERVICIO
                 model.setValueAt("", targetRow, 1); // PESO EN KG
                 model.setValueAt("", targetRow, 2); // PRECIO POR KG
                 model.setValueAt("", targetRow, 3); // TOTAL
                 model.setValueAt("", targetRow, 4); // ACCIONES
+                // Re-add service to combo (if any) so it becomes selectable again
+                if (servicioEliminado != null && !servicioEliminado.isBlank()) {
+                    addServiceBackToCombo(servicioEliminado);
+                }
                 // Update totals
                 updateTotals();
             }
@@ -873,6 +894,65 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel12.setText("S/. " + String.format("%.2f", subtotal));
         jLabel13.setText("S/. " + String.format("%.2f", igv));
         jLabel14.setText("S/. " + String.format("%.2f", total));
+    }
+
+    /**
+     * Checks if a service name is already present (non-empty) in the table.
+     */
+    private boolean isServiceAlreadyInTable(String serviceName) {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            Object val = model.getValueAt(i, 0);
+            if (val != null && !val.toString().isBlank() && val.toString().equalsIgnoreCase(serviceName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Removes a service (by its display name) from the combo box model.
+     */
+    private void removeServiceFromCombo(String serviceName) {
+        ComboBoxModel<String> m = cbxServicio.getModel();
+        if (m instanceof DefaultComboBoxModel) {
+            DefaultComboBoxModel<String> model = (DefaultComboBoxModel<String>) m;
+            for (int i = 0; i < model.getSize(); i++) {
+                String item = model.getElementAt(i);
+                if (item != null && item.equalsIgnoreCase(serviceName)) {
+                    model.removeElementAt(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Adds a service back into the combo box (after deletion) if it's not already there.
+     * Inserts after the placeholder and keeps alphabetical order relative to existing items (optional improvement).
+     */
+    private void addServiceBackToCombo(String serviceName) {
+        ComboBoxModel<String> m = cbxServicio.getModel();
+        if (!(m instanceof DefaultComboBoxModel)) return;
+        DefaultComboBoxModel<String> model = (DefaultComboBoxModel<String>) m;
+        // Check if already present
+        for (int i = 0; i < model.getSize(); i++) {
+            String item = model.getElementAt(i);
+            if (item != null && item.equalsIgnoreCase(serviceName)) {
+                return; // already present
+            }
+        }
+        // Find insertion index (keep first element as placeholder)
+        int insertIndex = model.getSize(); // default append
+        // Attempt alphabetical insertion starting from index 1
+        for (int i = 1; i < model.getSize(); i++) {
+            String item = model.getElementAt(i);
+            if (item != null && serviceName.compareToIgnoreCase(item) < 0) {
+                insertIndex = i;
+                break;
+            }
+        }
+        model.insertElementAt(serviceName, insertIndex);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
