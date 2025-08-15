@@ -77,7 +77,7 @@
                                       <Group type="102" alignment="1" attributes="0">
                                           <Component id="cbxCliente" min="-2" pref="333" max="-2" attributes="0"/>
                                           <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                                          <Component id="jButton1" min="-2" pref="234" max="-2" attributes="0"/>
+                                          <Component id="btnAgregarNuevoCliente" min="-2" pref="234" max="-2" attributes="0"/>
                                       </Group>
                                   </Group>
                               </Group>
@@ -93,7 +93,7 @@
                               <Group type="102" alignment="0" attributes="0">
                                   <Component id="cbxServicio" min="-2" pref="410" max="-2" attributes="0"/>
                                   <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="jButton3" max="32767" attributes="0"/>
+                                  <Component id="btnAgregarServicioComprobante" max="32767" attributes="0"/>
                               </Group>
                               <Component id="jLabel15" min="-2" max="-2" attributes="0"/>
                               <Component id="jScrollPane2" max="32767" attributes="0"/>
@@ -107,7 +107,7 @@
                                   <Group type="102" alignment="0" attributes="0">
                                       <Component id="jLabel10" min="-2" max="-2" attributes="0"/>
                                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                                      <Component id="jTextField1" min="-2" pref="202" max="-2" attributes="0"/>
+                                      <Component id="txtMontoAbonado" min="-2" pref="202" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" alignment="1" attributes="0">
@@ -138,7 +138,7 @@
                   <EmptySpace min="-2" pref="27" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="2" attributes="0">
                       <Component id="jLabel2" alignment="2" min="-2" max="-2" attributes="0"/>
-                      <Component id="jButton1" alignment="2" min="-2" pref="30" max="-2" attributes="0"/>
+                      <Component id="btnAgregarNuevoCliente" alignment="2" min="-2" pref="30" max="-2" attributes="0"/>
                       <Component id="jLabel6" alignment="2" min="-2" max="-2" attributes="0"/>
                       <Component id="dateTimePicker1" alignment="2" min="-2" pref="30" max="-2" attributes="0"/>
                       <Component id="cbxCliente" alignment="0" min="-2" pref="30" max="-2" attributes="0"/>
@@ -163,7 +163,7 @@
                           <EmptySpace max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="3" attributes="0">
                               <Component id="jLabel10" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="jTextField1" alignment="3" min="-2" pref="30" max="-2" attributes="0"/>
+                              <Component id="txtMontoAbonado" alignment="3" min="-2" pref="30" max="-2" attributes="0"/>
                           </Group>
                       </Group>
                       <Group type="102" alignment="0" attributes="0">
@@ -207,7 +207,7 @@
                       <Group type="102" attributes="0">
                           <Group type="103" groupAlignment="2" attributes="0">
                               <Component id="cbxServicio" alignment="2" min="-2" pref="30" max="-2" attributes="0"/>
-                              <Component id="jButton3" alignment="2" min="-2" pref="30" max="-2" attributes="0"/>
+                              <Component id="btnAgregarServicioComprobante" alignment="2" min="-2" pref="30" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace type="separate" max="-2" attributes="0"/>
                           <Component id="jScrollPane2" min="-2" pref="138" max="-2" attributes="0"/>
@@ -221,39 +221,35 @@
       <SubComponents>
         <Component class="javax.swing.JLabel" name="jLabel2">
           <Properties>
-            <Property name="text" type="java.lang.String" value="CLIENTE:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="CLIENTE:"/>
           </Properties>
         </Component>
-        <Component class="javax.swing.JButton" name="jButton1">
+        <Component class="javax.swing.JButton" name="btnAgregarNuevoCliente">
           <Properties>
-            <Property name="text" type="java.lang.String" value="A&#xd1;ADIR NUEVO CLIENTE"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="A&#xd1;ADIR NUEVO CLIENTE"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel3">
           <Properties>
-            <Property name="text" type="java.lang.String" value="ESTADO:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="ESTADO:"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JComboBox" name="cbxEstadoComprobante">
           <Properties>
-            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-              <StringArray count="3">
-                <StringItem index="0" value="DEBE"/>
-                <StringItem index="1" value="ABONO"/>
-                <StringItem index="2" value="CANCELO"/>
-              </StringArray>
-            </Property>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="0"/>
+            </Property>
+            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+              <StringArray count="0"/>
             </Property>
           </Properties>
           <AuxValues>
@@ -262,19 +258,19 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel1">
           <Properties>
-            <Property name="text" type="java.lang.String" value="CONDICI&#xd3;N DE PAGO:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="CONDICI&#xd3;N DE PAGO:"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JComboBox" name="cbxMetodoPago">
           <Properties>
-            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-              <StringArray count="0"/>
-            </Property>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="0"/>
+            </Property>
+            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+              <StringArray count="0"/>
             </Property>
           </Properties>
           <AuxValues>
@@ -316,26 +312,26 @@
         </Component>
         <Component class="javax.swing.JLabel" name="lblTitulo">
           <Properties>
-            <Property name="text" type="java.lang.String" value="REGISTRO DE COMPROBANTE"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="24" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="REGISTRO DE COMPROBANTE"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel4">
           <Properties>
-            <Property name="text" type="java.lang.String" value="RUC:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="RUC:"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel5">
           <Properties>
-            <Property name="text" type="java.lang.String" value="RAZON SOCIAL:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="RAZON SOCIAL:"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JTextField" name="txtRUC">
@@ -356,10 +352,10 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel6">
           <Properties>
-            <Property name="text" type="java.lang.String" value="CREACI&#xd3;N:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="CREACI&#xd3;N:"/>
           </Properties>
         </Component>
         <Component class="com.github.lgooddatepicker.components.DateTimePicker" name="dateTimePicker1">
@@ -371,11 +367,11 @@
         </Component>
         <Component class="javax.swing.JComboBox" name="cbxCliente">
           <Properties>
-            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-              <StringArray count="0"/>
-            </Property>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="SansSerif" size="14" style="0"/>
+            </Property>
+            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+              <StringArray count="0"/>
             </Property>
           </Properties>
           <AuxValues>
@@ -384,37 +380,37 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel7">
           <Properties>
-            <Property name="text" type="java.lang.String" value="OP. GRAVADAS:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="OP. GRAVADAS:"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel8">
           <Properties>
-            <Property name="text" type="java.lang.String" value="IGV 18%:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="IGV 18%:"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel9">
           <Properties>
-            <Property name="text" type="java.lang.String" value="TOTAL A PAGAR:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="TOTAL A PAGAR:"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel10">
           <Properties>
-            <Property name="text" type="java.lang.String" value="MONTO ABONADO:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="MONTO ABONADO:"/>
           </Properties>
         </Component>
-        <Component class="javax.swing.JTextField" name="jTextField1">
+        <Component class="javax.swing.JTextField" name="txtMontoAbonado">
           <Properties>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="SansSerif" size="14" style="0"/>
@@ -424,10 +420,10 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel11">
           <Properties>
-            <Property name="text" type="java.lang.String" value="OBSERVACIONES:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="OBSERVACIONES:"/>
           </Properties>
         </Component>
         <Container class="javax.swing.JScrollPane" name="jScrollPane1">
@@ -437,79 +433,79 @@
 
           <Layout class="org.netbeans.modules.form.compat2.layouts.support.JScrollPaneSupportLayout"/>
           <SubComponents>
-            <Component class="javax.swing.JTextArea" name="jTextArea1">
+            <Component class="javax.swing.JTextArea" name="txtObservaciones">
               <Properties>
                 <Property name="columns" type="int" value="20"/>
-                <Property name="rows" type="int" value="5"/>
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                   <Font name="SansSerif" size="14" style="0"/>
                 </Property>
+                <Property name="rows" type="int" value="5"/>
               </Properties>
             </Component>
           </SubComponents>
         </Container>
         <Component class="javax.swing.JButton" name="btnGenerarComprobante">
           <Properties>
-            <Property name="text" type="java.lang.String" value="GENERAR"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Segoe UI" size="18" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="GENERAR"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel12">
           <Properties>
-            <Property name="text" type="java.lang.String" value="S/. 0.00"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Segoe UI" size="14" style="0"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="S/. 0.00"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel13">
           <Properties>
-            <Property name="text" type="java.lang.String" value="S/. 0.00"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Segoe UI" size="14" style="0"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="S/. 0.00"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel14">
           <Properties>
-            <Property name="text" type="java.lang.String" value="S/. 0.00"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Segoe UI" size="14" style="0"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="S/. 0.00"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JComboBox" name="cbxServicio">
           <Properties>
-            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-              <StringArray count="0"/>
-            </Property>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="SansSerif" size="14" style="0"/>
+            </Property>
+            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+              <StringArray count="0"/>
             </Property>
           </Properties>
           <AuxValues>
             <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
           </AuxValues>
         </Component>
-        <Component class="javax.swing.JButton" name="jButton3">
+        <Component class="javax.swing.JButton" name="btnAgregarServicioComprobante">
           <Properties>
-            <Property name="text" type="java.lang.String" value="A&#xd1;ADIR AL COMPROBANTE"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="A&#xd1;ADIR AL COMPROBANTE"/>
           </Properties>
           <Events>
-            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButton3ActionPerformed"/>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnAgregarServicioComprobanteActionPerformed"/>
           </Events>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel15">
           <Properties>
-            <Property name="text" type="java.lang.String" value="SELECCIONAR SERVICIO:"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="sansserif" size="14" style="1"/>
             </Property>
+            <Property name="text" type="java.lang.String" value="SELECCIONAR SERVICIO:"/>
           </Properties>
         </Component>
         <Container class="javax.swing.JScrollPane" name="jScrollPane2">

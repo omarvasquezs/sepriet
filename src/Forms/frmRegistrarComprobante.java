@@ -33,6 +33,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         loadClientes();
         loadMetodosPago();
         loadServicios();
+        loadEstadoComprobante();
         // make all combo-boxes filter as you type
         AutoCompleteDecorator.decorate(cbxMetodoPago);
         AutoCompleteDecorator.decorate(cbxEstadoComprobante);
@@ -46,6 +47,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         radioFactura.addActionListener(e -> toggleRucFields());
         radioNotaVenta.addActionListener(e -> toggleRucFields());
         radioBoleta.addActionListener(e -> toggleRucFields());
+        // Add listener for estado combo box
+        cbxEstadoComprobante.addActionListener(e -> toggleMontoAbonado());
         // Load and set the internal‐frame icon
         ImageIcon icon = new ImageIcon(getClass().getResource("/Forms/icon.png"));
         this.setFrameIcon(icon);
@@ -76,14 +79,27 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
         });
         btnGenerarComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        // Initialize the state of RUC and Razon Social fields
+        btnAgregarNuevoCliente.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnAgregarServicioComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        // Initialize the state of controls
         toggleRucFields();
+        toggleMontoAbonado();
     }
 
     private void toggleRucFields() {
         boolean enable = radioFactura.isSelected();
         txtRUC.setEnabled(enable);
         txtRazonSocial.setEnabled(enable);
+    }
+
+    private void toggleMontoAbonado() {
+        Object selectedItem = cbxEstadoComprobante.getSelectedItem();
+        if (selectedItem == null || selectedItem.toString().startsWith("--")) {
+            txtMontoAbonado.setEnabled(false); // Disable if placeholder is selected
+            return;
+        }
+        boolean enable = "ABONO".equals(selectedItem.toString().trim());
+        txtMontoAbonado.setEnabled(enable);
     }
 
     private void loadClientes() {
@@ -141,6 +157,25 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         }
     }
 
+    private void loadEstadoComprobante() {
+        final String sql = "SELECT nom_estado FROM estado_comprobantes WHERE habilitado = 1 AND nom_estado <> 'ANULADO' ORDER BY nom_estado";
+        try (Connection conn = DatabaseConfig.getConnection(); 
+             PreparedStatement stmt = conn.prepareStatement(sql); 
+             ResultSet rs = stmt.executeQuery()) {
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            model.addElement("-- Seleccione un estado --"); // Add placeholder
+            while (rs.next()) {
+                model.addElement(rs.getString("nom_estado").trim());
+            }
+            cbxEstadoComprobante.setModel(model);
+            cbxEstadoComprobante.setSelectedIndex(0); // Select the placeholder
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error cargando estados de comprobante:\n" + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -153,7 +188,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         buttonGroup1 = new javax.swing.ButtonGroup();
         jPanel1 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
+        btnAgregarNuevoCliente = new javax.swing.JButton();
         jLabel3 = new javax.swing.JLabel();
         cbxEstadoComprobante = new javax.swing.JComboBox<>();
         jLabel1 = new javax.swing.JLabel();
@@ -173,16 +208,16 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel8 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
+        txtMontoAbonado = new javax.swing.JTextField();
         jLabel11 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
+        txtObservaciones = new javax.swing.JTextArea();
         btnGenerarComprobante = new javax.swing.JButton();
         jLabel12 = new javax.swing.JLabel();
         jLabel13 = new javax.swing.JLabel();
         jLabel14 = new javax.swing.JLabel();
         cbxServicio = new javax.swing.JComboBox<>();
-        jButton3 = new javax.swing.JButton();
+        btnAgregarServicioComprobante = new javax.swing.JButton();
         jLabel15 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
@@ -193,20 +228,19 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         setResizable(true);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel2.setText("CLIENTE:");
         jLabel2.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel2.setText("CLIENTE:");
 
-        jButton1.setText("AÑADIR NUEVO CLIENTE");
-        jButton1.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        btnAgregarNuevoCliente.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        btnAgregarNuevoCliente.setText("AÑADIR NUEVO CLIENTE");
 
-        jLabel3.setText("ESTADO:");
         jLabel3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel3.setText("ESTADO:");
 
-        cbxEstadoComprobante.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "DEBE", "ABONO", "CANCELO" }));
         cbxEstadoComprobante.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
-        jLabel1.setText("CONDICIÓN DE PAGO:");
         jLabel1.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel1.setText("CONDICIÓN DE PAGO:");
 
         cbxMetodoPago.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
@@ -222,14 +256,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         radioBoleta.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         radioBoleta.setText("BOLETA");
 
-        lblTitulo.setText("REGISTRO DE COMPROBANTE");
         lblTitulo.setFont(new java.awt.Font("sansserif", 1, 24)); // NOI18N
+        lblTitulo.setText("REGISTRO DE COMPROBANTE");
 
-        jLabel4.setText("RUC:");
         jLabel4.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel4.setText("RUC:");
 
-        jLabel5.setText("RAZON SOCIAL:");
         jLabel5.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel5.setText("RAZON SOCIAL:");
 
         txtRUC.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRUC.setEnabled(false);
@@ -237,60 +271,60 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         txtRazonSocial.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRazonSocial.setEnabled(false);
 
-        jLabel6.setText("CREACIÓN:");
         jLabel6.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel6.setText("CREACIÓN:");
 
         dateTimePicker1.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
         cbxCliente.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
-        jLabel7.setText("OP. GRAVADAS:");
         jLabel7.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel7.setText("OP. GRAVADAS:");
 
-        jLabel8.setText("IGV 18%:");
         jLabel8.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel8.setText("IGV 18%:");
 
-        jLabel9.setText("TOTAL A PAGAR:");
         jLabel9.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel9.setText("TOTAL A PAGAR:");
 
-        jLabel10.setText("MONTO ABONADO:");
         jLabel10.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel10.setText("MONTO ABONADO:");
 
-        jTextField1.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
-        jTextField1.setEnabled(false);
+        txtMontoAbonado.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
+        txtMontoAbonado.setEnabled(false);
 
-        jLabel11.setText("OBSERVACIONES:");
         jLabel11.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel11.setText("OBSERVACIONES:");
 
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jTextArea1.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
-        jScrollPane1.setViewportView(jTextArea1);
+        txtObservaciones.setColumns(20);
+        txtObservaciones.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
+        txtObservaciones.setRows(5);
+        jScrollPane1.setViewportView(txtObservaciones);
 
-        btnGenerarComprobante.setText("GENERAR");
         btnGenerarComprobante.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnGenerarComprobante.setText("GENERAR");
 
-        jLabel12.setText("S/. 0.00");
         jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel12.setText("S/. 0.00");
 
-        jLabel13.setText("S/. 0.00");
         jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel13.setText("S/. 0.00");
 
-        jLabel14.setText("S/. 0.00");
         jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel14.setText("S/. 0.00");
 
         cbxServicio.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
-        jButton3.setText("AÑADIR AL COMPROBANTE");
-        jButton3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
+        btnAgregarServicioComprobante.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        btnAgregarServicioComprobante.setText("AÑADIR AL COMPROBANTE");
+        btnAgregarServicioComprobante.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                btnAgregarServicioComprobanteActionPerformed(evt);
             }
         });
 
-        jLabel15.setText("SELECCIONAR SERVICIO:");
         jLabel15.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel15.setText("SELECCIONAR SERVICIO:");
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -362,7 +396,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                                         .addComponent(cbxCliente, javax.swing.GroupLayout.PREFERRED_SIZE, 333, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 234, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                        .addComponent(btnAgregarNuevoCliente, javax.swing.GroupLayout.PREFERRED_SIZE, 234, javax.swing.GroupLayout.PREFERRED_SIZE))))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                                 .addComponent(jLabel4)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -374,7 +408,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(cbxServicio, javax.swing.GroupLayout.PREFERRED_SIZE, 410, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addComponent(btnAgregarServicioComprobante, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addComponent(jLabel15)
                             .addComponent(jScrollPane2))
                         .addGap(43, 43, 43)
@@ -386,7 +420,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 .addGroup(jPanel1Layout.createSequentialGroup()
                                     .addComponent(jLabel10)
                                     .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 202, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                    .addComponent(txtMontoAbonado, javax.swing.GroupLayout.PREFERRED_SIZE, 202, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jLabel7)
@@ -407,7 +441,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 .addGap(27, 27, 27)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
                     .addComponent(jLabel2)
-                    .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnAgregarNuevoCliente, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel6)
                     .addComponent(dateTimePicker1, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cbxCliente, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -428,7 +462,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel10)
-                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(txtMontoAbonado, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
@@ -461,7 +495,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
                             .addComponent(cbxServicio, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(btnAgregarServicioComprobante, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
                         .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(194, Short.MAX_VALUE))
@@ -472,12 +506,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+    private void btnAgregarServicioComprobanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarServicioComprobanteActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton3ActionPerformed
+    }//GEN-LAST:event_btnAgregarServicioComprobanteActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnAgregarNuevoCliente;
+    private javax.swing.JButton btnAgregarServicioComprobante;
     private javax.swing.JButton btnGenerarComprobante;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JComboBox<String> cbxCliente;
@@ -485,8 +521,6 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     private javax.swing.JComboBox<String> cbxMetodoPago;
     private javax.swing.JComboBox<String> cbxServicio;
     private com.github.lgooddatepicker.components.DateTimePicker dateTimePicker1;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton3;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -506,12 +540,12 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
-    private javax.swing.JTextArea jTextArea1;
-    private javax.swing.JTextField jTextField1;
     private javax.swing.JLabel lblTitulo;
     private javax.swing.JRadioButton radioBoleta;
     private javax.swing.JRadioButton radioFactura;
     private javax.swing.JRadioButton radioNotaVenta;
+    private javax.swing.JTextField txtMontoAbonado;
+    private javax.swing.JTextArea txtObservaciones;
     private javax.swing.JTextField txtRUC;
     private javax.swing.JTextField txtRazonSocial;
     // End of variables declaration//GEN-END:variables
