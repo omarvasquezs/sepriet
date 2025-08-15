@@ -343,14 +343,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         btnGenerarComprobante.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnGenerarComprobante.setText("GENERAR");
 
-        jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel12.setText("S/. 0.00");
+        jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
-        jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel13.setText("S/. 0.00");
+        jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
-        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel14.setText("S/. 0.00");
+        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
         cbxServicio.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
@@ -467,9 +467,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                     .addComponent(jLabel9))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel13)
-                                    .addComponent(jLabel12)
-                                    .addComponent(jLabel14))))))
+                                    .addComponent(jLabel14, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.TRAILING))))))
                 .addGap(15, 15, 15))
         );
         jPanel1Layout.setVerticalGroup(
