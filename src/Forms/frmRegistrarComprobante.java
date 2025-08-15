@@ -104,12 +104,16 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
     private void loadClientes() {
         final String sql = "SELECT id, nombres FROM clientes ORDER BY nombres";
-        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection(); 
+             PreparedStatement stmt = conn.prepareStatement(sql); 
+             ResultSet rs = stmt.executeQuery()) {
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            model.addElement("-- Seleccione un cliente --"); // Add placeholder
             while (rs.next()) {
                 model.addElement(rs.getString("nombres"));
             }
             cbxCliente.setModel(model);
+            cbxCliente.setSelectedIndex(0); // Select the placeholder
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this,
                     "Error cargando clientes:\n" + ex.getMessage(),
@@ -122,13 +126,17 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      */
     private void loadMetodosPago() {
         final String sql = "SELECT nom_metodo_pago FROM metodo_pago WHERE habilitado = 1 ORDER BY nom_metodo_pago";
-        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection(); 
+             PreparedStatement stmt = conn.prepareStatement(sql); 
+             ResultSet rs = stmt.executeQuery()) {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            model.addElement("-- Seleccione método de pago --"); // Add placeholder
             while (rs.next()) {
                 model.addElement(rs.getString("nom_metodo_pago"));
             }
             cbxMetodoPago.setModel(model);
+            cbxMetodoPago.setSelectedIndex(0); // Select the placeholder
 
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this,
@@ -142,13 +150,17 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      */
     private void loadServicios() {
         final String sql = "SELECT nom_servicio FROM servicios WHERE habilitado = 1 ORDER BY nom_servicio";
-        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection(); 
+             PreparedStatement stmt = conn.prepareStatement(sql); 
+             ResultSet rs = stmt.executeQuery()) {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            model.addElement("-- Seleccione un servicio --"); // Add placeholder
             while (rs.next()) {
                 model.addElement(rs.getString("nom_servicio"));
             }
             cbxServicio.setModel(model);
+            cbxServicio.setSelectedIndex(0); // Select the placeholder
 
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this,
