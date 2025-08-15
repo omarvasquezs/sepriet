@@ -75,6 +75,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
             }
         });
+        btnGenerarComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         // Initialize the state of RUC and Razon Social fields
         toggleRucFields();
     }
@@ -176,7 +177,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel11 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTextArea1 = new javax.swing.JTextArea();
-        jButton2 = new javax.swing.JButton();
+        btnGenerarComprobante = new javax.swing.JButton();
         jLabel12 = new javax.swing.JLabel();
         jLabel13 = new javax.swing.JLabel();
         jLabel14 = new javax.swing.JLabel();
@@ -230,12 +231,18 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel5.setText("RAZON SOCIAL:");
         jLabel5.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
+        txtRUC.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRUC.setEnabled(false);
 
+        txtRazonSocial.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRazonSocial.setEnabled(false);
 
         jLabel6.setText("CREACIÓN:");
         jLabel6.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+
+        dateTimePicker1.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
+
+        cbxCliente.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
         jLabel7.setText("OP. GRAVADAS:");
         jLabel7.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
@@ -249,6 +256,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel10.setText("MONTO ABONADO:");
         jLabel10.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
+        jTextField1.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         jTextField1.setEnabled(false);
 
         jLabel11.setText("OBSERVACIONES:");
@@ -256,10 +264,11 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
         jTextArea1.setColumns(20);
         jTextArea1.setRows(5);
+        jTextArea1.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         jScrollPane1.setViewportView(jTextArea1);
 
-        jButton2.setText("GENERAR");
-        jButton2.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnGenerarComprobante.setText("GENERAR");
+        btnGenerarComprobante.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
 
         jLabel12.setText("S/. 0.00");
         jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -270,7 +279,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel14.setText("S/. 0.00");
         jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
-        cbxServicio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cbxServicio.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
         jButton3.setText("AÑADIR AL COMPROBANTE");
         jButton3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
@@ -370,7 +379,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                             .addComponent(jScrollPane2))
                         .addGap(43, 43, 43)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(btnGenerarComprobante, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jScrollPane1)
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(jLabel11)
@@ -448,7 +457,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addComponent(jScrollPane1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(btnGenerarComprobante, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
                             .addComponent(cbxServicio, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -469,6 +478,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnGenerarComprobante;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JComboBox<String> cbxCliente;
     private javax.swing.JComboBox<String> cbxEstadoComprobante;
@@ -476,7 +486,6 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     private javax.swing.JComboBox<String> cbxServicio;
     private com.github.lgooddatepicker.components.DateTimePicker dateTimePicker1;
     private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
