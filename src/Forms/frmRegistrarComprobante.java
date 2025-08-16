@@ -688,15 +688,18 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
         };
         jTable1.setModel(newModel);
-        // Custom editor for PESO column
-        jTable1.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(new javax.swing.JTextField()) {
+        // Shared numeric document filter
+        NumericDocumentFilter numericFilter = new NumericDocumentFilter();
+
+        // Custom editor for PESO column (only integers or decimals while typing)
+        javax.swing.JTextField pesoField = new javax.swing.JTextField();
+        ((AbstractDocument) pesoField.getDocument()).setDocumentFilter(numericFilter);
+        jTable1.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(pesoField) {
             @Override
             public boolean stopCellEditing() {
                 try {
                     String value = getCellEditorValue().toString();
-                    if (!value.isEmpty()) {
-                        Double.parseDouble(value);
-                    }
+                    if (!value.isEmpty()) Double.parseDouble(value);
                     return super.stopCellEditing();
                 } catch (NumberFormatException e) {
                     JOptionPane.showMessageDialog(jTable1,
@@ -706,15 +709,16 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
             }
         });
-        // Custom editor for PRECIO column
-        jTable1.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(new javax.swing.JTextField()) {
+
+        // Custom editor for PRECIO column (only integers or decimals while typing)
+        javax.swing.JTextField precioField = new javax.swing.JTextField();
+        ((AbstractDocument) precioField.getDocument()).setDocumentFilter(numericFilter);
+        jTable1.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(precioField) {
             @Override
             public boolean stopCellEditing() {
                 try {
                     String value = getCellEditorValue().toString();
-                    if (!value.isEmpty()) {
-                        Double.parseDouble(value);
-                    }
+                    if (!value.isEmpty()) Double.parseDouble(value);
                     return super.stopCellEditing();
                 } catch (NumberFormatException e) {
                     JOptionPane.showMessageDialog(jTable1,
@@ -736,6 +740,37 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
             }
         });
+    }
+
+    /**
+     * Reusable DocumentFilter allowing only integer or decimal numbers (e.g. 10, 10., 10.5, 10.50).
+     * Empty string is allowed while user is typing.
+     */
+    private static class NumericDocumentFilter extends DocumentFilter {
+        private boolean isValid(String text) {
+            if (text.isEmpty()) return true;
+            return text.matches("\\d+(\\.\\d*)?");
+        }
+
+        @Override
+        public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+            if (string == null) return;
+            StringBuilder sb = new StringBuilder(fb.getDocument().getText(0, fb.getDocument().getLength()));
+            sb.insert(offset, string);
+            if (isValid(sb.toString())) {
+                super.insertString(fb, offset, string, attr);
+            }
+        }
+
+        @Override
+        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+            if (text == null) text = "";
+            StringBuilder sb = new StringBuilder(fb.getDocument().getText(0, fb.getDocument().getLength()));
+            sb.replace(offset, offset + length, text);
+            if (isValid(sb.toString())) {
+                super.replace(fb, offset, length, text, attrs);
+            }
+        }
     }
 
     /**
