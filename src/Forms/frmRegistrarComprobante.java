@@ -18,7 +18,6 @@ import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
-import javax.swing.text.DocumentFilter.FilterBypass;
 import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
