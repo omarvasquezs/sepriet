@@ -27,7 +27,6 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.UIManager;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.event.TableModelEvent;
