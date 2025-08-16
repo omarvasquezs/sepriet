@@ -19,7 +19,7 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.DocumentFilter.FilterBypass;
-// import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator; // Comentado: librería no presente actualmente
+import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator; // Comentado: librería no presente actualmente
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -51,11 +51,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         loadServicios();
         loadEstadoComprobante();
         // make all combo-boxes filter as you type
-    // Si se añade SwingX al classpath, descomentar estas líneas para autocompletado:
-    // AutoCompleteDecorator.decorate(cbxMetodoPago);
-    // AutoCompleteDecorator.decorate(cbxEstadoComprobante);
-    // AutoCompleteDecorator.decorate(cbxCliente);
-    // AutoCompleteDecorator.decorate(cbxServicio);
+        AutoCompleteDecorator.decorate(cbxMetodoPago);
+        AutoCompleteDecorator.decorate(cbxEstadoComprobante);
+        AutoCompleteDecorator.decorate(cbxCliente);
+        AutoCompleteDecorator.decorate(cbxServicio);
         this.setSize(1100, 600);
         this.setTitle("REGISTRAR COMPROBANTE");
         // Set the DateTimePicker to the current date and time
