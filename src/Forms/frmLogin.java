@@ -75,7 +75,7 @@ public class frmLogin extends javax.swing.JFrame {
         txtPassword.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
-                if (txtPassword.getText().equals("********")) {
+                if (new String(txtPassword.getPassword()).equals("********")) {
                     txtPassword.setText("");
                     txtPassword.setForeground(Color.BLACK);
                     txtPassword.setEchoChar('*'); // Enable echo char for password
@@ -84,7 +84,7 @@ public class frmLogin extends javax.swing.JFrame {
 
             @Override
             public void focusLost(FocusEvent e) {
-                if (txtPassword.getText().isEmpty()) {
+                if (txtPassword.getPassword().length == 0) {
                     txtPassword.setText("********");
                     txtPassword.setForeground(Color.GRAY);
                     txtPassword.setEchoChar((char) 0); // Disable echo char for placeholder
