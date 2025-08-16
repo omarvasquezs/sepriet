@@ -54,7 +54,7 @@ public class frmMain extends javax.swing.JFrame {
         menuSalir.addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // TODO
+                
             }
 
             @Override
@@ -78,17 +78,17 @@ public class frmMain extends javax.swing.JFrame {
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                // TODO
+                
             }
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                // TODO
+                
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                // TODO
+                
             }
         });
     }
@@ -258,7 +258,7 @@ public class frmMain extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void menuRegistrarComprobanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuRegistrarComprobanteActionPerformed
-        // TODO add your handling code here:
+
         // Check if the internal frame is already open
         for (javax.swing.JInternalFrame frame : desktopPane.getAllFrames()) {
             if (frame instanceof frmRegistrarComprobante) {

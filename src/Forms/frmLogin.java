@@ -267,14 +267,14 @@ public class frmLogin extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnConfigurarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConfigurarActionPerformed
-        // TODO add your handling code here:
+        
         this.setVisible(false); // Hide frmLogin
         frmDB dbForm = new frmDB(); // Create an instance of frmDB
         dbForm.setVisible(true); // Show frmDB
     }//GEN-LAST:event_btnConfigurarActionPerformed
 
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
-        // TODO add your handling code here:
+        
         String username = txtUsuario.getText();
         String password = new String(txtPassword.getPassword());
 
