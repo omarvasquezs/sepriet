@@ -222,7 +222,16 @@ public class frmDB extends javax.swing.JFrame {
         String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
 
         try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, username, password)) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Conexión Exitosa!", "Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            // use the connection to avoid "variable not used" and to verify connectivity
+            try {
+                if (conn != null && conn.isValid(2)) {
+                    javax.swing.JOptionPane.showMessageDialog(this, "Conexión Exitosa!", "Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    javax.swing.JOptionPane.showMessageDialog(this, "Conexión Fallida: conexión no válida", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (java.sql.SQLException innerEx) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Conexión Fallida: " + innerEx.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
         } catch (java.sql.SQLException ex) {
             javax.swing.JOptionPane.showMessageDialog(this, "Conexión Fallida: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
@@ -231,15 +240,23 @@ public class frmDB extends javax.swing.JFrame {
     private void btnSaveSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveSettingsActionPerformed
 
         try (Connection conn = DatabaseConfig.getConnection()) {
-            JOptionPane.showMessageDialog(this, "Conexión Exitosa!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            try {
+            if (conn != null && conn.isValid(2)) {
+                JOptionPane.showMessageDialog(this, "Conexión Exitosa!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Conexión Fallida: conexión no válida", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+            } catch (SQLException innerEx) {
+            JOptionPane.showMessageDialog(this, "Conexión Fallida: " + innerEx.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         } catch (IllegalStateException ex) {
             JOptionPane.showMessageDialog(this,
-                    ex.getMessage(),
-                    "Error de configuración", JOptionPane.ERROR_MESSAGE);
+                ex.getMessage(),
+                "Error de configuración", JOptionPane.ERROR_MESSAGE);
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this,
-                    "Conexión Fallida: " + ex.getMessage(),
-                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+                "Conexión Fallida: " + ex.getMessage(),
+                "Error de base de datos", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnSaveSettingsActionPerformed
 
