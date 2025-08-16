@@ -58,11 +58,11 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Set the DateTimePicker to the current date and time
         dateTimePicker1.setDateTimePermissive(LocalDateTime.now());
         // Add listeners to radio buttons to toggle RUC and Razon Social fields
-        radioFactura.addActionListener(e -> toggleRucFields());
-        radioNotaVenta.addActionListener(e -> toggleRucFields());
-        radioBoleta.addActionListener(e -> toggleRucFields());
+        radioFactura.addActionListener(_ -> toggleRucFields());
+        radioNotaVenta.addActionListener(_ -> toggleRucFields());
+        radioBoleta.addActionListener(_ -> toggleRucFields());
         // Add listener for estado combo box
-        cbxEstadoComprobante.addActionListener(e -> toggleMontoAbonado());
+        cbxEstadoComprobante.addActionListener(_ -> toggleMontoAbonado());
         // Load and set the internal‐frame icon
         ImageIcon icon = new ImageIcon(getClass().getResource("/Forms/icon.png"));
         this.setFrameIcon(icon);
