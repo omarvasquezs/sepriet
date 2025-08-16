@@ -51,8 +51,6 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         loadServicios();
         loadEstadoComprobante();
         // make all combo-boxes filter as you type
-        AutoCompleteDecorator.decorate(cbxMetodoPago);
-        AutoCompleteDecorator.decorate(cbxEstadoComprobante);
         AutoCompleteDecorator.decorate(cbxCliente);
         AutoCompleteDecorator.decorate(cbxServicio);
         this.setSize(1100, 600);
