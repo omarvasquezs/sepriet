@@ -90,6 +90,34 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
             }
         });
+        // Restrict MONTO ABONADO field to integers or decimal numbers (allows e.g., 10, 10.5, 10.50)
+        AbstractDocument montoDoc = (AbstractDocument) txtMontoAbonado.getDocument();
+        montoDoc.setDocumentFilter(new DocumentFilter() {
+            private boolean isValid(String text) {
+                if (text.isEmpty()) return true; // allow empty while typing
+                return text.matches("\\d+(\\.\\d*)?"); // digits, optional decimal part
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+                if (string == null) return;
+                StringBuilder sb = new StringBuilder(fb.getDocument().getText(0, fb.getDocument().getLength()));
+                sb.insert(offset, string);
+                if (isValid(sb.toString())) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+                if (text == null) text = "";
+                StringBuilder sb = new StringBuilder(fb.getDocument().getText(0, fb.getDocument().getLength()));
+                sb.replace(offset, offset + length, text);
+                if (isValid(sb.toString())) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+        });
         btnGenerarComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnAgregarNuevoCliente.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnAgregarServicioComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
