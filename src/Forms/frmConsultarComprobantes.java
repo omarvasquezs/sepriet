@@ -80,6 +80,12 @@ public class frmConsultarComprobantes extends JInternalFrame {
             @Override public void actionPerformed(java.awt.event.ActionEvent evt) { resetFilters(); loadPage(1); }
         });
 
+    // show pointer cursor for buttons
+    Cursor hand = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+    filterEstadoBtn.setCursor(hand);
+    btnBuscar.setCursor(hand);
+    btnReset.setCursor(hand);
+
         // CRUD toolbar
         JPanel crudBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
         crudBar.add(btnAdd); crudBar.add(btnEdit); crudBar.add(btnDelete);
@@ -93,6 +99,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
         btnDelete.addActionListener(new java.awt.event.ActionListener() {
             @Override public void actionPerformed(java.awt.event.ActionEvent e) { deleteSelected(); }
         });
+
+    // Hand cursor for CRUD/pagination buttons (reuse hand variable)
+    btnAdd.setCursor(hand); btnEdit.setCursor(hand); btnDelete.setCursor(hand);
+    btnPrev.setCursor(hand); btnNext.setCursor(hand);
 
         table.setModel(model);
         table.setFillsViewportHeight(true);
