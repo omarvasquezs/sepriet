@@ -12,9 +12,19 @@ import java.util.List;
 /** Internal frame to list comprobantes (read only) with search & pagination. */
 public class frmConsultarComprobantes extends JInternalFrame {
     private final JTextField txtBuscar = new JTextField();
-    private final JComboBox<String> cboCampo = new JComboBox<>(new String[]{"COD COMPROBANTE","CLIENTE"});
+    private final JComboBox<String> cboCampo = new JComboBox<>(new String[]{
+        "COD COMPROBANTE",
+        "CLIENTE",
+        "ESTADO ROPA",
+        "COSTO TOTAL (S/.)",
+        "DEUDA (S/.)",
+        "FECHA DE REGISTRO"
+    });
     private final JButton btnBuscar = new JButton("Buscar");
     private final JButton btnReset = new JButton("Resetear");
+    private final JButton btnAdd = new JButton("Añadir");
+    private final JButton btnEdit = new JButton("Editar");
+    private final JButton btnDelete = new JButton("Eliminar");
     private final JButton btnPrev = new JButton("<");
     private final JButton btnNext = new JButton(">");
     private final JLabel lblPagina = new JLabel("Página 1 de 1");
@@ -40,6 +50,15 @@ public class frmConsultarComprobantes extends JInternalFrame {
         loadPage(1);
     }
 
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        // Maximize after added to desktop
+        SwingUtilities.invokeLater(() -> {
+            try { setMaximum(true); } catch (Exception ignored) {}
+        });
+    }
+
     private void buildUI() {
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
         top.add(new JLabel("Buscar:"));
@@ -48,6 +67,20 @@ public class frmConsultarComprobantes extends JInternalFrame {
         btnBuscar.addActionListener(this::onBuscar);
         btnReset.addActionListener(new java.awt.event.ActionListener() {
             @Override public void actionPerformed(java.awt.event.ActionEvent evt) { txtBuscar.setText(""); loadPage(1); }
+        });
+
+        // CRUD toolbar
+        JPanel crudBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+        crudBar.add(btnAdd); crudBar.add(btnEdit); crudBar.add(btnDelete);
+        btnEdit.setEnabled(false); btnDelete.setEnabled(false);
+        btnAdd.addActionListener(new java.awt.event.ActionListener() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) { openAddComprobante(); }
+        });
+        btnEdit.addActionListener(new java.awt.event.ActionListener() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) { openEditDialog(); }
+        });
+        btnDelete.addActionListener(new java.awt.event.ActionListener() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) { deleteSelected(); }
         });
 
         table.setModel(model);
@@ -64,10 +97,19 @@ public class frmConsultarComprobantes extends JInternalFrame {
         bottom.add(btnPrev); bottom.add(btnNext); bottom.add(lblPagina);
 
         getContentPane().setLayout(new BorderLayout());
-        add(top, BorderLayout.NORTH);
+    JPanel north = new JPanel(new BorderLayout());
+    north.add(top, BorderLayout.NORTH);
+    north.add(crudBar, BorderLayout.SOUTH);
+    add(north, BorderLayout.NORTH);
         add(new JScrollPane(table), BorderLayout.CENTER);
         add(bottom, BorderLayout.SOUTH);
 
+        table.getSelectionModel().addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+            @Override public void valueChanged(javax.swing.event.ListSelectionEvent ev) {
+                boolean sel = table.getSelectedRow() >= 0;
+                btnEdit.setEnabled(sel); btnDelete.setEnabled(sel);
+            }
+        });
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount()==2) {
@@ -88,6 +130,63 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
     private void onBuscar(ActionEvent e) { loadPage(1); }
 
+    private Integer getSelectedId() {
+        int row = table.getSelectedRow();
+        if (row < 0) return null;
+        int modelRow = table.convertRowIndexToModel(row);
+        return model.rows.get(modelRow).id;
+    }
+
+    private void openAddComprobante() {
+        // Attempt to reuse existing registrar frame if open
+        JDesktopPane dp = getDesktopPane();
+        if (dp != null) {
+            for (JInternalFrame f : dp.getAllFrames()) {
+                if (f instanceof frmRegistrarComprobante) {
+                    try { f.setIcon(false); f.setSelected(true); } catch (Exception ignored) {}
+                    f.toFront();
+                    return;
+                }
+            }
+            frmRegistrarComprobante reg = new frmRegistrarComprobante();
+            dp.add(reg); reg.setVisible(true);
+        }
+    }
+
+    private void openEditDialog() {
+        Integer id = getSelectedId();
+        if (id == null) return;
+        DlgEditarComprobante dlg = new DlgEditarComprobante(SwingUtilities.getWindowAncestor(this), id, this::onEdited);
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
+    }
+
+    private void onEdited() { loadPage(currentPage); }
+
+    private void deleteSelected() {
+        Integer id = getSelectedId();
+        if (id == null) return;
+        int conf = JOptionPane.showConfirmDialog(this, "¿Eliminar el comprobante seleccionado?", "Confirmar", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (conf != JOptionPane.YES_OPTION) return;
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            conn.setAutoCommit(false);
+            String cod = null;
+            try (PreparedStatement ps = conn.prepareStatement("SELECT cod_comprobante FROM comprobantes WHERE id=?")) {
+                ps.setInt(1, id); try (ResultSet rs = ps.executeQuery()) { if (rs.next()) cod = rs.getString(1); }
+            }
+            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM comprobantes_detalles WHERE comprobante_id=?")) { ps.setInt(1, id); ps.executeUpdate(); }
+            if (cod != null) {
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM reporte_ingresos WHERE cod_comprobante=?")) { ps.setString(1, cod); ps.executeUpdate(); }
+            }
+            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM comprobantes WHERE id=?")) { ps.setInt(1, id); ps.executeUpdate(); }
+            conn.commit();
+            JOptionPane.showMessageDialog(this, "Eliminado.");
+            loadPage(currentPage);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error eliminando:\n"+ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void loadPage(int page) {
         String search = txtBuscar.getText().trim();
         try (Connection conn = DatabaseConfig.getConnection()) {
@@ -100,8 +199,31 @@ public class frmConsultarComprobantes extends JInternalFrame {
             }
             List<Object> params = new ArrayList<>();
             if (!search.isEmpty()) {
-                if (cboCampo.getSelectedIndex()==0) { where.append(" AND c.cod_comprobante LIKE ? "); params.add('%'+search+'%'); }
-                else { where.append(" AND cl.nombres LIKE ? "); params.add('%'+search+'%'); }
+                int fieldIndex = cboCampo.getSelectedIndex();
+                switch (fieldIndex) {
+                    case 0 -> { // COD COMPROBANTE
+                        where.append(" AND c.cod_comprobante LIKE ? "); params.add('%'+search+'%');
+                    }
+                    case 1 -> { // CLIENTE
+                        where.append(" AND cl.nombres LIKE ? "); params.add('%'+search+'%');
+                    }
+                    case 2 -> { // ESTADO ROPA
+                        where.append(" AND er.nom_estado_ropa LIKE ? "); params.add('%'+search+'%');
+                    }
+                    case 3 -> { // COSTO TOTAL numeric equality
+                        Float v = parseFloat(search);
+                        if (v != null) { where.append(" AND c.costo_total = ? "); params.add(v); }
+                        else { JOptionPane.showMessageDialog(this, "Ingrese un número válido para COSTO TOTAL."); }
+                    }
+                    case 4 -> { // DEUDA expression (c.costo_total - IFNULL(c.monto_abonado,0))
+                        Float v = parseFloat(search);
+                        if (v != null) { where.append(" AND (c.costo_total - IFNULL(c.monto_abonado,0)) = ? "); params.add(v); }
+                        else { JOptionPane.showMessageDialog(this, "Ingrese un número válido para DEUDA."); }
+                    }
+                    case 5 -> { // FECHA DE REGISTRO (date part) expect yyyy-MM-dd
+                        where.append(" AND DATE(c.fecha) = ? "); params.add(search);
+                    }
+                }
             }
             String sqlCount = "SELECT COUNT(*) FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id" + where;
             try (PreparedStatement ps = conn.prepareStatement(sqlCount)) {
@@ -123,6 +245,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error cargando comprobantes:\n"+ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private Float parseFloat(String s) {
+        try { return Float.parseFloat(s); } catch (Exception ex) { return null; }
     }
 
     @SuppressWarnings("unused")
