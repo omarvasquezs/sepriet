@@ -120,7 +120,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         });
         btnGenerarComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnAgregarNuevoCliente.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnAgregarServicioComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    btnAgregarServicioComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         // Initialize the state of controls
         toggleRucFields();
         toggleMontoAbonado();
@@ -145,6 +145,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
     // Action for generating (saving) the comprobante
     btnGenerarComprobante.addActionListener(_ -> saveComprobante());
+    btnAgregarNuevoCliente.addActionListener(_ -> openNuevoClienteDialog());
     }
 
     private void toggleRucFields() {
@@ -189,7 +190,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         }
     }
 
-    private void loadClientes() {
+    public void loadClientes() {
         final String sql = "SELECT id, nombres FROM clientes ORDER BY nombres";
         try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
@@ -204,6 +205,23 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                     "Error cargando clientes:\n" + ex.getMessage(),
                     "Error de base de datos", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    public void selectClienteByName(String nombre) {
+        if (nombre == null) return;
+        for (int i = 0; i < cbxCliente.getItemCount(); i++) {
+            String item = cbxCliente.getItemAt(i);
+            if (item != null && item.equalsIgnoreCase(nombre)) {
+                cbxCliente.setSelectedIndex(i);
+                break;
+            }
+        }
+    }
+
+    private void openNuevoClienteDialog() {
+        DlgNuevoCliente dlg = new DlgNuevoCliente(javax.swing.SwingUtilities.getWindowAncestor(this), this);
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
     }
 
     /**
