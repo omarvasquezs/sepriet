@@ -10,7 +10,9 @@ public class DlgEditarComprobante extends JDialog {
     private final int comprobanteId;
     private final Runnable onSaved;
     private final JComboBox<Item> cboEstado = new JComboBox<>();
+    private final JComboBox<Item> cboEstadoRopa = new JComboBox<>();
     private final JComboBox<Item> cboMetodoPago = new JComboBox<>();
+    private final JLabel lblMetodoPago = new JLabel("Método de pago:");
     private final JTextField txtMontoAbonar = new JTextField();
     private final JLabel lblInfo = new JLabel(" ");
     private float costoTotal = 0f;
@@ -28,9 +30,10 @@ public class DlgEditarComprobante extends JDialog {
     }
 
     private void buildUI(){
-        JPanel form = new JPanel(new GridBagLayout()); GridBagConstraints c=new GridBagConstraints(); c.insets=new Insets(6,6,6,6); c.fill=GridBagConstraints.HORIZONTAL; c.weightx=1; int r=0;
-        addRow(form,c,r++,new JLabel("Estado comprobante:"), cboEstado);
-        addRow(form,c,r++,new JLabel("Método de pago:"), cboMetodoPago);
+    JPanel form = new JPanel(new GridBagLayout()); GridBagConstraints c=new GridBagConstraints(); c.insets=new Insets(6,6,6,6); c.fill=GridBagConstraints.HORIZONTAL; c.weightx=1; int r=0;
+    addRow(form,c,r++,new JLabel("ESTADO ROPA :"), cboEstadoRopa);
+    addRow(form,c,r++,new JLabel("ESTADO COMPROBANTE :"), cboEstado);
+        addRow(form,c,r++, lblMetodoPago, cboMetodoPago);
         addRow(form,c,r++,new JLabel("Monto a abonar (incremental):"), txtMontoAbonar);
         c.gridy=r++; c.gridx=0; c.gridwidth=2; form.add(lblInfo,c);
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -43,7 +46,11 @@ public class DlgEditarComprobante extends JDialog {
 
     private void loadData(){
         try (Connection conn = DatabaseConfig.getConnection()) {
-            // load estados
+            // load estado_ropa
+            try (PreparedStatement ps = conn.prepareStatement("SELECT id, nom_estado_ropa FROM estado_ropa ORDER BY nom_estado_ropa")){
+                try(ResultSet rs=ps.executeQuery()){ while(rs.next()) cboEstadoRopa.addItem(new Item(rs.getInt(1), rs.getString(2))); }
+            } catch (SQLException ignore) {}
+            // load estados comprobante
             try (PreparedStatement ps = conn.prepareStatement("SELECT id, nom_estado FROM estado_comprobantes WHERE habilitado=1")){
                 try(ResultSet rs=ps.executeQuery()){ while(rs.next()) cboEstado.addItem(new Item(rs.getInt(1), rs.getString(2))); }
             }
@@ -53,10 +60,14 @@ public class DlgEditarComprobante extends JDialog {
                 try(ResultSet rs=ps.executeQuery()){ while(rs.next()) cboMetodoPago.addItem(new Item(rs.getInt(1), rs.getString(2))); }
             }
             // load current comprobante
-            try (PreparedStatement ps = conn.prepareStatement("SELECT estado_comprobante_id, metodo_pago_id, monto_abonado, costo_total FROM comprobantes WHERE id=?")){
+            try (PreparedStatement ps = conn.prepareStatement("SELECT estado_comprobante_id, estado_ropa_id, metodo_pago_id, monto_abonado, costo_total FROM comprobantes WHERE id=?")){
                 ps.setInt(1, comprobanteId);
-                try(ResultSet rs=ps.executeQuery()){ if(rs.next()){ int est=rs.getInt(1); int mp=rs.getInt(2); montoAbonadoPrevio=rs.getFloat(3); costoTotal=rs.getFloat(4); selectCombo(cboEstado, est); selectCombo(cboMetodoPago, mp==0? -1: mp); }}
+                try(ResultSet rs=ps.executeQuery()){ if(rs.next()){ int est=rs.getInt(1); int estR=rs.getInt(2); int mp=rs.getInt(3); montoAbonadoPrevio=rs.getFloat(4); costoTotal=rs.getFloat(5); selectCombo(cboEstado, est); selectCombo(cboEstadoRopa, estR); selectCombo(cboMetodoPago, mp==0? -1: mp); }}
             }
+            // react to estado selection changes
+            cboEstado.addActionListener(this::applyEstadoRules);
+            // apply rules once now so the UI matches the current estado when dialog opens
+            applyEstadoRules(null);
             updateInfo();
         } catch (Exception ex){ JOptionPane.showMessageDialog(this,"Error cargando datos:\n"+ex.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);}    
     }
@@ -64,32 +75,77 @@ public class DlgEditarComprobante extends JDialog {
     private void selectCombo(JComboBox<Item> combo, int id){ for(int i=0;i<combo.getItemCount();i++){ if(combo.getItemAt(i).id()==id){ combo.setSelectedIndex(i); return; }} }
     private void updateInfo(){ lblInfo.setText(String.format("Abonado previo: %.2f  |  Total: %.2f  |  Deuda: %.2f", montoAbonadoPrevio, costoTotal, (costoTotal - montoAbonadoPrevio))); }
 
+    private void applyEstadoRules(java.awt.event.ActionEvent ev){
+        Object sel = cboEstado.getSelectedItem(); if (sel==null) return;
+        String label = sel.toString().trim().toUpperCase();
+        float deuda = costoTotal - montoAbonadoPrevio;
+        switch(label){
+            case "ABONO":
+                txtMontoAbonar.setEnabled(true);
+                txtMontoAbonar.setText("");
+                // show metodo
+                lblMetodoPago.setVisible(true);
+                cboMetodoPago.setVisible(true);
+                cboMetodoPago.setEnabled(true);
+                break;
+            case "CANCELADO":
+                // set monto to remaining and disable edits
+                txtMontoAbonar.setEnabled(false);
+                txtMontoAbonar.setText(String.format("%.2f", Math.max(0f, deuda)));
+                // show metodo
+                lblMetodoPago.setVisible(true);
+                cboMetodoPago.setVisible(true);
+                cboMetodoPago.setEnabled(true);
+                break;
+            case "DEBE":
+            case "ANULADO":
+                // hide metodo and reset selection
+                txtMontoAbonar.setEnabled(false);
+                txtMontoAbonar.setText("");
+                lblMetodoPago.setVisible(false);
+                cboMetodoPago.setVisible(false);
+                cboMetodoPago.setSelectedIndex(0);
+                break;
+            default:
+                txtMontoAbonar.setEnabled(true);
+                lblMetodoPago.setVisible(true);
+                cboMetodoPago.setVisible(true);
+                cboMetodoPago.setEnabled(true);
+                break;
+        }
+        // refresh UI to account for visibility changes
+        SwingUtilities.invokeLater(() -> { lblMetodoPago.revalidate(); cboMetodoPago.revalidate(); this.revalidate(); this.repaint(); });
+        updateInfo();
+    }
+
     private void guardar(ActionEvent e){
         String montoTxt = txtMontoAbonar.getText().trim();
         float montoNuevo = 0f;
         if(!montoTxt.isEmpty()){
             try { montoNuevo = Float.parseFloat(montoTxt); if (montoNuevo < 0) throw new NumberFormatException(); } catch(NumberFormatException ex){ JOptionPane.showMessageDialog(this,"Monto inválido","Validación",JOptionPane.WARNING_MESSAGE); return; }
         }
-        float abonadoActualizado = montoAbonadoPrevio + montoNuevo;
-        if (abonadoActualizado > costoTotal + 0.001f) { JOptionPane.showMessageDialog(this,"El abono excede el total.","Validación",JOptionPane.WARNING_MESSAGE); return; }
         Item est = (Item) cboEstado.getSelectedItem(); Item mp = (Item) cboMetodoPago.getSelectedItem();
+        float abonadoActualizado;
+        String estLabel = est==null?"":est.label().toUpperCase();
+        if ("CANCELADO".equals(estLabel)) {
+            abonadoActualizado = costoTotal; // ensure full paid
+            montoNuevo = Math.max(0f, costoTotal - montoAbonadoPrevio);
+        } else if ("DEBE".equals(estLabel)) {
+            abonadoActualizado = 0f;
+            montoNuevo = 0f;
+        } else {
+            abonadoActualizado = montoAbonadoPrevio + montoNuevo;
+        }
+        if (abonadoActualizado > costoTotal + 0.001f) { JOptionPane.showMessageDialog(this,"El abono excede el total.","Validación",JOptionPane.WARNING_MESSAGE); return; }
         try (Connection conn = DatabaseConfig.getConnection()) {
             conn.setAutoCommit(false);
             // Update comprobante
             try (PreparedStatement ps = conn.prepareStatement("UPDATE comprobantes SET estado_comprobante_id=?, metodo_pago_id=?, monto_abonado=? WHERE id=?")){
-                if (abonadoActualizado == montoAbonadoPrevio) { // no new monto; keep same value
-                    ps.setInt(1, est.id());
-                    if (mp.id() == -1) ps.setNull(2, java.sql.Types.INTEGER); else ps.setInt(2, mp.id());
-                    ps.setFloat(3, montoAbonadoPrevio);
-                    ps.setInt(4, comprobanteId);
-                    ps.executeUpdate();
-                } else {
-                    ps.setInt(1, est.id());
-                    if (mp.id() == -1) ps.setNull(2, java.sql.Types.INTEGER); else ps.setInt(2, mp.id());
-                    ps.setFloat(3, abonadoActualizado);
-                    ps.setInt(4, comprobanteId);
-                    ps.executeUpdate();
-                }
+                ps.setInt(1, est.id());
+                if (mp == null || mp.id() == -1) ps.setNull(2, java.sql.Types.INTEGER); else ps.setInt(2, mp.id());
+                ps.setFloat(3, abonadoActualizado);
+                ps.setInt(4, comprobanteId);
+                ps.executeUpdate();
             }
             if (montoNuevo > 0) {
                 // Insert ingreso incremental
@@ -97,7 +153,7 @@ public class DlgEditarComprobante extends JDialog {
                 try (PreparedStatement ps = conn.prepareStatement("SELECT cod_comprobante, cliente_id, costo_total FROM comprobantes WHERE id=?")){
                     ps.setInt(1, comprobanteId); try(ResultSet rs=ps.executeQuery()){ if(rs.next()){ cod=rs.getString(1); int cliente=rs.getInt(2); float costo=rs.getFloat(3);
                         try (PreparedStatement ins = conn.prepareStatement("INSERT INTO reporte_ingresos (cod_comprobante, cliente_id, metodo_pago_id, fecha, monto_abonado, costo_total) VALUES (?,?,?,?,?,?)")){
-                            ins.setString(1, cod); ins.setInt(2, cliente); if(((Item)cboMetodoPago.getSelectedItem()).id()==-1) ins.setNull(3, java.sql.Types.INTEGER); else ins.setInt(3, ((Item)cboMetodoPago.getSelectedItem()).id());
+                            ins.setString(1, cod); ins.setInt(2, cliente); if(mp==null || mp.id()==-1) ins.setNull(3, java.sql.Types.INTEGER); else ins.setInt(3, mp.id());
                             ins.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
                             ins.setFloat(5, montoNuevo); ins.setFloat(6, costo); ins.executeUpdate(); }
                     }} }
