@@ -182,9 +182,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
     // Populate cliente names into filterCliente combobox
     private void populateClienteNames() {
         filterCliente.removeAllItems(); allClientes.clear();
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT nombres FROM clientes ORDER BY nombres LIMIT 1000");
-             ResultSet rs = ps.executeQuery()) {
+    try (Connection conn = DatabaseConfig.getConnection();
+         PreparedStatement ps = conn.prepareStatement("SELECT nombres FROM clientes ORDER BY nombres");
+         ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 String nombre = rs.getString(1);
                 allClientes.add(nombre);
@@ -192,37 +192,16 @@ public class frmConsultarComprobantes extends JInternalFrame {
         } catch (Exception ex) {
             // non-fatal
         }
-        // initial model: include empty selection
-        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-        model.addElement("");
-        for (String c : allClientes) model.addElement(c);
-        filterCliente.setModel(model);
-        filterCliente.setSelectedIndex(0);
-        // add simple live-filtering to mimic autocomplete if swingx decorator isn't available
-        try {
-            JTextField editor = (JTextField) filterCliente.getEditor().getEditorComponent();
-            editor.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-                private void update() {
-                    String text = editor.getText();
-                    DefaultComboBoxModel<String> m = new DefaultComboBoxModel<>();
-                    m.addElement(text);
-                    String lower = text.toLowerCase();
-                    for (String it : allClientes) {
-                        if (it.toLowerCase().contains(lower) && !it.equals(text)) m.addElement(it);
-                    }
-                    SwingUtilities.invokeLater(() -> {
-                        filterCliente.setModel(m);
-                        editor.setText(text);
-                        filterCliente.setPopupVisible(m.getSize()>1);
-                    });
-                }
-                @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
-                @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
-                @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
-            });
-        } catch (Exception ex) {
-            // ignore if editor not available
-        }
+    // initial model: include empty selection
+    DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+    model.addElement("");
+    for (String c : allClientes) model.addElement(c);
+    filterCliente.setModel(model);
+    filterCliente.setSelectedIndex(0);
+    // Allow larger visible row count so long lists are scrollable
+    filterCliente.setMaximumRowCount(20);
+    // Prefer SwingX AutoCompleteDecorator for stable behavior (same as frmRegistrarComprobante)
+    try { org.jdesktop.swingx.autocomplete.AutoCompleteDecorator.decorate(filterCliente); } catch (Exception ignore) {}
     }
 
     // Build estado popup with checkbox menu items (all checked by default)
