@@ -142,6 +142,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 jTable1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
             }
         });
+
+    // Action for generating (saving) the comprobante
+    btnGenerarComprobante.addActionListener(e -> saveComprobante());
     }
 
     private void toggleRucFields() {
@@ -154,10 +157,36 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         Object selectedItem = cbxEstadoComprobante.getSelectedItem();
         if (selectedItem == null || selectedItem.toString().startsWith("--")) {
             txtMontoAbonado.setEnabled(false); // Disable if placeholder is selected
+            txtMontoAbonado.setText("");
+            cbxMetodoPago.setEnabled(true); // default
             return;
         }
-        boolean enable = "ABONO".equals(selectedItem.toString().trim());
-        txtMontoAbonado.setEnabled(enable);
+        String estado = selectedItem.toString().trim().toUpperCase();
+        switch (estado) {
+            case "ABONO":
+                txtMontoAbonado.setEnabled(true);
+                // Do not overwrite existing manual input
+                cbxMetodoPago.setEnabled(true);
+                break;
+            case "CANCELADO":
+                // Auto fill with total and disable editing
+                txtMontoAbonado.setText(extractNumeric(jLabel14.getText()));
+                txtMontoAbonado.setEnabled(false);
+                cbxMetodoPago.setEnabled(true);
+                break;
+            case "DEBE":
+                // No payment yet, disable monto + metodo de pago
+                txtMontoAbonado.setText("");
+                txtMontoAbonado.setEnabled(false);
+                cbxMetodoPago.setEnabled(false);
+                cbxMetodoPago.setSelectedIndex(0); // placeholder
+                break;
+            default:
+                txtMontoAbonado.setText("");
+                txtMontoAbonado.setEnabled(false);
+                cbxMetodoPago.setEnabled(true);
+                break;
+        }
     }
 
     private void loadClientes() {
@@ -952,6 +981,18 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel12.setText("S/. " + String.format("%.2f", subtotal));
         jLabel13.setText("S/. " + String.format("%.2f", igv));
         jLabel14.setText("S/. " + String.format("%.2f", total));
+        // If estado is CANCELADO keep monto abonado synced with total
+        Object estadoSel = cbxEstadoComprobante.getSelectedItem();
+        if (estadoSel != null && "CANCELADO".equalsIgnoreCase(estadoSel.toString().trim())) {
+            txtMontoAbonado.setText(String.format("%.2f", total));
+        }
+    }
+
+    private String extractNumeric(String labelText) {
+        if (labelText == null) return "";
+        // Expect format "S/. 123.45" -> return 123.45
+        String cleaned = labelText.replace("S/.", "").replace("S/", "").trim();
+        return cleaned;
     }
 
     /**
@@ -1051,4 +1092,270 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     private javax.swing.JTextField txtRUC;
     private javax.swing.JTextField txtRazonSocial;
     // End of variables declaration//GEN-END:variables
+
+    // ===================== PERSISTENCE LOGIC =====================
+    // Assumptions (adjust as needed):
+    // - local_id fixed to 5
+    // - estado_ropa_id fixed to 1
+    // - user_id & last_updated_by temporarily fixed to 1 (no auth system in Swing client yet)
+    private static final int DEFAULT_LOCAL_ID = 5;
+    private static final int DEFAULT_ESTADO_ROPA_ID = 1;
+    private static final int DEFAULT_USER_ID = 1;
+
+    private void saveComprobante() {
+        // VALIDATIONS
+        String clienteNombre = (String) cbxCliente.getSelectedItem();
+        if (clienteNombre == null || clienteNombre.startsWith("--")) {
+            JOptionPane.showMessageDialog(this, "Seleccione un cliente válido.", "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String estadoNombre = (String) cbxEstadoComprobante.getSelectedItem();
+        if (estadoNombre == null || estadoNombre.startsWith("--")) {
+            JOptionPane.showMessageDialog(this, "Seleccione un estado de comprobante.", "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String metodoPagoNombre = (String) cbxMetodoPago.getSelectedItem();
+        String estadoUpperTmp = estadoNombre.trim().toUpperCase();
+        boolean estadoEsDebe = "DEBE".equals(estadoUpperTmp);
+        if (!estadoEsDebe) { // For non-DEBE states require a payment method
+            if (metodoPagoNombre == null || metodoPagoNombre.startsWith("--")) {
+                JOptionPane.showMessageDialog(this, "Seleccione un método de pago.", "Validación", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } else {
+            // Ignore metodo de pago (should be disabled)
+            metodoPagoNombre = null;
+        }
+        char tipoComprobante;
+        if (radioNotaVenta.isSelected()) tipoComprobante = 'N';
+        else if (radioBoleta.isSelected()) tipoComprobante = 'B';
+        else if (radioFactura.isSelected()) tipoComprobante = 'F';
+        else {
+            JOptionPane.showMessageDialog(this, "Seleccione un tipo de comprobante.", "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String numRuc = txtRUC.getText().trim();
+        String razonSocial = txtRazonSocial.getText().trim();
+        if (tipoComprobante == 'F') { // factura requires RUC & razon social
+            if (numRuc.isEmpty() || razonSocial.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Ingrese RUC y Razón Social para FACTURA.", "Validación", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } else { // clear if not factura
+            numRuc = null;
+            razonSocial = null;
+        }
+        // Collect table details
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        java.util.List<ServiceDetail> details = new java.util.ArrayList<>();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            Object servicioObj = model.getValueAt(i, 0);
+            if (servicioObj == null) continue;
+            String servicio = servicioObj.toString().trim();
+            if (servicio.isEmpty()) continue;
+            String pesoStr = safeStr(model.getValueAt(i, 1));
+            String precioStr = safeStr(model.getValueAt(i, 2));
+            if (pesoStr.isEmpty() || precioStr.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Fila " + (i + 1) + ": complete PESO y PRECIO.", "Validación", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            try {
+                double peso = Double.parseDouble(pesoStr);
+                double precio = Double.parseDouble(precioStr);
+                if (peso <= 0 || precio < 0) {
+                    JOptionPane.showMessageDialog(this, "Fila " + (i + 1) + ": valores numéricos inválidos.", "Validación", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                details.add(new ServiceDetail(servicio, peso, precio));
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Fila " + (i + 1) + ": formato numérico inválido.", "Validación", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+        if (details.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Agregue al menos un servicio.", "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        // Totals (labels contain e.g. "S/. 123.45")
+        double total = parseMoneyLabel(jLabel14.getText());
+        double montoAbonado;
+        String estadoUpper = estadoNombre.toUpperCase();
+        if ("ABONO".equals(estadoUpper)) {
+            String montoAbonadoStr = txtMontoAbonado.getText().trim();
+            if (montoAbonadoStr.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Ingrese el monto abonado.", "Validación", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            try { montoAbonado = Double.parseDouble(montoAbonadoStr); } catch (NumberFormatException ex) { JOptionPane.showMessageDialog(this, "Monto abonado inválido.", "Validación", JOptionPane.WARNING_MESSAGE); return; }
+            if (montoAbonado < 0 || montoAbonado > total) {
+                JOptionPane.showMessageDialog(this, "Monto abonado fuera de rango.", "Validación", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } else if ("CANCELADO".equals(estadoUpper) || "PAGADO".equals(estadoUpper)) {
+            montoAbonado = total; // fully paid
+        } else {
+            montoAbonado = 0.0; // pending / other states
+        }
+
+        LocalDateTime fecha = dateTimePicker1.getDateTimePermissive();
+        if (fecha == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione una fecha válida.", "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String observaciones = txtObservaciones.getText().trim();
+
+        // DB operations
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            conn.setAutoCommit(false);
+            int clienteId = fetchId(conn, "SELECT id FROM clientes WHERE nombres = ?", clienteNombre);
+            Integer metodoPagoId = null;
+            if (metodoPagoNombre != null && !metodoPagoNombre.startsWith("--")) {
+                int tmp = fetchId(conn, "SELECT id FROM metodo_pago WHERE nom_metodo_pago = ?", metodoPagoNombre);
+                if (tmp != -1) metodoPagoId = tmp; else {
+                    conn.rollback();
+                    JOptionPane.showMessageDialog(this, "Método de pago no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+            int estadoComprobanteId = fetchId(conn, "SELECT id FROM estado_comprobantes WHERE nom_estado = ?", estadoNombre);
+            if (clienteId == -1 || estadoComprobanteId == -1) {
+                conn.rollback();
+                JOptionPane.showMessageDialog(this, "No se pudo resolver IDs requeridos.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            String codComprobante = generateComprobanteCode(conn, tipoComprobante);
+            // Insert comprobante
+            String insertComprobanteSql = "INSERT INTO comprobantes (tipo_comprobante, cliente_id, user_id, fecha, metodo_pago_id, num_ruc, razon_social, estado_comprobante_id, estado_ropa_id, local_id, observaciones, monto_abonado, last_updated_by, cod_comprobante, costo_total) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            try (PreparedStatement ps = conn.prepareStatement(insertComprobanteSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, String.valueOf(tipoComprobante));
+                ps.setInt(2, clienteId);
+                ps.setInt(3, DEFAULT_USER_ID);
+                ps.setTimestamp(4, java.sql.Timestamp.valueOf(fecha));
+                if (metodoPagoId != null) ps.setInt(5, metodoPagoId); else ps.setNull(5, java.sql.Types.INTEGER);
+                if (numRuc != null) ps.setLong(6, Long.parseLong(numRuc)); else ps.setNull(6, java.sql.Types.BIGINT);
+                if (razonSocial != null) ps.setString(7, razonSocial); else ps.setNull(7, java.sql.Types.VARCHAR);
+                ps.setInt(8, estadoComprobanteId);
+                ps.setInt(9, DEFAULT_ESTADO_ROPA_ID);
+                ps.setInt(10, DEFAULT_LOCAL_ID);
+                if (!observaciones.isEmpty()) ps.setString(11, observaciones); else ps.setNull(11, java.sql.Types.CLOB);
+                ps.setDouble(12, montoAbonado);
+                ps.setInt(13, DEFAULT_USER_ID);
+                ps.setString(14, codComprobante);
+                ps.setDouble(15, total);
+                ps.executeUpdate();
+                int comprobanteId;
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) comprobanteId = rs.getInt(1); else throw new SQLException("No se obtuvo ID de comprobante");
+                }
+                // Insert details
+                String detailSql = "INSERT INTO comprobantes_detalles (comprobante_id, servicio_id, peso_kg, costo_kilo) VALUES (?,?,?,?)";
+                try (PreparedStatement psDet = conn.prepareStatement(detailSql)) {
+                    for (ServiceDetail d : details) {
+                        int servicioId = fetchId(conn, "SELECT id FROM servicios WHERE nom_servicio = ?", d.nombreServicio);
+                        if (servicioId == -1) throw new SQLException("Servicio no encontrado: " + d.nombreServicio);
+                        psDet.setInt(1, comprobanteId);
+                        psDet.setInt(2, servicioId);
+                        psDet.setDouble(3, d.pesoKg);
+                        psDet.setDouble(4, d.costoKilo);
+                        psDet.addBatch();
+                    }
+                    psDet.executeBatch();
+                }
+                // Insert ingreso
+                String ingresoSql = "INSERT INTO reporte_ingresos (cod_comprobante, cliente_id, metodo_pago_id, fecha, monto_abonado, costo_total) VALUES (?,?,?,?,?,?)";
+                try (PreparedStatement psIng = conn.prepareStatement(ingresoSql)) {
+                    psIng.setString(1, codComprobante);
+                    psIng.setInt(2, clienteId);
+                    if (metodoPagoId != null) psIng.setInt(3, metodoPagoId); else psIng.setNull(3, java.sql.Types.INTEGER);
+                    psIng.setTimestamp(4, java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()));
+                    psIng.setDouble(5, montoAbonado);
+                    psIng.setDouble(6, total);
+                    psIng.executeUpdate();
+                }
+            }
+            conn.commit();
+            JOptionPane.showMessageDialog(this, "Comprobante registrado. Código: " + codComprobante, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            resetFormAfterSave();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error guardando comprobante:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String safeStr(Object o) { return o == null ? "" : o.toString().trim(); }
+
+    private double parseMoneyLabel(String lbl) {
+        if (lbl == null) return 0.0;
+        // Expected formats: "S/. 123.45" or "S/.0.00"; remove currency part and spaces/commas
+        String cleaned = lbl.replace("S/.", "").replace("S/", "").trim();
+        cleaned = cleaned.replace(",", "");
+        if (cleaned.isEmpty()) return 0.0;
+        try {
+            return Double.parseDouble(cleaned);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
+    private int fetchId(Connection conn, String sql, String value) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, value);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        }
+        return -1;
+    }
+
+    private String generateComprobanteCode(Connection conn, char tipo) throws SQLException {
+        // Manage counter inside transaction
+        int newValue = 1;
+        // Try select for update
+        try (PreparedStatement ps = conn.prepareStatement("SELECT last_value FROM comprobante_counter WHERE tipo_comprobante = ? FOR UPDATE")) {
+            ps.setString(1, String.valueOf(tipo));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    newValue = rs.getInt(1) + 1;
+                    try (PreparedStatement upd = conn.prepareStatement("UPDATE comprobante_counter SET last_value = ? WHERE tipo_comprobante = ?")) {
+                        upd.setInt(1, newValue);
+                        upd.setString(2, String.valueOf(tipo));
+                        upd.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement ins = conn.prepareStatement("INSERT INTO comprobante_counter (tipo_comprobante, last_value) VALUES (?,?)")) {
+                        ins.setString(1, String.valueOf(tipo));
+                        ins.setInt(2, newValue);
+                        ins.executeUpdate();
+                    }
+                }
+            }
+        }
+        return tipo + String.format("-%06d", newValue); // e.g. N-001234
+    }
+
+    private void resetFormAfterSave() {
+        cbxCliente.setSelectedIndex(0);
+        cbxEstadoComprobante.setSelectedIndex(0);
+        cbxMetodoPago.setSelectedIndex(0);
+        radioNotaVenta.setSelected(true);
+        txtRUC.setText("");
+        txtRazonSocial.setText("");
+        txtMontoAbonado.setText("");
+        txtObservaciones.setText("");
+        dateTimePicker1.setDateTimePermissive(LocalDateTime.now());
+        // Clear table
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            for (int c = 0; c < model.getColumnCount(); c++) {
+                model.setValueAt("", i, c);
+            }
+        }
+        updateTotals();
+        toggleMontoAbonado();
+    }
+
+    private static class ServiceDetail {
+        String nombreServicio; double pesoKg; double costoKilo;
+        ServiceDetail(String n, double p, double c) { nombreServicio = n; pesoKg = p; costoKilo = c; }
+    }
 }
