@@ -327,14 +327,14 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 try (ResultSet rs = ps.executeQuery()) { if (rs.next()) { int total = rs.getInt(1); totalPages = Math.max(1, (int)Math.ceil(total/(double)PAGE_SIZE)); } }
             }
             currentPage = Math.min(page, totalPages); int offset=(currentPage-1)*PAGE_SIZE;
-            String sql = "SELECT c.id,c.cod_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,c.costo_total,(c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha " +
-                    "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id" + where +
-                    " ORDER BY c.fecha DESC LIMIT ? OFFSET ?";
+        String sql = "SELECT c.id,c.cod_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,ec.nom_estado estado_comprobante,c.costo_total,(c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha " +
+            "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id" + where +
+            " ORDER BY c.fecha DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 int idx=1; for(Object p:params) { if (p instanceof java.sql.Date) ps.setDate(idx++, (java.sql.Date)p); else ps.setObject(idx++, p); }
                 ps.setInt(idx++, PAGE_SIZE); ps.setInt(idx, offset);
                 List<ComprobanteRow> rows = new ArrayList<>();
-                try(ResultSet rs=ps.executeQuery()) { while(rs.next()){ ComprobanteRow r=new ComprobanteRow(); r.id=rs.getInt("id"); r.codComprobante=rs.getString("cod_comprobante"); r.cliente=rs.getString("cliente"); r.estadoRopa=rs.getString("estado_ropa"); r.costoTotal=rs.getFloat("costo_total"); r.deuda=rs.getFloat("deuda"); Timestamp ts=rs.getTimestamp("fecha"); r.fecha= ts!=null? ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm")) : ""; rows.add(r);} }
+                try(ResultSet rs=ps.executeQuery()) { while(rs.next()){ ComprobanteRow r=new ComprobanteRow(); r.id=rs.getInt("id"); r.codComprobante=rs.getString("cod_comprobante"); r.cliente=rs.getString("cliente"); r.estadoRopa=rs.getString("estado_ropa"); r.estadoComprobante=rs.getString("estado_comprobante"); r.costoTotal=rs.getFloat("costo_total"); r.deuda=rs.getFloat("deuda"); Timestamp ts=rs.getTimestamp("fecha"); r.fecha= ts!=null? ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm")) : ""; rows.add(r);} }
                 model.setRows(rows);
             }
             lblPagina.setText("Página "+currentPage+" de "+totalPages);
@@ -347,15 +347,15 @@ public class frmConsultarComprobantes extends JInternalFrame {
     
 
     @SuppressWarnings("unused")
-    private static class ComprobanteRow { int id; String codComprobante; String cliente; String estadoRopa; float costoTotal; float deuda; String fecha; }
+    private static class ComprobanteRow { int id; String codComprobante; String cliente; String estadoRopa; String estadoComprobante; float costoTotal; float deuda; String fecha; }
     private static class ComprobantesTableModel extends AbstractTableModel {
-        private final String[] cols = {"COD COMPROBANTE","CLIENTE","ESTADO ROPA","COSTO TOTAL (S/.)","DEUDA (S/.)","FECHA DE REGISTRO"};
+        private final String[] cols = {"COD COMPROBANTE","CLIENTE","ESTADO ROPA","ESTADO COMPROBANTE","COSTO TOTAL (S/.)","DEUDA (S/.)","FECHA DE REGISTRO"};
         private List<ComprobanteRow> rows = new ArrayList<>();
         public void setRows(List<ComprobanteRow> data){ rows=data; fireTableDataChanged(); }
         @Override public int getRowCount(){ return rows.size(); }
         @Override public int getColumnCount(){ return cols.length; }
         @Override public String getColumnName(int c){ return cols[c]; }
-        @Override public Object getValueAt(int r,int c){ ComprobanteRow row=rows.get(r); return switch(c){ case 0->row.codComprobante; case 1->row.cliente; case 2->row.estadoRopa; case 3->row.costoTotal; case 4->row.deuda; case 5->row.fecha; default->null; }; }
-        @Override public Class<?> getColumnClass(int c){ return switch(c){ case 3,4->Float.class; default->String.class; }; }
+        @Override public Object getValueAt(int r,int c){ ComprobanteRow row=rows.get(r); return switch(c){ case 0->row.codComprobante; case 1->row.cliente; case 2->row.estadoRopa; case 3->row.estadoComprobante; case 4->row.costoTotal; case 5->row.deuda; case 6->row.fecha; default->null; }; }
+        @Override public Class<?> getColumnClass(int c){ return switch(c){ case 4,5->Float.class; default->String.class; }; }
     }
 }
