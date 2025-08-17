@@ -91,6 +91,16 @@ public class frmMain extends javax.swing.JFrame {
                 
             }
         });
+
+        // Open standalone client dialog when selecting Registrar -> Cliente
+        menuRegistrarCliente.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DlgNuevoCliente dlg = new DlgNuevoCliente(frmMain.this);
+                dlg.setLocationRelativeTo(frmMain.this);
+                dlg.setVisible(true);
+            }
+        });
     }
 
     /**

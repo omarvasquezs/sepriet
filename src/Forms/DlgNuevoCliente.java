@@ -12,11 +12,21 @@ public class DlgNuevoCliente extends JDialog {
     private final JTextField txtTelefono = new JTextField();
     private final JTextField txtEmail = new JTextField();
     private final JTextArea txtDireccion = new JTextArea(3, 20);
-    private final frmRegistrarComprobante parent;
+    private final frmRegistrarComprobante parent; // may be null when opened standalone
 
+    /** Main constructor used when launched from frmRegistrarComprobante */
     public DlgNuevoCliente(Window owner, frmRegistrarComprobante parent) {
         super(owner, "Añadir Cliente", ModalityType.APPLICATION_MODAL);
         this.parent = parent;
+        buildAndInit();
+    }
+
+    /** Convenience constructor for standalone use (e.g., main menu) */
+    public DlgNuevoCliente(Window owner) {
+        this(owner, null);
+    }
+
+    private void buildAndInit() {
         buildUI();
         setSize(480, 360);
         setResizable(false);
@@ -99,8 +109,10 @@ public class DlgNuevoCliente extends JDialog {
                 ps.executeUpdate();
             }
             JOptionPane.showMessageDialog(this, "Cliente guardado.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-            parent.loadClientes();
-            parent.selectClienteByName(nombres);
+            if (parent != null) { // refresh only if opened from registrar comprobante
+                parent.loadClientes();
+                parent.selectClienteByName(nombres);
+            }
             dispose();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error guardando cliente:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
