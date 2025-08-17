@@ -8,20 +8,24 @@ import java.sql.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Date;
+import com.toedter.calendar.JDateChooser;
 
 /** Internal frame to list comprobantes (read only) with search & pagination. */
 public class frmConsultarComprobantes extends JInternalFrame {
-    private final JTextField txtBuscar = new JTextField();
-    private final JComboBox<String> cboCampo = new JComboBox<>(new String[]{
-        "COD COMPROBANTE",
-        "CLIENTE",
-        "ESTADO ROPA",
-        "COSTO TOTAL (S/.)",
-        "DEUDA (S/.)",
-        "FECHA DE REGISTRO"
-    });
+    // Filters replacing the previous global search
+    private final JTextField filterCod = new JTextField();
+    private final JComboBox<String> filterCliente = new JComboBox<>();
+    private final List<String> allClientes = new ArrayList<>();
+    // which comprobante column to filter for estados (either estado_ropa_id or estado_comprobante_id)
+    private String estadoFilterColumn = "c.estado_ropa_id";
+    private final JButton filterEstadoBtn = new JButton("Estados (Todos)");
+    private final JDateChooser filterFecha = new JDateChooser();
     private final JButton btnBuscar = new JButton("Buscar");
     private final JButton btnReset = new JButton("Resetear");
+    private final JPopupMenu estadoPopup = new JPopupMenu();
+    private final List<Integer> estadoIds = new ArrayList<>();
+    private final List<JCheckBoxMenuItem> estadoItems = new ArrayList<>();
     private final JButton btnAdd = new JButton("Añadir");
     private final JButton btnEdit = new JButton("Editar");
     private final JButton btnDelete = new JButton("Eliminar");
@@ -61,12 +65,19 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
     private void buildUI() {
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        top.add(new JLabel("Buscar:"));
-        txtBuscar.setPreferredSize(new Dimension(170,24));
-        top.add(txtBuscar); top.add(cboCampo); top.add(btnBuscar); top.add(btnReset);
+        top.add(new JLabel("Filtros:"));
+        filterCod.setPreferredSize(new Dimension(150,24));
+        filterCliente.setPreferredSize(new Dimension(180,24));
+        filterCliente.setEditable(true);
+        filterFecha.setPreferredSize(new Dimension(130,24));
+        top.add(new JLabel("Cod:")); top.add(filterCod);
+        top.add(new JLabel("Cliente:")); top.add(filterCliente);
+        top.add(filterEstadoBtn);
+        top.add(new JLabel("Fecha:")); top.add(filterFecha);
+        top.add(btnBuscar); top.add(btnReset);
         btnBuscar.addActionListener(this::onBuscar);
         btnReset.addActionListener(new java.awt.event.ActionListener() {
-            @Override public void actionPerformed(java.awt.event.ActionEvent evt) { txtBuscar.setText(""); loadPage(1); }
+            @Override public void actionPerformed(java.awt.event.ActionEvent evt) { resetFilters(); loadPage(1); }
         });
 
         // CRUD toolbar
@@ -86,6 +97,13 @@ public class frmConsultarComprobantes extends JInternalFrame {
         table.setModel(model);
         table.setFillsViewportHeight(true);
         table.setAutoCreateRowSorter(true);
+
+        // Populate cliente names and estados for filters
+        SwingUtilities.invokeLater(() -> {
+            populateClienteNames();
+            populateEstadoItems();
+            try { org.jdesktop.swingx.autocomplete.AutoCompleteDecorator.decorate(filterCliente); } catch (Exception ignore) {}
+        });
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnPrev.addActionListener(new java.awt.event.ActionListener() {
@@ -161,6 +179,101 @@ public class frmConsultarComprobantes extends JInternalFrame {
         dlg.setVisible(true);
     }
 
+    // Populate cliente names into filterCliente combobox
+    private void populateClienteNames() {
+        filterCliente.removeAllItems(); allClientes.clear();
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT nombres FROM clientes ORDER BY nombres LIMIT 1000");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String nombre = rs.getString(1);
+                allClientes.add(nombre);
+            }
+        } catch (Exception ex) {
+            // non-fatal
+        }
+        // initial model: include empty selection
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+        model.addElement("");
+        for (String c : allClientes) model.addElement(c);
+        filterCliente.setModel(model);
+        filterCliente.setSelectedIndex(0);
+        // add simple live-filtering to mimic autocomplete if swingx decorator isn't available
+        try {
+            JTextField editor = (JTextField) filterCliente.getEditor().getEditorComponent();
+            editor.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+                private void update() {
+                    String text = editor.getText();
+                    DefaultComboBoxModel<String> m = new DefaultComboBoxModel<>();
+                    m.addElement(text);
+                    String lower = text.toLowerCase();
+                    for (String it : allClientes) {
+                        if (it.toLowerCase().contains(lower) && !it.equals(text)) m.addElement(it);
+                    }
+                    SwingUtilities.invokeLater(() -> {
+                        filterCliente.setModel(m);
+                        editor.setText(text);
+                        filterCliente.setPopupVisible(m.getSize()>1);
+                    });
+                }
+                @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
+                @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
+                @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            });
+        } catch (Exception ex) {
+            // ignore if editor not available
+        }
+    }
+
+    // Build estado popup with checkbox menu items (all checked by default)
+    private void populateEstadoItems() {
+        estadoPopup.removeAll(); estadoItems.clear(); estadoIds.clear();
+        // Try estado_ropa first (common in this project). If not present, try estado_comprobantes
+        boolean loaded = false;
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement("SELECT id,nom_estado_ropa FROM estado_ropa ORDER BY nom_estado_ropa"); ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int id = rs.getInt(1); String nom = rs.getString(2);
+                    JCheckBoxMenuItem it = new JCheckBoxMenuItem(nom, true);
+                    it.setActionCommand(String.valueOf(id)); estadoItems.add(it); estadoIds.add(id); estadoPopup.add(it);
+                    it.addActionListener(new java.awt.event.ActionListener() { @Override public void actionPerformed(java.awt.event.ActionEvent ae) { updateEstadoButtonLabel(); } });
+                }
+                if (!estadoItems.isEmpty()) { estadoFilterColumn = "c.estado_ropa_id"; loaded = true; }
+            } catch (SQLException ignored) {}
+            if (!loaded) {
+                try (PreparedStatement ps2 = conn.prepareStatement("SELECT id,nom_estado FROM estado_comprobantes ORDER BY nom_estado"); ResultSet rs2 = ps2.executeQuery()) {
+                    while (rs2.next()) {
+                        int id = rs2.getInt(1); String nom = rs2.getString(2);
+                        JCheckBoxMenuItem it = new JCheckBoxMenuItem(nom, true);
+                        it.setActionCommand(String.valueOf(id)); estadoItems.add(it); estadoIds.add(id); estadoPopup.add(it);
+                        it.addActionListener(new java.awt.event.ActionListener() { @Override public void actionPerformed(java.awt.event.ActionEvent ae) { updateEstadoButtonLabel(); } });
+                    }
+                    if (!estadoItems.isEmpty()) { estadoFilterColumn = "c.estado_comprobante_id"; loaded = true; }
+                } catch (SQLException ignored) {}
+            }
+        } catch (Exception ex) {
+            // ignore
+        }
+        if (!loaded) {
+            JCheckBoxMenuItem it = new JCheckBoxMenuItem("Todos", true); it.setActionCommand("0"); estadoItems.add(it); estadoPopup.add(it);
+        }
+        filterEstadoBtn.addActionListener(new java.awt.event.ActionListener() { @Override public void actionPerformed(java.awt.event.ActionEvent ae) { estadoPopup.show(filterEstadoBtn, 0, filterEstadoBtn.getHeight()); } });
+        updateEstadoButtonLabel();
+    }
+
+    private void updateEstadoButtonLabel() {
+        int checked = 0; for (JCheckBoxMenuItem it : estadoItems) if (it.isSelected()) checked++;
+        filterEstadoBtn.setText("Estados ("+checked+")");
+    }
+
+    private void resetFilters() {
+        filterCod.setText("");
+        filterCliente.setSelectedItem("");
+        for (JCheckBoxMenuItem it : estadoItems) it.setSelected(true);
+        filterFecha.setDate(null);
+        updateEstadoButtonLabel();
+    }
+
     private void onEdited() { loadPage(currentPage); }
 
     private void deleteSelected() {
@@ -188,7 +301,6 @@ public class frmConsultarComprobantes extends JInternalFrame {
     }
 
     private void loadPage(int page) {
-        String search = txtBuscar.getText().trim();
         try (Connection conn = DatabaseConfig.getConnection()) {
             StringBuilder where = new StringBuilder(" WHERE 1=1 ");
             switch (mode) {
@@ -198,36 +310,41 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 case TODOS -> {}
             }
             List<Object> params = new ArrayList<>();
-            if (!search.isEmpty()) {
-                int fieldIndex = cboCampo.getSelectedIndex();
-                switch (fieldIndex) {
-                    case 0 -> { // COD COMPROBANTE
-                        where.append(" AND c.cod_comprobante LIKE ? "); params.add('%'+search+'%');
-                    }
-                    case 1 -> { // CLIENTE
-                        where.append(" AND cl.nombres LIKE ? "); params.add('%'+search+'%');
-                    }
-                    case 2 -> { // ESTADO ROPA
-                        where.append(" AND er.nom_estado_ropa LIKE ? "); params.add('%'+search+'%');
-                    }
-                    case 3 -> { // COSTO TOTAL numeric equality
-                        Float v = parseFloat(search);
-                        if (v != null) { where.append(" AND c.costo_total = ? "); params.add(v); }
-                        else { JOptionPane.showMessageDialog(this, "Ingrese un número válido para COSTO TOTAL."); }
-                    }
-                    case 4 -> { // DEUDA expression (c.costo_total - IFNULL(c.monto_abonado,0))
-                        Float v = parseFloat(search);
-                        if (v != null) { where.append(" AND (c.costo_total - IFNULL(c.monto_abonado,0)) = ? "); params.add(v); }
-                        else { JOptionPane.showMessageDialog(this, "Ingrese un número válido para DEUDA."); }
-                    }
-                    case 5 -> { // FECHA DE REGISTRO (date part) expect yyyy-MM-dd
-                        where.append(" AND DATE(c.fecha) = ? "); params.add(search);
-                    }
+
+            // Filter: COD
+            String cod = filterCod.getText().trim();
+            if (!cod.isEmpty()) { where.append(" AND c.cod_comprobante LIKE ? "); params.add('%'+cod+'%'); }
+
+            // Filter: CLIENTE
+            String clienteVal = (filterCliente.getEditor().getItem()!=null? filterCliente.getEditor().getItem().toString().trim(): "");
+            if (!clienteVal.isEmpty()) { where.append(" AND cl.nombres LIKE ? "); params.add('%'+clienteVal+'%'); }
+
+            // Filter: ESTADO ROPA (multi-select checkboxes)
+            List<Integer> selEstadoIds = new ArrayList<>();
+            for (JCheckBoxMenuItem it : estadoItems) {
+                if (it.isSelected()) {
+                    try { selEstadoIds.add(Integer.parseInt(it.getActionCommand())); } catch (Exception ignore) {}
                 }
+            }
+            if (!selEstadoIds.isEmpty()) {
+                where.append(" AND ").append(estadoFilterColumn).append(" IN (");
+                for (int i=0;i<selEstadoIds.size();i++) { where.append(i==0?"?":",?"); params.add(selEstadoIds.get(i)); }
+                where.append(") ");
+            }
+
+            // Filter: FECHA (date part)
+            Date d = filterFecha.getDate();
+            if (d != null) {
+                where.append(" AND DATE(c.fecha) = ? ");
+                params.add(new java.sql.Date(d.getTime()));
             }
             String sqlCount = "SELECT COUNT(*) FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id" + where;
             try (PreparedStatement ps = conn.prepareStatement(sqlCount)) {
-                for (int i=0;i<params.size();i++) ps.setObject(i+1, params.get(i));
+                for (int i=0;i<params.size();i++) {
+                    Object p = params.get(i);
+                    if (p instanceof java.sql.Date) ps.setDate(i+1, (java.sql.Date)p);
+                    else ps.setObject(i+1, p);
+                }
                 try (ResultSet rs = ps.executeQuery()) { if (rs.next()) { int total = rs.getInt(1); totalPages = Math.max(1, (int)Math.ceil(total/(double)PAGE_SIZE)); } }
             }
             currentPage = Math.min(page, totalPages); int offset=(currentPage-1)*PAGE_SIZE;
@@ -235,7 +352,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id" + where +
                     " ORDER BY c.fecha DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                int idx=1; for(Object p:params) ps.setObject(idx++, p); ps.setInt(idx++, PAGE_SIZE); ps.setInt(idx, offset);
+                int idx=1; for(Object p:params) { if (p instanceof java.sql.Date) ps.setDate(idx++, (java.sql.Date)p); else ps.setObject(idx++, p); }
+                ps.setInt(idx++, PAGE_SIZE); ps.setInt(idx, offset);
                 List<ComprobanteRow> rows = new ArrayList<>();
                 try(ResultSet rs=ps.executeQuery()) { while(rs.next()){ ComprobanteRow r=new ComprobanteRow(); r.id=rs.getInt("id"); r.codComprobante=rs.getString("cod_comprobante"); r.cliente=rs.getString("cliente"); r.estadoRopa=rs.getString("estado_ropa"); r.costoTotal=rs.getFloat("costo_total"); r.deuda=rs.getFloat("deuda"); Timestamp ts=rs.getTimestamp("fecha"); r.fecha= ts!=null? ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm")) : ""; rows.add(r);} }
                 model.setRows(rows);
@@ -247,9 +365,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         }
     }
 
-    private Float parseFloat(String s) {
-        try { return Float.parseFloat(s); } catch (Exception ex) { return null; }
-    }
+    
 
     @SuppressWarnings("unused")
     private static class ComprobanteRow { int id; String codComprobante; String cliente; String estadoRopa; float costoTotal; float deuda; String fecha; }
