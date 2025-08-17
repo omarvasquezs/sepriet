@@ -144,7 +144,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         });
 
     // Action for generating (saving) the comprobante
-    btnGenerarComprobante.addActionListener(e -> saveComprobante());
+    btnGenerarComprobante.addActionListener(_ -> saveComprobante());
     }
 
     private void toggleRucFields() {
