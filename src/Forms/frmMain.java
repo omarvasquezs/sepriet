@@ -101,6 +101,17 @@ public class frmMain extends javax.swing.JFrame {
                 dlg.setVisible(true);
             }
         });
+
+        // Comprobantes listings
+        menuConsultarTodosComprobantes.addActionListener(new java.awt.event.ActionListener() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) { openComprobantesFrame(frmConsultarComprobantes.Mode.TODOS); }
+        });
+        menuConsultarComprobantesNoCancelados.addActionListener(new java.awt.event.ActionListener() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) { openComprobantesFrame(frmConsultarComprobantes.Mode.RECIBIDOS); }
+        });
+        menuConsultarComprobantesCancelados.addActionListener(new java.awt.event.ActionListener() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) { openComprobantesFrame(frmConsultarComprobantes.Mode.CANCELADOS); }
+        });
     }
 
     /**
@@ -291,6 +302,20 @@ public class frmMain extends javax.swing.JFrame {
         // Make the internal frame visible
         registrarForm.setVisible(true);
     }//GEN-LAST:event_menuRegistrarComprobanteActionPerformed
+
+    private void openComprobantesFrame(frmConsultarComprobantes.Mode mode) {
+        // if already open bring to front
+        for (javax.swing.JInternalFrame f : desktopPane.getAllFrames()) {
+            if (f instanceof frmConsultarComprobantes) {
+                try { f.setSelected(true); } catch (java.beans.PropertyVetoException ignored) {}
+                f.toFront();
+                return;
+            }
+        }
+        frmConsultarComprobantes frm = new frmConsultarComprobantes(mode);
+        desktopPane.add(frm);
+        frm.setVisible(true);
+    }
 
     /**
      * @param args the command line arguments
