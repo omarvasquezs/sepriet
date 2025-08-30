@@ -5,9 +5,7 @@
 package Forms;
 
 import java.awt.Color;
-import java.sql.Connection;
-import java.sql.SQLException;
-import javax.swing.JOptionPane;
+/* imports Connection/SQLException/JOptionPane are not needed after refactor */
 
 /**
  *
@@ -239,24 +237,46 @@ public class frmDB extends javax.swing.JFrame {
 
     private void btnSaveSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveSettingsActionPerformed
 
-        try (Connection conn = DatabaseConfig.getConnection()) {
+        // Collect fields
+        String host = txtHost.getText();
+        String port = txtPort.getText();
+        String database = txtDatabase.getText();
+        String username = txtUsername.getText();
+        String password = new String(txtPassword.getPassword());
+
+        // Persist to properties file
+        java.util.Properties props = new java.util.Properties();
+        props.setProperty("db.host", host);
+        props.setProperty("db.port", port);
+        props.setProperty("db.database", database);
+        props.setProperty("db.username", username);
+        props.setProperty("db.password", password);
+
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream("db_settings.properties")) {
+            props.store(fos, "Database Settings");
+        } catch (java.io.IOException ioex) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Failed to save settings: " + ioex.getMessage(),
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Test the connection with saved values
+        String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
+        try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, username, password)) {
             try {
-            if (conn != null && conn.isValid(2)) {
-                JOptionPane.showMessageDialog(this, "Conexión Exitosa!", "Success", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this, "Conexión Fallida: conexión no válida", "Error", JOptionPane.ERROR_MESSAGE);
+                if (conn != null && conn.isValid(2)) {
+                    javax.swing.JOptionPane.showMessageDialog(this, "Settings saved and connection successful!", "Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    javax.swing.JOptionPane.showMessageDialog(this, "Conexión Fallida: conexión no válida", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (java.sql.SQLException innerEx) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Conexión Fallida: " + innerEx.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             }
-            } catch (SQLException innerEx) {
-            JOptionPane.showMessageDialog(this, "Conexión Fallida: " + innerEx.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (IllegalStateException ex) {
-            JOptionPane.showMessageDialog(this,
-                ex.getMessage(),
-                "Error de configuración", JOptionPane.ERROR_MESSAGE);
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this,
-                "Conexión Fallida: " + ex.getMessage(),
-                "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        } catch (java.sql.SQLException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Conexión Fallida: " + ex.getMessage(),
+                    "Error de base de datos", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnSaveSettingsActionPerformed
 

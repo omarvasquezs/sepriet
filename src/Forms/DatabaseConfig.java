@@ -20,15 +20,6 @@ public class DatabaseConfig {
     private static final String PROPS_FILE = "db_settings.properties";
     private static final Properties props = new Properties();
 
-    static {
-        try (FileInputStream fis = new FileInputStream(PROPS_FILE)) {
-            props.load(fis);
-        } catch (IOException e) {
-            throw new RuntimeException(
-                    "Error loading " + PROPS_FILE + ": " + e.getMessage(), e);
-        }
-    }
-
     /**
      * Returns a new Connection using settings from db_settings.properties.
      *
@@ -37,6 +28,13 @@ public class DatabaseConfig {
      * @throws IllegalStateException if any property is missing or empty
      */
     public static Connection getConnection() throws SQLException {
+        // Load properties from file each time so changes are reflected immediately
+        try (FileInputStream fis = new FileInputStream(PROPS_FILE)) {
+            props.load(fis);
+        } catch (IOException e) {
+            throw new IllegalStateException("Error loading " + PROPS_FILE + ": " + e.getMessage(), e);
+        }
+
         String host = props.getProperty("db.host");
         String port = props.getProperty("db.port");
         String database = props.getProperty("db.database");
