@@ -78,11 +78,11 @@ public class frmConsultarComprobantes extends JInternalFrame {
     }
 
     private void buildUI() {
-    // Top area: a header line for "Filtros" and a filter row below it.
-    JPanel top = new JPanel();
-    top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
-    // Add left padding for the filters area so controls don't stick to the border
-    top.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 8));
+        // Top area: a header line for "Filtros" and a filter row below it.
+        JPanel top = new JPanel();
+        top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+        // Add left padding for the filters area so controls don't stick to the border
+        top.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 8));
         JLabel lblFiltros = new JLabel("Filtros");
         lblFiltros.setFont(lblFiltros.getFont().deriveFont(Font.BOLD, 16f));
         lblFiltros.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -97,20 +97,21 @@ public class frmConsultarComprobantes extends JInternalFrame {
         filtersRow.add(filterCod);
         filtersRow.add(new JLabel("Cliente:"));
         filtersRow.add(filterCliente);
-        // "Estados:" label removed per request; estadoPanel will be placed on its own line
+        // "Estados:" label removed per request; estadoPanel will be placed on its own
+        // line
         filtersRow.add(new JLabel("Fecha:"));
         filtersRow.add(filterFecha);
         filtersRow.add(btnBuscar);
         filtersRow.add(btnReset);
         filtersRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    // Place the estado groups side-by-side: the container is horizontal while
-    // each group keeps a vertical layout so their checkboxes remain one-per-line.
-    estadoPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 16, 4));
-    estadoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // Place the estado groups side-by-side: the container is horizontal while
+        // each group keeps a vertical layout so their checkboxes remain one-per-line.
+        estadoPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 16, 4));
+        estadoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    top.add(filtersRow);
-    top.add(estadoPanel);
+        top.add(filtersRow);
+        top.add(estadoPanel);
         btnBuscar.addActionListener(this::onBuscar);
         btnReset.addActionListener(new java.awt.event.ActionListener() {
             @Override
@@ -161,10 +162,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
         table.setModel(model);
         table.setFillsViewportHeight(true);
         table.setAutoCreateRowSorter(true);
-    // allow only one row to be selected at a time
-    table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    table.setRowSelectionAllowed(true);
-    table.setColumnSelectionAllowed(false);
+        // allow only one row to be selected at a time
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setRowSelectionAllowed(true);
+        table.setColumnSelectionAllowed(false);
 
         // Populate cliente names and estados for filters
         SwingUtilities.invokeLater(() -> {
@@ -205,11 +206,11 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     loadPage(currentPage + 1);
             }
         });
-    bottom.add(new JLabel("Registros por página:"));
-    bottom.add(pageSizeCombo);
-    bottom.add(btnPrev);
-    bottom.add(btnNext);
-    bottom.add(lblPagina);
+        bottom.add(new JLabel("Registros por página:"));
+        bottom.add(pageSizeCombo);
+        bottom.add(btnPrev);
+        bottom.add(btnNext);
+        bottom.add(lblPagina);
 
         getContentPane().setLayout(new BorderLayout());
         JPanel north = new JPanel(new BorderLayout());
