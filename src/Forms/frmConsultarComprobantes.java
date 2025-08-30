@@ -43,7 +43,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private final ComprobantesTableModel model = new ComprobantesTableModel();
     private int currentPage = 1;
     private int totalPages = 1;
-    private static final int PAGE_SIZE = 100;
+    // page size is configurable by the user; default to 50
+    private int pageSize = 50;
+    private final JComboBox<Integer> pageSizeCombo = new JComboBox<>(new Integer[] { 10, 25, 50, 100, 200 });
     private Mode mode;
 
     public enum Mode {
@@ -175,6 +177,20 @@ public class frmConsultarComprobantes extends JInternalFrame {
         });
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        // page size selector (records per page)
+        pageSizeCombo.setSelectedItem(Integer.valueOf(pageSize));
+        pageSizeCombo.setMaximumRowCount(6);
+        pageSizeCombo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        pageSizeCombo.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                Integer sel = (Integer) pageSizeCombo.getSelectedItem();
+                if (sel != null && sel != pageSize) {
+                    pageSize = sel;
+                    loadPage(1);
+                }
+            }
+        });
         btnPrev.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -189,9 +205,11 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     loadPage(currentPage + 1);
             }
         });
-        bottom.add(btnPrev);
-        bottom.add(btnNext);
-        bottom.add(lblPagina);
+    bottom.add(new JLabel("Registros por página:"));
+    bottom.add(pageSizeCombo);
+    bottom.add(btnPrev);
+    bottom.add(btnNext);
+    bottom.add(lblPagina);
 
         getContentPane().setLayout(new BorderLayout());
         JPanel north = new JPanel(new BorderLayout());
@@ -560,12 +578,12 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         int total = rs.getInt(1);
-                        totalPages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
+                        totalPages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
                     }
                 }
             }
             currentPage = Math.min(page, totalPages);
-            int offset = (currentPage - 1) * PAGE_SIZE;
+            int offset = (currentPage - 1) * pageSize;
             String sql = "SELECT c.id,c.cod_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,ec.nom_estado estado_comprobante,c.costo_total,(c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha "
                     +
                     "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id"
@@ -579,7 +597,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     else
                         ps.setObject(idx++, p);
                 }
-                ps.setInt(idx++, PAGE_SIZE);
+                ps.setInt(idx++, pageSize);
                 ps.setInt(idx, offset);
                 List<ComprobanteRow> rows = new ArrayList<>();
                 try (ResultSet rs = ps.executeQuery()) {
