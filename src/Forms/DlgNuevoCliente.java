@@ -75,7 +75,9 @@ public class DlgNuevoCliente extends JDialog {
 
     JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
     JButton btnGuardar = new JButton("Guardar"); btnGuardar.setFont(btnFont); btnGuardar.setPreferredSize(new Dimension(120, 38));
+    btnGuardar.setCursor(new Cursor(Cursor.HAND_CURSOR));
     JButton btnCancelar = new JButton("Cancelar"); btnCancelar.setFont(btnFont); btnCancelar.setPreferredSize(new Dimension(120, 38));
+    btnCancelar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         buttons.add(btnGuardar);
         buttons.add(btnCancelar);
 
