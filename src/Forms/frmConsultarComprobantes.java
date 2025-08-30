@@ -159,6 +159,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
         table.setModel(model);
         table.setFillsViewportHeight(true);
         table.setAutoCreateRowSorter(true);
+    // allow only one row to be selected at a time
+    table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    table.setRowSelectionAllowed(true);
+    table.setColumnSelectionAllowed(false);
 
         // Populate cliente names and estados for filters
         SwingUtilities.invokeLater(() -> {
