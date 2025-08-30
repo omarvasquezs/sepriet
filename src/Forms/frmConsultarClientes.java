@@ -38,6 +38,18 @@ public class frmConsultarClientes extends JInternalFrame {
         loadClients();
     }
 
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        // Maximize after added to desktop
+        SwingUtilities.invokeLater(() -> {
+            try {
+                setMaximum(true);
+            } catch (Exception ignored) {
+            }
+        });
+    }
+
     private void buildUI() {
         JPanel top = new JPanel();
         top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
