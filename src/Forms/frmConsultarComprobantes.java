@@ -19,13 +19,18 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private final List<String> allClientes = new ArrayList<>();
     // which comprobante column to filter for estados (either estado_ropa_id or estado_comprobante_id)
     private String estadoFilterColumn = "c.estado_ropa_id";
-    private final JButton filterEstadoBtn = new JButton("Estados (Todos)");
+    // estados will be shown as visible checkboxes
+    private final JPanel estadoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+    // label for selected count removed per request
+    // Separate lists for possible two kinds of estados
+    private final List<JCheckBox> estadoRopaItems = new ArrayList<>();
+    private final List<JCheckBox> estadoComprobanteItems = new ArrayList<>();
+    private boolean hasEstadoRopa = false;
+    private boolean hasEstadoComprobante = false;
     private final JDateChooser filterFecha = new JDateChooser();
     private final JButton btnBuscar = new JButton("Buscar");
     private final JButton btnReset = new JButton("Resetear");
-    private final JPopupMenu estadoPopup = new JPopupMenu();
     private final List<Integer> estadoIds = new ArrayList<>();
-    private final List<JCheckBoxMenuItem> estadoItems = new ArrayList<>();
     private final JButton btnAdd = new JButton("Añadir");
     private final JButton btnEdit = new JButton("Editar");
     private final JButton btnDelete = new JButton("Eliminar");
@@ -67,12 +72,12 @@ public class frmConsultarComprobantes extends JInternalFrame {
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
         top.add(new JLabel("Filtros:"));
         filterCod.setPreferredSize(new Dimension(150,24));
-        filterCliente.setPreferredSize(new Dimension(180,24));
+    filterCliente.setPreferredSize(new Dimension(180,24));
         filterCliente.setEditable(true);
         filterFecha.setPreferredSize(new Dimension(130,24));
         top.add(new JLabel("Cod:")); top.add(filterCod);
         top.add(new JLabel("Cliente:")); top.add(filterCliente);
-        top.add(filterEstadoBtn);
+    top.add(new JLabel("Estados:")); top.add(estadoPanel);
         top.add(new JLabel("Fecha:")); top.add(filterFecha);
         top.add(btnBuscar); top.add(btnReset);
         btnBuscar.addActionListener(this::onBuscar);
@@ -82,7 +87,6 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
     // show pointer cursor for buttons
     Cursor hand = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
-    filterEstadoBtn.setCursor(hand);
     btnBuscar.setCursor(hand);
     btnReset.setCursor(hand);
 
@@ -110,8 +114,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
         // Populate cliente names and estados for filters
         SwingUtilities.invokeLater(() -> {
-            populateClienteNames();
-            populateEstadoItems();
+                populateClienteNames();
+                populateEstadoItems();
             try { org.jdesktop.swingx.autocomplete.AutoCompleteDecorator.decorate(filterCliente); } catch (Exception ignore) {}
         });
 
@@ -214,51 +218,52 @@ public class frmConsultarComprobantes extends JInternalFrame {
     try { org.jdesktop.swingx.autocomplete.AutoCompleteDecorator.decorate(filterCliente); } catch (Exception ignore) {}
     }
 
-    // Build estado popup with checkbox menu items (all checked by default)
+    // Build estado panel with JCheckBox items (all checked by default).
+    // Load both estado_ropa and estado_comprobantes if present.
     private void populateEstadoItems() {
-        estadoPopup.removeAll(); estadoItems.clear(); estadoIds.clear();
-        // Try estado_ropa first (common in this project). If not present, try estado_comprobantes
-        boolean loaded = false;
+        estadoPanel.removeAll(); estadoRopaItems.clear(); estadoComprobanteItems.clear(); estadoIds.clear();
+        hasEstadoRopa = false; hasEstadoComprobante = false;
         try (Connection conn = DatabaseConfig.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT id,nom_estado_ropa FROM estado_ropa ORDER BY nom_estado_ropa"); ResultSet rs = ps.executeQuery()) {
+            // load estado_ropa
+            try (PreparedStatement ps = conn.prepareStatement("SELECT id,nom_estado_ropa FROM estado_ropa WHERE habilitado=1 ORDER BY nom_estado_ropa"); ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     int id = rs.getInt(1); String nom = rs.getString(2);
-                    JCheckBoxMenuItem it = new JCheckBoxMenuItem(nom, true);
-                    it.setActionCommand(String.valueOf(id)); estadoItems.add(it); estadoIds.add(id); estadoPopup.add(it);
+                    JCheckBox it = new JCheckBox(nom, true);
+                    it.setActionCommand(String.valueOf(id)); estadoRopaItems.add(it); estadoIds.add(id); estadoPanel.add(it);
                     it.addActionListener(new java.awt.event.ActionListener() { @Override public void actionPerformed(java.awt.event.ActionEvent ae) { updateEstadoButtonLabel(); } });
                 }
-                if (!estadoItems.isEmpty()) { estadoFilterColumn = "c.estado_ropa_id"; loaded = true; }
+                if (!estadoRopaItems.isEmpty()) { hasEstadoRopa = true; }
             } catch (SQLException ignored) {}
-            if (!loaded) {
-                try (PreparedStatement ps2 = conn.prepareStatement("SELECT id,nom_estado FROM estado_comprobantes ORDER BY nom_estado"); ResultSet rs2 = ps2.executeQuery()) {
-                    while (rs2.next()) {
-                        int id = rs2.getInt(1); String nom = rs2.getString(2);
-                        JCheckBoxMenuItem it = new JCheckBoxMenuItem(nom, true);
-                        it.setActionCommand(String.valueOf(id)); estadoItems.add(it); estadoIds.add(id); estadoPopup.add(it);
-                        it.addActionListener(new java.awt.event.ActionListener() { @Override public void actionPerformed(java.awt.event.ActionEvent ae) { updateEstadoButtonLabel(); } });
-                    }
-                    if (!estadoItems.isEmpty()) { estadoFilterColumn = "c.estado_comprobante_id"; loaded = true; }
-                } catch (SQLException ignored) {}
-            }
+            // load estado_comprobantes
+            try (PreparedStatement ps2 = conn.prepareStatement("SELECT id,nom_estado FROM estado_comprobantes WHERE habilitado=1 ORDER BY nom_estado"); ResultSet rs2 = ps2.executeQuery()) {
+                while (rs2.next()) {
+                    int id = rs2.getInt(1); String nom = rs2.getString(2);
+                    JCheckBox it = new JCheckBox(nom, true);
+                    it.setActionCommand(String.valueOf(id)); estadoComprobanteItems.add(it); estadoIds.add(id); estadoPanel.add(it);
+                    it.addActionListener(new java.awt.event.ActionListener() { @Override public void actionPerformed(java.awt.event.ActionEvent ae) { updateEstadoButtonLabel(); } });
+                }
+                if (!estadoComprobanteItems.isEmpty()) { hasEstadoComprobante = true; }
+            } catch (SQLException ignored) {}
         } catch (Exception ex) {
             // ignore
         }
-        if (!loaded) {
-            JCheckBoxMenuItem it = new JCheckBoxMenuItem("Todos", true); it.setActionCommand("0"); estadoItems.add(it); estadoPopup.add(it);
+        if (!hasEstadoRopa && !hasEstadoComprobante) {
+            JCheckBox it = new JCheckBox("Todos", true); it.setActionCommand("0"); estadoRopaItems.add(it); estadoPanel.add(it);
         }
-        filterEstadoBtn.addActionListener(new java.awt.event.ActionListener() { @Override public void actionPerformed(java.awt.event.ActionEvent ae) { estadoPopup.show(filterEstadoBtn, 0, filterEstadoBtn.getHeight()); } });
+        // small label showing how many selected
         updateEstadoButtonLabel();
+        estadoPanel.revalidate(); estadoPanel.repaint();
     }
 
     private void updateEstadoButtonLabel() {
-        int checked = 0; for (JCheckBoxMenuItem it : estadoItems) if (it.isSelected()) checked++;
-        filterEstadoBtn.setText("Estados ("+checked+")");
+    // counter removed - no UI update needed
     }
 
     private void resetFilters() {
         filterCod.setText("");
         filterCliente.setSelectedItem("");
-        for (JCheckBoxMenuItem it : estadoItems) it.setSelected(true);
+    for (JCheckBox it : estadoRopaItems) it.setSelected(true);
+    for (JCheckBox it : estadoComprobanteItems) it.setSelected(true);
         filterFecha.setDate(null);
         updateEstadoButtonLabel();
     }
@@ -309,15 +314,24 @@ public class frmConsultarComprobantes extends JInternalFrame {
             if (!clienteVal.isEmpty()) { where.append(" AND cl.nombres LIKE ? "); params.add('%'+clienteVal+'%'); }
 
             // Filter: ESTADO ROPA (multi-select checkboxes)
-            List<Integer> selEstadoIds = new ArrayList<>();
-            for (JCheckBoxMenuItem it : estadoItems) {
-                if (it.isSelected()) {
-                    try { selEstadoIds.add(Integer.parseInt(it.getActionCommand())); } catch (Exception ignore) {}
-                }
-            }
-            if (!selEstadoIds.isEmpty()) {
-                where.append(" AND ").append(estadoFilterColumn).append(" IN (");
-                for (int i=0;i<selEstadoIds.size();i++) { where.append(i==0?"?":",?"); params.add(selEstadoIds.get(i)); }
+            List<Integer> selRopa = new ArrayList<>();
+            for (JCheckBox it : estadoRopaItems) if (it.isSelected()) try { selRopa.add(Integer.parseInt(it.getActionCommand())); } catch (Exception ignore) {}
+            List<Integer> selComp = new ArrayList<>();
+            for (JCheckBox it : estadoComprobanteItems) if (it.isSelected()) try { selComp.add(Integer.parseInt(it.getActionCommand())); } catch (Exception ignore) {}
+            if (!selRopa.isEmpty() && !selComp.isEmpty()) {
+                // filter where either columna matches selected ids
+                where.append(" AND ( ").append("c.estado_ropa_id IN (");
+                for (int i=0;i<selRopa.size();i++) { where.append(i==0?"?":",?"); params.add(selRopa.get(i)); }
+                where.append(") OR c.estado_comprobante_id IN (");
+                for (int i=0;i<selComp.size();i++) { where.append(i==0?"?":",?"); params.add(selComp.get(i)); }
+                where.append(") ) ");
+            } else if (!selRopa.isEmpty()) {
+                where.append(" AND c.estado_ropa_id IN (");
+                for (int i=0;i<selRopa.size();i++) { where.append(i==0?"?":",?"); params.add(selRopa.get(i)); }
+                where.append(") ");
+            } else if (!selComp.isEmpty()) {
+                where.append(" AND c.estado_comprobante_id IN (");
+                for (int i=0;i<selComp.size();i++) { where.append(i==0?"?":",?"); params.add(selComp.get(i)); }
                 where.append(") ");
             }
 
