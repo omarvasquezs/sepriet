@@ -43,7 +43,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private final ComprobantesTableModel model = new ComprobantesTableModel();
     private int currentPage = 1;
     private int totalPages = 1;
-    private static final int PAGE_SIZE = 10;
+    private static final int PAGE_SIZE = 100;
     private Mode mode;
 
     public enum Mode {
@@ -76,22 +76,39 @@ public class frmConsultarComprobantes extends JInternalFrame {
     }
 
     private void buildUI() {
-        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        top.add(new JLabel("Filtros:"));
+    // Top area: a header line for "Filtros" and a filter row below it.
+    JPanel top = new JPanel();
+    top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+    // Add left padding for the filters area so controls don't stick to the border
+    top.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 8));
+        JLabel lblFiltros = new JLabel("Filtros");
+        lblFiltros.setFont(lblFiltros.getFont().deriveFont(Font.BOLD, 16f));
+        lblFiltros.setAlignmentX(Component.LEFT_ALIGNMENT);
+        top.add(lblFiltros);
+
+        JPanel filtersRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filterCod.setPreferredSize(new Dimension(150, 24));
         filterCliente.setPreferredSize(new Dimension(180, 24));
         filterCliente.setEditable(true);
         filterFecha.setPreferredSize(new Dimension(130, 24));
-        top.add(new JLabel("Cod:"));
-        top.add(filterCod);
-        top.add(new JLabel("Cliente:"));
-        top.add(filterCliente);
-        top.add(new JLabel("Estados:"));
-        top.add(estadoPanel);
-        top.add(new JLabel("Fecha:"));
-        top.add(filterFecha);
-        top.add(btnBuscar);
-        top.add(btnReset);
+        filtersRow.add(new JLabel("Código:"));
+        filtersRow.add(filterCod);
+        filtersRow.add(new JLabel("Cliente:"));
+        filtersRow.add(filterCliente);
+        // "Estados:" label removed per request; estadoPanel will be placed on its own line
+        filtersRow.add(new JLabel("Fecha:"));
+        filtersRow.add(filterFecha);
+        filtersRow.add(btnBuscar);
+        filtersRow.add(btnReset);
+        filtersRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    // Place the estado groups side-by-side: the container is horizontal while
+    // each group keeps a vertical layout so their checkboxes remain one-per-line.
+    estadoPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 16, 4));
+    estadoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    top.add(filtersRow);
+    top.add(estadoPanel);
         btnBuscar.addActionListener(this::onBuscar);
         btnReset.addActionListener(new java.awt.event.ActionListener() {
             @Override
@@ -356,16 +373,30 @@ public class frmConsultarComprobantes extends JInternalFrame {
         }
         // add labeled groups to the container panel
         if (hasEstadoRopa || !estadoRopaItems.isEmpty()) {
+            JPanel p = new JPanel();
+            p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+            p.setAlignmentX(Component.LEFT_ALIGNMENT);
+            p.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
             JLabel l = new JLabel("Estado Ropa:");
-            l.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
-            estadoPanel.add(l);
-            estadoPanel.add(estadoRopaPanel);
+            l.setBorder(BorderFactory.createEmptyBorder(4, 6, 2, 6));
+            l.setAlignmentX(Component.LEFT_ALIGNMENT);
+            p.add(l);
+            estadoRopaPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            p.add(estadoRopaPanel);
+            estadoPanel.add(p);
         }
         if (hasEstadoComprobante || !estadoComprobanteItems.isEmpty()) {
+            JPanel p2 = new JPanel();
+            p2.setLayout(new BoxLayout(p2, BoxLayout.Y_AXIS));
+            p2.setAlignmentX(Component.LEFT_ALIGNMENT);
+            p2.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
             JLabel l2 = new JLabel("Estado Comprobante:");
-            l2.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 6));
-            estadoPanel.add(l2);
-            estadoPanel.add(estadoComprobantePanel);
+            l2.setBorder(BorderFactory.createEmptyBorder(4, 6, 2, 6));
+            l2.setAlignmentX(Component.LEFT_ALIGNMENT);
+            p2.add(l2);
+            estadoComprobantePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            p2.add(estadoComprobantePanel);
+            estadoPanel.add(p2);
         }
         // small label showing how many selected (no visual count now)
         updateEstadoButtonLabel();
