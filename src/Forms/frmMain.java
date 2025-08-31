@@ -333,15 +333,14 @@ public class frmMain extends javax.swing.JFrame {
     }// GEN-LAST:event_menuRegistrarComprobanteActionPerformed
 
     private void openComprobantesFrame(frmConsultarComprobantes.Mode mode) {
-        // if already open bring to front
+        // Close any existing frmConsultarComprobantes instances so opening a
+        // different listing replaces the previous one automatically.
         for (javax.swing.JInternalFrame f : desktopPane.getAllFrames()) {
             if (f instanceof frmConsultarComprobantes) {
                 try {
-                    f.setSelected(true);
-                } catch (java.beans.PropertyVetoException ignored) {
+                    f.setClosed(true);
+                } catch (Exception ignored) {
                 }
-                f.toFront();
-                return;
             }
         }
         frmConsultarComprobantes frm;
