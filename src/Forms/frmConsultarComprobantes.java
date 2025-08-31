@@ -533,18 +533,19 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     } catch (Exception ignore) {
                     }
             if (!selRopa.isEmpty() && !selComp.isEmpty()) {
-                // filter where either columna matches selected ids
-                where.append(" AND ( ").append("c.estado_ropa_id IN (");
+                // require both estado_ropa and estado_comprobante to match selected ids (intersection)
+                where.append(" AND c.estado_ropa_id IN (");
                 for (int i = 0; i < selRopa.size(); i++) {
                     where.append(i == 0 ? "?" : ",?");
                     params.add(selRopa.get(i));
                 }
-                where.append(") OR c.estado_comprobante_id IN (");
+                where.append(") ");
+                where.append(" AND c.estado_comprobante_id IN (");
                 for (int i = 0; i < selComp.size(); i++) {
                     where.append(i == 0 ? "?" : ",?");
                     params.add(selComp.get(i));
                 }
-                where.append(") ) ");
+                where.append(") ");
             } else if (!selRopa.isEmpty()) {
                 where.append(" AND c.estado_ropa_id IN (");
                 for (int i = 0; i < selRopa.size(); i++) {
