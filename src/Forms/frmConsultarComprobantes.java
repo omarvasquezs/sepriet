@@ -425,6 +425,36 @@ public class frmConsultarComprobantes extends JInternalFrame {
         updateEstadoButtonLabel();
         estadoPanel.revalidate();
         estadoPanel.repaint();
+        // hook for subclasses to modify the estado checkbox lists/visibility
+        try {
+            postPopulateEstadoItems();
+        } catch (Exception ignore) {
+        }
+    }
+
+    /**
+     * Hook called after estado items are populated. Subclasses may override to
+     * remove or lock specific checkboxes (e.g., remove CANCELADO).
+     */
+    protected void postPopulateEstadoItems() {
+        // default: no-op
+    }
+
+    // Protected accessors for subclasses
+    protected java.util.List<JCheckBox> getEstadoComprobanteItems() {
+        return estadoComprobanteItems;
+    }
+
+    protected java.util.List<JCheckBox> getEstadoRopaItems() {
+        return estadoRopaItems;
+    }
+
+    protected JPanel getEstadoComprobantePanel() {
+        return estadoComprobantePanel;
+    }
+
+    protected JPanel getEstadoRopaPanel() {
+        return estadoRopaPanel;
     }
 
     private void updateEstadoButtonLabel() {
@@ -533,7 +563,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     } catch (Exception ignore) {
                     }
             if (!selRopa.isEmpty() && !selComp.isEmpty()) {
-                // require both estado_ropa and estado_comprobante to match selected ids (intersection)
+                // require both estado_ropa and estado_comprobante to match selected ids
+                // (intersection)
                 where.append(" AND c.estado_ropa_id IN (");
                 for (int i = 0; i < selRopa.size(); i++) {
                     where.append(i == 0 ? "?" : ",?");

@@ -344,7 +344,14 @@ public class frmMain extends javax.swing.JFrame {
                 return;
             }
         }
-        frmConsultarComprobantes frm = new frmConsultarComprobantes(mode);
+        frmConsultarComprobantes frm;
+        if (mode == frmConsultarComprobantes.Mode.RECIBIDOS) {
+            frm = new frmConsultarComprobantesNoCancelados();
+        } else if (mode == frmConsultarComprobantes.Mode.CANCELADOS) {
+            frm = new frmConsultarComprobantesCancelados();
+        } else {
+            frm = new frmConsultarComprobantes(mode);
+        }
         desktopPane.add(frm);
         frm.setVisible(true);
     }
