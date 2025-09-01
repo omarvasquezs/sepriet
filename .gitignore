@@ -47,3 +47,5 @@ db_settings.properties
 # NetBeans metadata for tracking generated files (safe to ignore)
 nbproject/genfiles.properties
 
+# Portable directory
+/portable/
