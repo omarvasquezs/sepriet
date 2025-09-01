@@ -309,8 +309,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     String estado = rh.getString("estado_comprobante");
 
                     sb.append("<div class=\"container\"><div class=\"receipt\">");
-                    sb.append("<div class=\"company\">VJS LAUNDRY S.A.C.</div>");
-                    sb.append("<div class=\"company-sub\">Av. Agustín de la Rosa Toro 318, San Luis 15021<br>R.U.C. N° 20602340466</div>");
+                    sb.append("<div class=\"company\">LAVANDERIA SEPRIET</div>");
+                    sb.append("<div class=\"company-sub\">Enrique Nerini 995, San Luis 15021</div>");
                     // Tipo label and code
                     String tipoLabel = switch (tipo == null ? "" : tipo) {
                         case "B" -> "BOLETA DE VENTA ELECTRÓNICA";
