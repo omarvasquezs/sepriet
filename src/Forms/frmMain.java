@@ -126,6 +126,37 @@ public class frmMain extends javax.swing.JFrame {
                 openComprobantesFrame(frmConsultarComprobantes.Mode.TODOS);
             }
         });
+        menuReportesFinancieros.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                // close existing instances first
+                for (javax.swing.JInternalFrame f : desktopPane.getAllFrames()) {
+                    if (f instanceof frmReporteFinanciero) {
+                        try {
+                            f.setClosed(true);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+                frmReporteFinanciero frm = new frmReporteFinanciero();
+                desktopPane.add(frm);
+                frm.setVisible(true);
+            }
+        });
+        menuReportesCargaTrabajo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                for (javax.swing.JInternalFrame f : desktopPane.getAllFrames()) {
+                    if (f instanceof frmReporteTrabajo) {
+                        try {
+                            f.setClosed(true);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+                frmReporteTrabajo frm = new frmReporteTrabajo();
+                desktopPane.add(frm);
+                frm.setVisible(true);
+            }
+        });
     }
 
     private void menuConsultarClientsAction() {
