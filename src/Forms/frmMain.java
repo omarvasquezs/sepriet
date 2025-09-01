@@ -176,6 +176,19 @@ public class frmMain extends javax.swing.JFrame {
                 frm.setVisible(true);
             }
         });
+        // Servicios menu - open internal frame (CRUD servicios)
+        menuAvanzadoServicios.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                for (javax.swing.JInternalFrame f : desktopPane.getAllFrames()) {
+                    if (f instanceof frmServicios) {
+                        try { f.setClosed(true); } catch (Exception ignored) {}
+                    }
+                }
+                frmServicios frm = new frmServicios();
+                desktopPane.add(frm);
+                frm.setVisible(true);
+            }
+        });
     }
 
     private void menuConsultarClientsAction() {
