@@ -121,6 +121,11 @@ public class frmMain extends javax.swing.JFrame {
             }
         });
         menuConsultarClientsAction();
+        menuReportesHistorico.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                openComprobantesFrame(frmConsultarComprobantes.Mode.TODOS);
+            }
+        });
     }
 
     private void menuConsultarClientsAction() {
