@@ -157,6 +157,11 @@ public class frmMain extends javax.swing.JFrame {
                 frm.setVisible(true);
             }
         });
+        menuReportesExportarComprobantes.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ExportComprobantes.exportAllToCsv(frmMain.this);
+            }
+        });
     }
 
     private void menuConsultarClientsAction() {
