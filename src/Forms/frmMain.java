@@ -162,6 +162,20 @@ public class frmMain extends javax.swing.JFrame {
                 ExportComprobantes.exportAllToCsv(frmMain.this);
             }
         });
+        // Usuarios menu - open internal frame (CRUD)
+        menuAvanzadoUsuarios.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                // Close any existing instances first
+                for (javax.swing.JInternalFrame f : desktopPane.getAllFrames()) {
+                    if (f instanceof frmUsuarios) {
+                        try { f.setClosed(true); } catch (Exception ignored) {}
+                    }
+                }
+                frmUsuarios frm = new frmUsuarios();
+                desktopPane.add(frm);
+                frm.setVisible(true);
+            }
+        });
     }
 
     private void menuConsultarClientsAction() {
