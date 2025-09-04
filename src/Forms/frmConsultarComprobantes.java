@@ -286,11 +286,11 @@ public class frmConsultarComprobantes extends JInternalFrame {
     sb.append(".footer{margin-top:10px;text-align:center;font-weight:700;} ");
     sb.append("</style></head><body>");
 
-    String telefono = null;
-    try (Connection conn = DatabaseConfig.getConnection()) {
+        String telefonoCliente = null;
+         try (Connection conn = DatabaseConfig.getConnection()) {
             // Header
-        String hdrSql = "SELECT c.tipo_comprobante,c.cod_comprobante,c.fecha,c.num_ruc,c.razon_social,c.costo_total, "
-            + "cl.nombres,cl.dni,cl.direccion,cl.telefono,ec.nom_estado as estado_comprobante "
+            String hdrSql = "SELECT c.tipo_comprobante,c.cod_comprobante,c.fecha,c.num_ruc,c.razon_social,c.costo_total, "
+                    + "cl.nombres,cl.dni,cl.direccion,cl.telefono,ec.nom_estado as estado_comprobante "
                     + "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id WHERE c.id=?";
             try (PreparedStatement ph = conn.prepareStatement(hdrSql)) {
                 ph.setInt(1, id);
@@ -307,7 +307,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     String cliente = rh.getString("nombres");
                     String dni = rh.getString("dni");
                     String direccion = rh.getString("direccion");
-                    telefono = rh.getString("telefono");
+                    telefonoCliente = rh.getString("telefono");
                     String estado = rh.getString("estado_comprobante");
 
                     sb.append("<div class=\"container\"><div class=\"receipt\">");
@@ -388,8 +388,17 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
         sb.append("</body></html>");
 
+    // Embed receipt id inside HTML as a comment so preview can always retrieve it
+    sb.append("<!--RECEIPT_ID:" + id + "-->");
+
     DlgPrintPreview dlg = new DlgPrintPreview(SwingUtilities.getWindowAncestor(this), pxWidth);
-    dlg.showForHtml(sb.toString(), telefono);
+    // pass the selected comprobante id so the preview dialog can use it when sending
+    dlg.getRootPane().putClientProperty("receiptId", id.toString());
+    // pass telefonoCliente (may be null) so the preview dialog can prefill send dialog
+    dlg.showForHtml(sb.toString(), telefonoCliente);
+
+    // Debugging: Print the selected ID
+    System.out.println("Selected Comprobante ID: " + id);
     }
 
     private Integer getSelectedId() {
