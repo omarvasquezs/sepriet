@@ -41,8 +41,7 @@ target/
 .gradle/
 out/
 
-# Ignore database settings file
-db_settings.properties
+# Ignore database settings file (now using JSON)
 db_settings.json
 
 # API files
