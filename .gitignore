@@ -43,6 +43,7 @@ out/
 
 # Ignore database settings file
 db_settings.properties
+db_settings.json
 
 # API files
 textmebot_api.json
