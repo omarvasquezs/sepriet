@@ -51,6 +51,20 @@ public class frmDB extends javax.swing.JFrame {
         } catch (java.io.IOException ex) {
             javax.swing.JOptionPane.showMessageDialog(this, "Failed to Load Settings: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
+
+        // Load textmebot_api.json (if present) into txtApiTextmebot
+        try {
+            java.nio.file.Path jsonPath = java.nio.file.Paths.get("textmebot_api.json");
+            if (java.nio.file.Files.exists(jsonPath)) {
+                String json = new String(java.nio.file.Files.readAllBytes(jsonPath), java.nio.charset.StandardCharsets.UTF_8);
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"textmebot_api\"\\s*:\\s*\"([^\"]*)\"").matcher(json);
+                if (m.find()) {
+                    txtApiTextmebot.setText(m.group(1));
+                }
+            }
+        } catch (java.io.IOException ioe) {
+            logger.log(java.util.logging.Level.WARNING, "Could not read textmebot_api.json", ioe);
+        }
     }
 
     /**
@@ -272,6 +286,23 @@ public class frmDB extends javax.swing.JFrame {
                     "Failed to save settings: " + ioex.getMessage(),
                     "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             return;
+        }
+
+        // If API key field has text, save/update textmebot_api.json (same format as attached file)
+        String apiKey = txtApiTextmebot.getText() != null ? txtApiTextmebot.getText().trim() : "";
+        if (!apiKey.isEmpty()) {
+            java.nio.file.Path jsonPath = java.nio.file.Paths.get("textmebot_api.json");
+            // escape backslashes and quotes in the value
+            String escaped = apiKey.replace("\\", "\\\\").replace("\"", "\\\"");
+            String jsonContent = "{\"textmebot_api\":\"" + escaped + "\"}";
+            try (java.io.FileWriter fw = new java.io.FileWriter(jsonPath.toFile(), false)) {
+                fw.write(jsonContent);
+            } catch (java.io.IOException jex) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "Failed to save API file: " + jex.getMessage(),
+                        "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                // continue; do not abort DB connection test because of JSON write failure
+            }
         }
 
         // Test the connection with saved values
