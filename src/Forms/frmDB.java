@@ -76,6 +76,8 @@ public class frmDB extends javax.swing.JFrame {
         btnTestConnection = new javax.swing.JButton();
         btnSaveSettings = new javax.swing.JButton();
         btnRegresar = new javax.swing.JButton();
+        lblApiTextmebot = new javax.swing.JLabel();
+        txtApiTextmebot = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("CONFIGURACIÓN BASE DE DATOS");
@@ -141,19 +143,23 @@ public class frmDB extends javax.swing.JFrame {
             }
         });
 
+        lblApiTextmebot.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        lblApiTextmebot.setText("TEXTMEBOT API:");
+
+        txtApiTextmebot.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(37, 37, 37)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(lblApiTextmebot)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(btnSaveSettings)
+                        .addComponent(btnSaveSettings, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnTestConnection)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnRegresar))
+                        .addComponent(btnRegresar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblDB)
@@ -170,7 +176,9 @@ public class frmDB extends javax.swing.JFrame {
                                 .addComponent(txtDatabase, javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(txtHost, javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(txtPassword)
-                                .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(txtApiTextmebot, javax.swing.GroupLayout.PREFERRED_SIZE, 272, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addComponent(btnTestConnection, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(37, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -198,9 +206,14 @@ public class frmDB extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblUsername1)
                     .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 31, Short.MAX_VALUE)
+                .addGap(26, 26, 26)
+                .addComponent(btnTestConnection)
+                .addGap(23, 23, 23)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnTestConnection)
+                    .addComponent(lblApiTextmebot)
+                    .addComponent(txtApiTextmebot, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnSaveSettings)
                     .addComponent(btnRegresar))
                 .addGap(35, 35, 35))
@@ -316,12 +329,14 @@ public class frmDB extends javax.swing.JFrame {
     private javax.swing.JButton btnRegresar;
     private javax.swing.JButton btnSaveSettings;
     private javax.swing.JButton btnTestConnection;
+    private javax.swing.JLabel lblApiTextmebot;
     private javax.swing.JLabel lblDB;
     private javax.swing.JLabel lblHost;
     private javax.swing.JLabel lblPort;
     private javax.swing.JLabel lblTitulo;
     private javax.swing.JLabel lblUsername;
     private javax.swing.JLabel lblUsername1;
+    private javax.swing.JTextField txtApiTextmebot;
     private javax.swing.JTextField txtDatabase;
     private javax.swing.JTextField txtHost;
     private javax.swing.JPasswordField txtPassword;
