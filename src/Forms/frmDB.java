@@ -5,66 +5,101 @@
 package Forms;
 
 import java.awt.Color;
-/* imports Connection/SQLException/JOptionPane are not needed after refactor */
 
 /**
- *
- * @author omarv
+ * frmDB - ventana de configuración de base de datos
  */
 public class frmDB extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(frmDB.class.getName());
 
-    /**
-     * Creates new form frmDbSettings
-     */
     public frmDB() {
         initComponents();
         getContentPane().setBackground(Color.WHITE);
-        // Center window on screen
         setLocationRelativeTo(null);
-        // Disable maximize button
         setResizable(false);
-        loadSettings(); // Load settings when the form is opened
-        // Set window icon
+        // Cargar ajustes al abrir
+        loadSettings();
         setIconImage(new javax.swing.ImageIcon(getClass().getResource("/Forms/icon.png")).getImage());
-        // strips LAF effects
         btnRegresar.setUI(new javax.swing.plaf.basic.BasicButtonUI());
         btnSaveSettings.setUI(new javax.swing.plaf.basic.BasicButtonUI());
         btnTestConnection.setUI(new javax.swing.plaf.basic.BasicButtonUI());
-        // Mouse point on hover
         btnRegresar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnSaveSettings.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnTestConnection.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
     }
 
     private void loadSettings() {
-        try (java.io.FileInputStream fis = new java.io.FileInputStream("db_settings.properties")) {
-            java.util.Properties props = new java.util.Properties();
-            props.load(fis);
-
-            txtHost.setText(props.getProperty("db.host", "localhost"));
-            txtPort.setText(props.getProperty("db.port", "3306"));
-            txtDatabase.setText(props.getProperty("db.database", ""));
-            txtUsername.setText(props.getProperty("db.username", "root"));
-            txtPassword.setText(props.getProperty("db.password", ""));
-        } catch (java.io.IOException ex) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Failed to Load Settings: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        // Preferir db_settings.json
+        java.nio.file.Path dbJsonPath = java.nio.file.Paths.get("db_settings.json");
+        if (java.nio.file.Files.exists(dbJsonPath)) {
+            try {
+                String json = new String(java.nio.file.Files.readAllBytes(dbJsonPath), java.nio.charset.StandardCharsets.UTF_8);
+                txtHost.setText(getJsonValue(json, "db.host", "localhost"));
+                txtPort.setText(getJsonValue(json, "db.port", "3306"));
+                txtDatabase.setText(getJsonValue(json, "db.database", ""));
+                txtUsername.setText(getJsonValue(json, "db.username", "root"));
+                txtPassword.setText(getJsonValue(json, "db.password", ""));
+            } catch (java.io.IOException ioe) {
+                logger.log(java.util.logging.Level.WARNING, "No se pudo leer db_settings.json", ioe);
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "Error al leer db_settings.json: " + ioe.getMessage(),
+                        "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                setDefaults();
+            }
+        } else {
+            java.nio.file.Path propsPath = java.nio.file.Paths.get("db_settings.properties");
+            if (java.nio.file.Files.exists(propsPath)) {
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(propsPath.toFile())) {
+                    java.util.Properties props = new java.util.Properties();
+                    props.load(fis);
+                    txtHost.setText(props.getProperty("db.host", "localhost"));
+                    txtPort.setText(props.getProperty("db.port", "3306"));
+                    txtDatabase.setText(props.getProperty("db.database", ""));
+                    txtUsername.setText(props.getProperty("db.username", "root"));
+                    txtPassword.setText(props.getProperty("db.password", ""));
+                } catch (java.io.IOException ex) {
+                    logger.log(java.util.logging.Level.WARNING, "No se pudo leer db_settings.properties", ex);
+                    javax.swing.JOptionPane.showMessageDialog(this,
+                            "Error al leer db_settings.properties: " + ex.getMessage(),
+                            "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                    setDefaults();
+                }
+            } else {
+                setDefaults();
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "No se encontró un archivo de configuración. Se usarán valores por defecto.",
+                        "Información", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            }
         }
 
-        // Load textmebot_api.json (if present) into txtApiTextmebot
+        // Cargar textmebot_api.json si existe
         try {
             java.nio.file.Path jsonPath = java.nio.file.Paths.get("textmebot_api.json");
             if (java.nio.file.Files.exists(jsonPath)) {
                 String json = new String(java.nio.file.Files.readAllBytes(jsonPath), java.nio.charset.StandardCharsets.UTF_8);
                 java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"textmebot_api\"\\s*:\\s*\"([^\"]*)\"").matcher(json);
-                if (m.find()) {
-                    txtApiTextmebot.setText(m.group(1));
-                }
+                if (m.find()) txtApiTextmebot.setText(m.group(1));
             }
         } catch (java.io.IOException ioe) {
-            logger.log(java.util.logging.Level.WARNING, "Could not read textmebot_api.json", ioe);
+            logger.log(java.util.logging.Level.WARNING, "No se pudo leer textmebot_api.json", ioe);
         }
+    }
+
+    private void setDefaults() {
+        txtHost.setText("localhost");
+        txtPort.setText("3306");
+        txtDatabase.setText("");
+        txtUsername.setText("root");
+        txtPassword.setText("");
+    }
+
+    private String getJsonValue(String json, String key, String defaultValue) {
+        if (json == null) return defaultValue;
+        String pattern = "\\\"" + java.util.regex.Pattern.quote(key) + "\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"";
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(pattern).matcher(json);
+        if (m.find()) return m.group(1);
+        return defaultValue;
     }
 
     /**
@@ -271,22 +306,25 @@ public class frmDB extends javax.swing.JFrame {
         String username = txtUsername.getText();
         String password = new String(txtPassword.getPassword());
 
-        // Persist to properties file
-        java.util.Properties props = new java.util.Properties();
-        props.setProperty("db.host", host);
-        props.setProperty("db.port", port);
-        props.setProperty("db.database", database);
-        props.setProperty("db.username", username);
-        props.setProperty("db.password", password);
-
-        try (java.io.FileOutputStream fos = new java.io.FileOutputStream("db_settings.properties")) {
-            props.store(fos, "Database Settings");
-        } catch (java.io.IOException ioex) {
-            javax.swing.JOptionPane.showMessageDialog(this,
-                    "Failed to save settings: " + ioex.getMessage(),
-                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+    // Persist settings to JSON only (db_settings.json)
+    java.nio.file.Path dbJsonPath = java.nio.file.Paths.get("db_settings.json");
+    // Escape values for JSON
+    java.util.function.UnaryOperator<String> esc = s -> s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
+    String json = "{"
+        + "\"db.host\":\"" + esc.apply(host) + "\"," 
+        + "\"db.port\":\"" + esc.apply(port) + "\"," 
+        + "\"db.database\":\"" + esc.apply(database) + "\"," 
+        + "\"db.username\":\"" + esc.apply(username) + "\"," 
+        + "\"db.password\":\"" + esc.apply(password) + "\""
+        + "}";
+    try (java.io.FileWriter fw = new java.io.FileWriter(dbJsonPath.toFile(), false)) {
+        fw.write(json);
+    } catch (java.io.IOException ioex) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Error al guardar configuración: " + ioex.getMessage(),
+            "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        return;
+    }
 
         // If API key field has text, save/update textmebot_api.json (same format as attached file)
         String apiKey = txtApiTextmebot.getText() != null ? txtApiTextmebot.getText().trim() : "";
@@ -310,9 +348,9 @@ public class frmDB extends javax.swing.JFrame {
         try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, username, password)) {
             try {
                 if (conn != null && conn.isValid(2)) {
-                    javax.swing.JOptionPane.showMessageDialog(this, "Settings saved and connection successful!", "Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                    javax.swing.JOptionPane.showMessageDialog(this, "Configuración guardada y conexión exitosa!", "Éxito", javax.swing.JOptionPane.INFORMATION_MESSAGE);
                 } else {
-                    javax.swing.JOptionPane.showMessageDialog(this, "Conexión Fallida: conexión no válida", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                    javax.swing.JOptionPane.showMessageDialog(this, "Conexión fallida: conexión no válida", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
                 }
             } catch (java.sql.SQLException innerEx) {
                 javax.swing.JOptionPane.showMessageDialog(this, "Conexión Fallida: " + innerEx.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
