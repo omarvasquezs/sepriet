@@ -47,31 +47,13 @@ public class frmDB extends javax.swing.JFrame {
                         "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
                 setDefaults();
             }
-        } else {
-            java.nio.file.Path propsPath = java.nio.file.Paths.get("db_settings.properties");
-            if (java.nio.file.Files.exists(propsPath)) {
-                try (java.io.FileInputStream fis = new java.io.FileInputStream(propsPath.toFile())) {
-                    java.util.Properties props = new java.util.Properties();
-                    props.load(fis);
-                    txtHost.setText(props.getProperty("db.host", "localhost"));
-                    txtPort.setText(props.getProperty("db.port", "3306"));
-                    txtDatabase.setText(props.getProperty("db.database", ""));
-                    txtUsername.setText(props.getProperty("db.username", "root"));
-                    txtPassword.setText(props.getProperty("db.password", ""));
-                } catch (java.io.IOException ex) {
-                    logger.log(java.util.logging.Level.WARNING, "No se pudo leer db_settings.properties", ex);
-                    javax.swing.JOptionPane.showMessageDialog(this,
-                            "Error al leer db_settings.properties: " + ex.getMessage(),
-                            "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
-                    setDefaults();
-                }
-            } else {
-                setDefaults();
-                javax.swing.JOptionPane.showMessageDialog(this,
-                        "No se encontró un archivo de configuración. Se usarán valores por defecto.",
-                        "Información", javax.swing.JOptionPane.INFORMATION_MESSAGE);
-            }
-        }
+    } else {
+        // JSON-only policy: if db_settings.json no existe, usar valores por defecto y notificar
+        setDefaults();
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "No se encontró 'db_settings.json'. Se usarán valores por defecto. Para persistir, guarde la configuración.",
+            "Información", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+    }
 
         // Cargar textmebot_api.json si existe
         try {
