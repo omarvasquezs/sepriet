@@ -4,12 +4,10 @@
  */
 package Forms;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
 
 /**
  *
@@ -17,41 +15,51 @@ import java.util.Properties;
  */
 public class DatabaseConfig {
 
-    private static final String PROPS_FILE = "db_settings.properties";
-    private static final Properties props = new Properties();
+    private static final String JSON_FILE = "db_settings.json";
 
     /**
-     * Returns a new Connection using settings from db_settings.properties.
+     * Returns a new Connection using settings from db_settings.json (JSON-only).
      *
-     * @return 
+     * @return a live SQL Connection
      * @throws SQLException if connection fails
-     * @throws IllegalStateException if any property is missing or empty
+     * @throws IllegalStateException if the JSON file is missing or contains invalid/missing fields
      */
     public static Connection getConnection() throws SQLException {
-        // Load properties from file each time so changes are reflected immediately
-        try (FileInputStream fis = new FileInputStream(PROPS_FILE)) {
-            props.load(fis);
-        } catch (IOException e) {
-            throw new IllegalStateException("Error loading " + PROPS_FILE + ": " + e.getMessage(), e);
+        java.nio.file.Path jsonPath = java.nio.file.Paths.get(JSON_FILE);
+        if (!java.nio.file.Files.exists(jsonPath)) {
+            throw new IllegalStateException(JSON_FILE + " no encontrado. Asegúrate de crear " + JSON_FILE);
         }
 
-        String host = props.getProperty("db.host");
-        String port = props.getProperty("db.port");
-        String database = props.getProperty("db.database");
-        String user = props.getProperty("db.username");
-        String pass = props.getProperty("db.password");
+        String json;
+        try {
+            json = new String(java.nio.file.Files.readAllBytes(jsonPath), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException("Error leyendo " + JSON_FILE + ": " + e.getMessage(), e);
+        }
 
-        if (host == null || host.isBlank()
-                || port == null || port.isBlank()
-                || database == null || database.isBlank()
-                || user == null || user.isBlank()
-                || pass == null) {
-            throw new IllegalStateException(
-                    "db_settings.properties incompleto: configurar db.host, db.port, "
-                    + "db.database, db.username, db.password");
+        String host = extract(json, "db.host");
+        String port = extract(json, "db.port");
+        String database = extract(json, "db.database");
+        String user = extract(json, "db.username");
+        String pass = extract(json, "db.password");
+
+        if (isEmpty(host) || isEmpty(port) || isEmpty(database) || isEmpty(user) || pass == null) {
+            throw new IllegalStateException(JSON_FILE + " incompleto: configurar db.host, db.port, db.database, db.username, db.password");
         }
 
         String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
         return DriverManager.getConnection(url, user, pass);
+    }
+
+    private static boolean isEmpty(String s) {
+        return s == null || s.isBlank();
+    }
+
+    private static String extract(String json, String key) {
+        if (json == null) return null;
+        String pattern = "\\\"" + java.util.regex.Pattern.quote(key) + "\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"";
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(pattern).matcher(json);
+        if (m.find()) return m.group(1);
+        return null;
     }
 }
