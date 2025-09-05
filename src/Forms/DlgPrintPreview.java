@@ -183,8 +183,9 @@ public class DlgPrintPreview extends JDialog {
         String html = editor.getText();
         String message = htmlToPlainText(html);
 
-        // Append database details to the message
+        // Append database details to the message, then add closing footer so it is last
         message += "\n" + receiptDetails;
+        message = message.trim();
 
         try {
             String req = "https://api.textmebot.com/send.php?recipient=" + java.net.URLEncoder.encode(recipient, "UTF-8")
@@ -216,10 +217,65 @@ public class DlgPrintPreview extends JDialog {
     // Convert a fragment of receipt HTML into a compact plain-text message
     private String htmlToPlainText(String html) {
         if (html == null) return "";
-        // Replace <br> and </p> tags with newlines
-        String t = html.replaceAll("(?i)<br\\s*/?>", "\n").replaceAll("<\\s*/p\\s*>", "\n");
-        // Remove all other HTML tags but keep their inner text
-        t = t.replaceAll("<[^>]+>", "");
+    // Normalize and preserve structural breaks so table rows/cells and list items
+    // become separate lines when tags are stripped.
+    String t = html;
+    // Common line breaks
+    t = t.replaceAll("(?i)<br\\s*/?>", "\n").replaceAll("(?i)<\\s*/p\\s*>", "\n");
+    // End of table rows and tables -> newline
+    t = t.replaceAll("(?i)</tr>|</tbody>|</table>", "\n");
+    // Table cells -> separator
+    t = t.replaceAll("(?i)</td>|</th>", " | ");
+    // Remove opening cell/th tags
+    t = t.replaceAll("(?i)<td[^>]*>", "").replaceAll("(?i)<th[^>]*>", "");
+    // List items
+    t = t.replaceAll("(?i)<li[^>]*>", "- ").replaceAll("(?i)</li>", "\n");
+    // Remove remaining tags but keep inner text
+    t = t.replaceAll("<[^>]+>", "");
+        // Additionally, try to extract table rows directly from the raw HTML so
+        // we can recover item detail rows even if the simple tag-stripping
+        // logic split them incorrectly.
+        java.util.List<String> tableRows = new java.util.ArrayList<>();
+        try {
+            java.util.regex.Pattern tableP = java.util.regex.Pattern.compile("(?is)<table[^>]*>(.*?)</table>");
+            java.util.regex.Matcher tableM = tableP.matcher(html);
+            while (tableM.find()) {
+                String tableHtml = tableM.group(1);
+                java.util.regex.Pattern trP = java.util.regex.Pattern.compile("(?is)<tr[^>]*>(.*?)</tr>");
+                java.util.regex.Matcher trM = trP.matcher(tableHtml);
+                while (trM.find()) {
+                    String trHtml = trM.group(1);
+                    java.util.regex.Pattern cellP = java.util.regex.Pattern.compile("(?is)<t[dh][^>]*>(.*?)</t[dh]>");
+                    java.util.regex.Matcher cellM = cellP.matcher(trHtml);
+                    java.util.List<String> cells = new java.util.ArrayList<>();
+                    while (cellM.find()) {
+                        String cellHtml = cellM.group(1);
+                        String cellText = cellHtml.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
+                        if (cellText.isEmpty()) continue;
+                        // basic entity decode for common entities and numeric entities
+                        cellText = cellText.replaceAll("&nbsp;", " ").replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&quot;", "\"");
+                        java.util.regex.Pattern entP2 = java.util.regex.Pattern.compile("&#(\\d+);");
+                        java.util.regex.Matcher entM2 = entP2.matcher(cellText);
+                        StringBuffer sb2 = new StringBuffer();
+                        while (entM2.find()) {
+                            try {
+                                int code = Integer.parseInt(entM2.group(1));
+                                entM2.appendReplacement(sb2, java.util.regex.Matcher.quoteReplacement(Character.toString((char) code)));
+                            } catch (Exception ex) {
+                                entM2.appendReplacement(sb2, "");
+                            }
+                        }
+                        entM2.appendTail(sb2);
+                        cellText = sb2.toString();
+                        cells.add(cellText);
+                    }
+                    if (!cells.isEmpty()) {
+                        tableRows.add(String.join(" | ", cells));
+                    }
+                }
+            }
+        } catch (Exception ignore) {
+        }
         // Decode common HTML entities
         t = t.replaceAll("&nbsp;", " ").replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&quot;", "\"");
         // Decode numeric entities like &#225;
@@ -239,10 +295,33 @@ public class DlgPrintPreview extends JDialog {
 
         // Split lines and trim
         String[] lines = t.split("\\r?\\n");
-        java.util.List<String> L = new java.util.ArrayList<>();
+        java.util.List<String> raw = new java.util.ArrayList<>();
         for (String line : lines) {
             String s2 = line.replaceAll("\\s+", " ").trim();
-            if (!s2.isEmpty()) L.add(s2);
+            if (!s2.isEmpty()) raw.add(s2);
+        }
+
+        // Re-group fragments that were split into separate entries by cell separators
+        // e.g. ["SERVICIO","|","PESO","|","C/ KG","|"] -> ["SERVICIO | PESO | C/ KG"]
+        java.util.List<String> L = new java.util.ArrayList<>();
+        for (int i = 0; i < raw.size(); i++) {
+            String cur = raw.get(i);
+            if (cur.matches("^\\|\\s*$")) {
+                // stray separator without left-hand text: skip
+                continue;
+            }
+            StringBuilder sb = new StringBuilder(cur);
+            int j = i + 1;
+            while (j + 0 < raw.size()) {
+                String maybeSep = raw.get(j);
+                if (!maybeSep.matches("^\\|\\s*$")) break;
+                if (j + 1 >= raw.size()) break;
+                String nextText = raw.get(j + 1);
+                sb.append(" | ").append(nextText);
+                j += 2;
+            }
+            L.add(sb.toString());
+            i = Math.max(i, j - 1);
         }
 
         // Heuristics: build a friendlier message
@@ -293,12 +372,11 @@ public class DlgPrintPreview extends JDialog {
         // Attach details
         for (String it : itemLines) out.append(it).append("\n");
         out.append("\n");
-
         // Totals
         for (String totalLine : totalLines) {
             out.append(totalLine).append("\n");
         }
-        out.append("\nGracias por su preferencia!");
+        out.append("\n");
 
         String msg = out.toString().trim();
         if (msg.length() > 3000) msg = msg.substring(0, 3000) + "...";
