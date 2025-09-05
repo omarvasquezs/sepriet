@@ -40,12 +40,10 @@ public class DlgPrintPreview extends JDialog {
     JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
     top.add(btnPrint);
     top.add(btnSend);
-    // small URL panel (hidden by default)
+    // small URL panel (hidden by default) - label removed, keep only the text field
     JPanel urlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-    JLabel urlLabel = new JLabel("URL pública:");
     txtPublicUrl.setEditable(false);
     txtPublicUrl.setVisible(false);
-    urlPanel.add(urlLabel);
     urlPanel.add(txtPublicUrl);
 
     getContentPane().setLayout(new BorderLayout());
