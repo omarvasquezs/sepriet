@@ -38,11 +38,6 @@ public class frmMain extends javax.swing.JFrame {
         menuConsultarComprobantesNoCancelados.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuConsultarComprobantesCancelados.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuConsultarClientes.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuAvanzadoEstadoComprobantes.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuAvanzadoEstadoRopa.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuAvanzadoLocales.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuAvanzadoMetodosPago.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuAvanzadoRoles.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuAvanzadoServicios.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuAvanzadoUsuarios.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuReportesFinancieros.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -247,7 +242,7 @@ public class frmMain extends javax.swing.JFrame {
      */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated
-    // Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         desktopPane = new javax.swing.JDesktopPane();
@@ -261,11 +256,6 @@ public class frmMain extends javax.swing.JFrame {
         menuConsultarComprobantesCancelados = new javax.swing.JMenuItem();
         menuConsultarClientes = new javax.swing.JMenuItem();
         menuOpcionesAvanzadas = new javax.swing.JMenu();
-        menuAvanzadoEstadoComprobantes = new javax.swing.JMenuItem();
-        menuAvanzadoEstadoRopa = new javax.swing.JMenuItem();
-        menuAvanzadoLocales = new javax.swing.JMenuItem();
-        menuAvanzadoMetodosPago = new javax.swing.JMenuItem();
-        menuAvanzadoRoles = new javax.swing.JMenuItem();
         menuAvanzadoServicios = new javax.swing.JMenuItem();
         menuAvanzadoUsuarios = new javax.swing.JMenuItem();
         menuReportes = new javax.swing.JMenu();
@@ -283,17 +273,18 @@ public class frmMain extends javax.swing.JFrame {
         javax.swing.GroupLayout desktopPaneLayout = new javax.swing.GroupLayout(desktopPane);
         desktopPane.setLayout(desktopPaneLayout);
         desktopPaneLayout.setHorizontalGroup(
-                desktopPaneLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGap(0, 1132, Short.MAX_VALUE));
+            desktopPaneLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 1132, Short.MAX_VALUE)
+        );
         desktopPaneLayout.setVerticalGroup(
-                desktopPaneLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGap(0, 524, Short.MAX_VALUE));
+            desktopPaneLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 524, Short.MAX_VALUE)
+        );
 
         menuRegistrar.setText("Registrar");
         menuRegistrar.setMargin(new java.awt.Insets(3, 8, 3, 8));
 
-        menuRegistrarComprobante.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N,
-                java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        menuRegistrarComprobante.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         menuRegistrarComprobante.setText("Comprobante");
         menuRegistrarComprobante.setMargin(new java.awt.Insets(3, 6, 4, 6));
         menuRegistrarComprobante.addActionListener(new java.awt.event.ActionListener() {
@@ -332,26 +323,6 @@ public class frmMain extends javax.swing.JFrame {
 
         menuOpcionesAvanzadas.setText("Opciones Avanzadas");
         menuOpcionesAvanzadas.setMargin(new java.awt.Insets(3, 8, 3, 8));
-
-        menuAvanzadoEstadoComprobantes.setText("Estado Comprobantes");
-        menuAvanzadoEstadoComprobantes.setMargin(new java.awt.Insets(3, 6, 4, 6));
-        menuOpcionesAvanzadas.add(menuAvanzadoEstadoComprobantes);
-
-        menuAvanzadoEstadoRopa.setText("Estado Ropa");
-        menuAvanzadoEstadoRopa.setMargin(new java.awt.Insets(3, 6, 4, 6));
-        menuOpcionesAvanzadas.add(menuAvanzadoEstadoRopa);
-
-        menuAvanzadoLocales.setText("Locales");
-        menuAvanzadoLocales.setMargin(new java.awt.Insets(3, 6, 4, 6));
-        menuOpcionesAvanzadas.add(menuAvanzadoLocales);
-
-        menuAvanzadoMetodosPago.setText("Métodos de Pago");
-        menuAvanzadoMetodosPago.setMargin(new java.awt.Insets(3, 6, 4, 6));
-        menuOpcionesAvanzadas.add(menuAvanzadoMetodosPago);
-
-        menuAvanzadoRoles.setText("Roles");
-        menuAvanzadoRoles.setMargin(new java.awt.Insets(3, 6, 4, 6));
-        menuOpcionesAvanzadas.add(menuAvanzadoRoles);
 
         menuAvanzadoServicios.setText("Servicios");
         menuAvanzadoServicios.setMargin(new java.awt.Insets(3, 6, 4, 6));
@@ -393,11 +364,13 @@ public class frmMain extends javax.swing.JFrame {
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(desktopPane));
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(desktopPane)
+        );
         layout.setVerticalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(desktopPane));
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(desktopPane)
+        );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -486,11 +459,6 @@ public class frmMain extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JDesktopPane desktopPane;
     private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JMenuItem menuAvanzadoEstadoComprobantes;
-    private javax.swing.JMenuItem menuAvanzadoEstadoRopa;
-    private javax.swing.JMenuItem menuAvanzadoLocales;
-    private javax.swing.JMenuItem menuAvanzadoMetodosPago;
-    private javax.swing.JMenuItem menuAvanzadoRoles;
     private javax.swing.JMenuItem menuAvanzadoServicios;
     private javax.swing.JMenuItem menuAvanzadoUsuarios;
     private javax.swing.JMenu menuConsultar;
