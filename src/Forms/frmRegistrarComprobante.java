@@ -32,6 +32,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import javax.swing.text.JTextComponent;
 import javax.swing.event.TableModelEvent;
 import java.util.Vector;
@@ -239,7 +241,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             // editor placeholder visual in focusLost.
             // However, keep an action listener so when the selected item changes and the
             // editor is not focused we reflect the selection in the editor for clarity.
-            combo.addActionListener((ActionEvent e) -> {
+            combo.addActionListener(ae -> {
                 try {
                     if (!tc.isFocusOwner()) {
                         Object sel = combo.getSelectedItem();
@@ -258,6 +260,39 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 } catch (Exception ignored) {
                 }
             });
+            // If this combo is the servicio selector, pressing Enter when the editor
+            // text matches an existing model item should simulate the "AÑADIR AL
+            // COMPROBANTE" button.
+            if (combo == cbxServicio) {
+                tc.addKeyListener(new KeyAdapter() {
+                    @Override
+                    public void keyPressed(KeyEvent ke) {
+                        if (ke.getKeyCode() == KeyEvent.VK_ENTER) {
+                            String ed = tc.getText() == null ? "" : tc.getText().trim();
+                            if (ed.isEmpty() || ed.startsWith("--"))
+                                return;
+                            ComboBoxModel<String> m = combo.getModel();
+                            String found = null;
+                            for (int i = 0; i < m.getSize(); i++) {
+                                String it = m.getElementAt(i);
+                                if (it != null && it.equalsIgnoreCase(ed)) {
+                                    found = it;
+                                    break;
+                                }
+                            }
+                            if (found != null) {
+                                // select canonical value and simulate button click
+                                combo.setSelectedItem(found);
+                                // small deferred click to allow selection to settle
+                                javax.swing.SwingUtilities.invokeLater(() -> btnAgregarServicioComprobante.doClick());
+                            }
+                        }
+                    }
+                });
+
+                // If this combo is the servicio selector, pressing Enter when the editor
+                // (duplicate listener removed)
+            }
         }
     }
 
@@ -286,6 +321,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 // Auto fill with total and disable editing
                 txtMontoAbonado.setText(extractNumeric(jLabel14.getText()));
                 txtMontoAbonado.setEnabled(false);
+
                 cbxMetodoPago.setEnabled(true);
                 break;
             case "DEBE":
@@ -864,11 +900,43 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             } catch (Exception ignore) {
             }
         }
-        // Require an exact match (no free-typed services)
+        // Require an exact match (no free-typed services).
+        // Sometimes the AutoCompleteDecorator commits selection slightly after the
+        // ENTER key event — retry once after a short delay before showing the
+        // validation dialog. Use a one-shot Swing Timer to give the autocompleter a
+        // chance to finalize the selection.
         if (serviceName == null || serviceName.isEmpty() || serviceName.startsWith("--")) {
-            JOptionPane.showMessageDialog(this,
-                    "Por favor seleccione un servicio válido.",
-                    "Servicio no seleccionado", JOptionPane.WARNING_MESSAGE);
+            javax.swing.Timer t = new javax.swing.Timer(50, ev -> {
+                ((javax.swing.Timer) ev.getSource()).stop();
+                // re-resolve from editor
+                String resolved = null;
+                try {
+                    Object editorItem = cbxServicio.getEditor().getItem();
+                    if (editorItem != null) {
+                        String ed = editorItem.toString().trim();
+                        if (!ed.isEmpty() && !ed.startsWith("--")) {
+                            ComboBoxModel<String> m = cbxServicio.getModel();
+                            for (int i = 0; i < m.getSize(); i++) {
+                                String it = m.getElementAt(i);
+                                if (it != null && it.equalsIgnoreCase(ed)) {
+                                    resolved = it;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ignore) {
+                }
+                if (resolved == null) {
+                    JOptionPane.showMessageDialog(this,
+                            "Por favor seleccione un servicio válido.",
+                            "Servicio no seleccionado", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                finalizeAddService(resolved);
+            });
+            t.setRepeats(false);
+            t.start();
             return;
         }
         // Extra guard: avoid adding a service that is already present in the table (in
@@ -879,18 +947,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                     "Servicio duplicado", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        // Get the price per kg for this service from database
-        double precioPorKg = getPrecioServicio(serviceName);
-        // Add to table with empty PESO field and editable cells
-        addServiceToTable(serviceName, "", String.format("%.2f", precioPorKg), "0.00", "X");
-        // Remove the added service from the combo to prevent duplicates
-        removeServiceFromCombo(serviceName);
-        // Reset the combo box to the placeholder
-        cbxServicio.setSelectedIndex(0);
-        // Set up cell editors for PESO and PRECIO columns if not already set
-        setupTableCellEditors();
-        // Set up delete button renderer/editor
-        setupTableButtons();
+        // perform the add steps
+        finalizeAddService(serviceName);
     }
     // GEN-LAST:event_btnAgregarServicioComprobanteActionPerformed
 
@@ -953,6 +1011,18 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         }
 
         updateTotals();
+    }
+
+    /**
+     * Finalize adding a service (shared path for immediate and deferred flows).
+     */
+    private void finalizeAddService(String serviceName) {
+        double precioPorKg = getPrecioServicio(serviceName);
+        addServiceToTable(serviceName, "", String.format("%.2f", precioPorKg), "0.00", "X");
+        removeServiceFromCombo(serviceName);
+        cbxServicio.setSelectedIndex(0);
+        setupTableCellEditors();
+        setupTableButtons();
     }
 
     /**
