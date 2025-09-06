@@ -57,10 +57,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // make all combo-boxes filter as you type
         AutoCompleteDecorator.decorate(cbxCliente);
         AutoCompleteDecorator.decorate(cbxServicio);
-    // Make combos editable and install placeholder behavior so the placeholder
-    // disappears on click/focus and when the user erases the text it stays empty
-    setupComboPlaceholderBehavior(cbxCliente, "-- Seleccione un cliente --");
-    setupComboPlaceholderBehavior(cbxServicio, "-- Seleccione un servicio --");
+        // Make combos editable and install placeholder behavior so the placeholder
+        // disappears on click/focus and when the user erases the text it stays empty
+        setupComboPlaceholderBehavior(cbxCliente, "-- Seleccione un cliente --");
+        setupComboPlaceholderBehavior(cbxServicio, "-- Seleccione un servicio --");
         this.setSize(1100, 600);
         this.setTitle("REGISTRAR COMPROBANTE");
         // Set the DateTimePicker to the current date and time
@@ -100,17 +100,21 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
             }
         });
-        // Restrict MONTO ABONADO field to integers or decimal numbers (allows e.g., 10, 10.5, 10.50)
+        // Restrict MONTO ABONADO field to integers or decimal numbers (allows e.g., 10,
+        // 10.5, 10.50)
         AbstractDocument montoDoc = (AbstractDocument) txtMontoAbonado.getDocument();
         montoDoc.setDocumentFilter(new DocumentFilter() {
             private boolean isValid(String text) {
-                if (text.isEmpty()) return true; // allow empty while typing
+                if (text.isEmpty())
+                    return true; // allow empty while typing
                 return text.matches("\\d+(\\.\\d*)?"); // digits, optional decimal part
             }
 
             @Override
-            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
-                if (string == null) return;
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if (string == null)
+                    return;
                 StringBuilder sb = new StringBuilder(fb.getDocument().getText(0, fb.getDocument().getLength()));
                 sb.insert(offset, string);
                 if (isValid(sb.toString())) {
@@ -119,8 +123,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
 
             @Override
-            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
-                if (text == null) text = "";
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                if (text == null)
+                    text = "";
                 StringBuilder sb = new StringBuilder(fb.getDocument().getText(0, fb.getDocument().getLength()));
                 sb.replace(offset, offset + length, text);
                 if (isValid(sb.toString())) {
@@ -130,7 +136,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         });
         btnGenerarComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnAgregarNuevoCliente.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-    btnAgregarServicioComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnAgregarServicioComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         // Initialize the state of controls
         toggleRucFields();
         toggleMontoAbonado();
@@ -153,15 +159,17 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
         });
 
-    // Action for generating (saving) the comprobante
-    btnGenerarComprobante.addActionListener(_ -> saveComprobante());
-    btnAgregarNuevoCliente.addActionListener(_ -> openNuevoClienteDialog());
+        // Action for generating (saving) the comprobante
+        btnGenerarComprobante.addActionListener(_ -> saveComprobante());
+        btnAgregarNuevoCliente.addActionListener(_ -> openNuevoClienteDialog());
     }
 
     /**
      * Make a combo editable and ensure placeholder handling:
-     * - when focused or clicked, if the editor text equals the placeholder it is cleared
-     * - if user deletes all text, the editor stays empty (and placeholder is not re-selected)
+     * - when focused or clicked, if the editor text equals the placeholder it is
+     * cleared
+     * - if user deletes all text, the editor stays empty (and placeholder is not
+     * re-selected)
      */
     private void setupComboPlaceholderBehavior(javax.swing.JComboBox<String> combo, String placeholder) {
         combo.setEditable(true);
@@ -173,7 +181,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             // copy existing items if any
             for (int i = 0; i < model.getSize(); i++) {
                 String it = model.getElementAt(i);
-                if (it != null && !it.equals(placeholder)) m.addElement(it);
+                if (it != null && !it.equals(placeholder))
+                    m.addElement(it);
             }
             combo.setModel(m);
         }
@@ -182,54 +191,74 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         java.awt.Component editorComp = combo.getEditor().getEditorComponent();
         if (editorComp instanceof JTextComponent) {
             JTextComponent tc = (JTextComponent) editorComp;
+            // Do NOT prefill the editor here. Prefill only when the editor is not focused
+            // so we don't interfere with autocomplete or user typing.
 
-            // initialize editor text with placeholder if placeholder selected
-            if (combo.getSelectedIndex() == 0) tc.setText(placeholder);
-
-            // When focus gained or clicked, if placeholder present clear it so user types
+            // When focus gained, if the editor currently shows the placeholder, clear it so
+            // user types
             tc.addFocusListener(new FocusAdapter() {
                 @Override
                 public void focusGained(FocusEvent e) {
-                    if (tc.getText() != null && tc.getText().equals(placeholder)) {
-                        tc.setText("");
+                    try {
+                        if (tc.getText() != null && tc.getText().equals(placeholder)) {
+                            tc.setText("");
+                        }
+                    } catch (Exception ignored) {
                     }
                 }
 
                 @Override
                 public void focusLost(FocusEvent e) {
-                    // if user left empty, keep it empty (do not reselect placeholder as selection)
-                    String t = tc.getText();
-                    if (t == null || t.trim().isEmpty()) {
-                        // nothing to select; leave editor empty and set selected index to -1
-                        combo.setSelectedIndex(-1);
-                        tc.setText("");
+                    // If the editor is empty when losing focus and the model still has the
+                    // placeholder as first element, show the placeholder text for visual cue.
+                    try {
+                        String t = tc.getText();
+                        if (t == null || t.trim().isEmpty()) {
+                            if (combo.getModel().getSize() > 0
+                                    && combo.getModel().getElementAt(0).equals(placeholder)) {
+                                tc.setText(placeholder);
+                            } else {
+                                tc.setText("");
+                            }
+                        }
+                    } catch (Exception ignored) {
                     }
                 }
             });
 
-            // mouse click should also clear placeholder
+            // Mouse press: request focus but don't forcibly clear or change selection here.
+            // This avoids clashing with the dropdown selection and the autocomplete
+            // decorator.
             tc.addMouseListener(new MouseAdapter() {
                 @Override
-                public void mouseClicked(java.awt.event.MouseEvent e) {
-                    if (tc.getText() != null && tc.getText().equals(placeholder)) {
-                        tc.setText("");
-                    }
+                public void mousePressed(java.awt.event.MouseEvent e) {
+                    tc.requestFocusInWindow();
                 }
             });
 
-            // Listen to document changes: when user erases everything, ensure combo selection is cleared
-            tc.getDocument().addDocumentListener(new DocumentListener() {
-                private void update() {
-                    String t = tc.getText();
-                    if (t == null || t.trim().isEmpty()) {
-                        // keep combo not selecting the placeholder
-                        combo.setSelectedIndex(-1);
+            // Avoid modifying combo selection from document changes. The autocomplete
+            // and selection model should be the source of truth. We only keep the
+            // editor placeholder visual in focusLost.
+            // However, keep an action listener so when the selected item changes and the
+            // editor is not focused we reflect the selection in the editor for clarity.
+            combo.addActionListener((ActionEvent e) -> {
+                try {
+                    if (!tc.isFocusOwner()) {
+                        Object sel = combo.getSelectedItem();
+                        if (sel == null) {
+                            // if model has placeholder, show it; otherwise clear
+                            if (combo.getModel().getSize() > 0
+                                    && combo.getModel().getElementAt(0).equals(placeholder)) {
+                                tc.setText(placeholder);
+                            } else {
+                                tc.setText("");
+                            }
+                        } else {
+                            tc.setText(sel.toString());
+                        }
                     }
+                } catch (Exception ignored) {
                 }
-
-                public void insertUpdate(DocumentEvent e) { update(); }
-                public void removeUpdate(DocumentEvent e) { update(); }
-                public void changedUpdate(DocumentEvent e) { update(); }
             });
         }
     }
@@ -278,7 +307,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
     public void loadClientes() {
         final String sql = "SELECT id, nombres FROM clientes ORDER BY nombres";
-        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Seleccione un cliente --"); // Add placeholder
             while (rs.next()) {
@@ -294,7 +325,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     }
 
     public void selectClienteByName(String nombre) {
-        if (nombre == null) return;
+        if (nombre == null)
+            return;
         for (int i = 0; i < cbxCliente.getItemCount(); i++) {
             String item = cbxCliente.getItemAt(i);
             if (item != null && item.equalsIgnoreCase(nombre)) {
@@ -315,7 +347,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      */
     private void loadMetodosPago() {
         final String sql = "SELECT nom_metodo_pago FROM metodo_pago WHERE habilitado = 1 ORDER BY nom_metodo_pago";
-        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Seleccione método de pago --"); // Add placeholder
@@ -337,7 +371,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      */
     private void loadServicios() {
         final String sql = "SELECT nom_servicio FROM servicios WHERE habilitado = 1 ORDER BY nom_servicio";
-        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Seleccione un servicio --"); // Add placeholder
@@ -356,7 +392,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
     private void loadEstadoComprobante() {
         final String sql = "SELECT nom_estado FROM estado_comprobantes WHERE habilitado = 1 AND nom_estado <> 'ANULADO' ORDER BY nom_estado";
-        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Seleccione un estado --"); // Add placeholder
             while (rs.next()) {
@@ -377,7 +415,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      * regenerated by the Form Editor.
      */
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated
+    // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         buttonGroup1 = new javax.swing.ButtonGroup();
@@ -522,33 +561,32 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel15.setText("SELECCIONAR SERVICIO:");
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null}
-            },
-            new String [] {
-                "SERVICIO", "PESO EN KG", "PRECIO POR KG (S/.)", "TOTAL (S/.)", "ACCIONES"
-            }
-        ));
+                new Object[][] {
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null },
+                        { null, null, null, null, null }
+                },
+                new String[] {
+                        "SERVICIO", "PESO EN KG", "PRECIO POR KG (S/.)", "TOTAL (S/.)", "ACCIONES"
+                }));
         jTable1.setRowHeight(22);
         jScrollPane2.setViewportView(jTable1);
         if (jTable1.getColumnModel().getColumnCount() > 0) {
@@ -558,172 +596,297 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(12, 12, 12)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(lblTitulo)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(704, 704, 704)
-                        .addComponent(jLabel6)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(dateTimePicker1, javax.swing.GroupLayout.PREFERRED_SIZE, 256, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel1)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(cbxMetodoPago, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(12, 12, 12)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel3)
-                                    .addComponent(jLabel2))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                        .addComponent(cbxEstadoComprobante, javax.swing.GroupLayout.PREFERRED_SIZE, 227, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(radioNotaVenta)
-                                        .addGap(19, 19, 19)
-                                        .addComponent(radioBoleta)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(radioFactura))
-                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                        .addComponent(cbxCliente, javax.swing.GroupLayout.PREFERRED_SIZE, 333, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                        .addComponent(btnAgregarNuevoCliente, javax.swing.GroupLayout.PREFERRED_SIZE, 234, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel4)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(txtRUC, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jLabel5)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(txtRazonSocial))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(cbxServicio, javax.swing.GroupLayout.PREFERRED_SIZE, 410, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnAgregarServicioComprobante, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addComponent(jLabel15)
-                            .addComponent(jScrollPane2))
-                        .addGap(43, 43, 43)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(btnGenerarComprobante, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jScrollPane1)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel11)
-                                .addGroup(jPanel1Layout.createSequentialGroup()
-                                    .addComponent(jLabel10)
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                    .addComponent(txtMontoAbonado, javax.swing.GroupLayout.PREFERRED_SIZE, 202, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel7)
-                                    .addComponent(jLabel8)
-                                    .addComponent(jLabel9))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel14, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.TRAILING))))))
-                .addGap(15, 15, 15))
-        );
+                                        .addComponent(lblTitulo)
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGap(704, 704, 704)
+                                                .addComponent(jLabel6)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                .addComponent(dateTimePicker1, javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                        256, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING,
+                                                                false)
+                                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                                .addComponent(jLabel1)
+                                                                .addPreferredGap(
+                                                                        javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                                .addComponent(cbxMetodoPago, 0,
+                                                                        javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                        Short.MAX_VALUE))
+                                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
+                                                                jPanel1Layout.createSequentialGroup()
+                                                                        .addGroup(jPanel1Layout.createParallelGroup(
+                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                .addComponent(jLabel3)
+                                                                                .addComponent(jLabel2))
+                                                                        .addPreferredGap(
+                                                                                javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                                        .addGroup(jPanel1Layout.createParallelGroup(
+                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                .addGroup(
+                                                                                        javax.swing.GroupLayout.Alignment.TRAILING,
+                                                                                        jPanel1Layout
+                                                                                                .createSequentialGroup()
+                                                                                                .addComponent(
+                                                                                                        cbxEstadoComprobante,
+                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                        227,
+                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                                .addGap(18, 18, 18)
+                                                                                                .addComponent(
+                                                                                                        radioNotaVenta)
+                                                                                                .addGap(19, 19, 19)
+                                                                                                .addComponent(
+                                                                                                        radioBoleta)
+                                                                                                .addGap(18, 18, 18)
+                                                                                                .addComponent(
+                                                                                                        radioFactura))
+                                                                                .addGroup(
+                                                                                        javax.swing.GroupLayout.Alignment.TRAILING,
+                                                                                        jPanel1Layout
+                                                                                                .createSequentialGroup()
+                                                                                                .addComponent(
+                                                                                                        cbxCliente,
+                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                        333,
+                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                                .addPreferredGap(
+                                                                                                        javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                                                                .addComponent(
+                                                                                                        btnAgregarNuevoCliente,
+                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                        234,
+                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
+                                                                jPanel1Layout.createSequentialGroup()
+                                                                        .addComponent(jLabel4)
+                                                                        .addPreferredGap(
+                                                                                javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                                        .addComponent(txtRUC,
+                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                200,
+                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                        .addPreferredGap(
+                                                                                javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                                        .addComponent(jLabel5)
+                                                                        .addPreferredGap(
+                                                                                javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                                        .addComponent(txtRazonSocial))
+                                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                                .addComponent(cbxServicio,
+                                                                        javax.swing.GroupLayout.PREFERRED_SIZE, 410,
+                                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                .addPreferredGap(
+                                                                        javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                                .addComponent(btnAgregarServicioComprobante,
+                                                                        javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                        javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                        Short.MAX_VALUE))
+                                                        .addComponent(jLabel15)
+                                                        .addComponent(jScrollPane2))
+                                                .addGap(43, 43, 43)
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING,
+                                                                false)
+                                                        .addComponent(btnGenerarComprobante,
+                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                        .addComponent(jScrollPane1)
+                                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
+                                                                jPanel1Layout.createParallelGroup(
+                                                                        javax.swing.GroupLayout.Alignment.LEADING)
+                                                                        .addComponent(jLabel11)
+                                                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                                                .addComponent(jLabel10)
+                                                                                .addPreferredGap(
+                                                                                        javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                                                .addComponent(txtMontoAbonado,
+                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                        202,
+                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
+                                                                jPanel1Layout.createSequentialGroup()
+                                                                        .addGroup(jPanel1Layout.createParallelGroup(
+                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                .addComponent(jLabel7)
+                                                                                .addComponent(jLabel8)
+                                                                                .addComponent(jLabel9))
+                                                                        .addPreferredGap(
+                                                                                javax.swing.LayoutStyle.ComponentPlacement.RELATED,
+                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                                Short.MAX_VALUE)
+                                                                        .addGroup(jPanel1Layout.createParallelGroup(
+                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                .addComponent(jLabel14,
+                                                                                        javax.swing.GroupLayout.Alignment.TRAILING)
+                                                                                .addComponent(jLabel13,
+                                                                                        javax.swing.GroupLayout.Alignment.TRAILING)
+                                                                                .addComponent(jLabel12,
+                                                                                        javax.swing.GroupLayout.Alignment.TRAILING))))))
+                                .addGap(15, 15, 15)));
         jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(14, 14, 14)
-                .addComponent(lblTitulo)
-                .addGap(27, 27, 27)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                    .addComponent(jLabel2)
-                    .addComponent(btnAgregarNuevoCliente, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel6)
-                    .addComponent(dateTimePicker1, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(cbxCliente, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel7)
-                            .addComponent(jLabel12))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel8)
-                            .addComponent(jLabel13))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel9)
-                            .addComponent(jLabel14))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel10)
-                            .addComponent(txtMontoAbonado, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                                .addComponent(jLabel3)
-                                .addComponent(cbxEstadoComprobante, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                                .addComponent(radioNotaVenta)
-                                .addComponent(radioBoleta)
-                                .addComponent(radioFactura)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(cbxMetodoPago, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel1))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel4)
-                            .addComponent(jLabel5)
-                            .addComponent(txtRUC, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtRazonSocial, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(28, 28, 28)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel15)
-                    .addComponent(jLabel11))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addComponent(jScrollPane1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnGenerarComprobante, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                            .addComponent(cbxServicio, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(btnAgregarServicioComprobante, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(194, Short.MAX_VALUE))
-        );
+                jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(14, 14, 14)
+                                .addComponent(lblTitulo)
+                                .addGap(27, 27, 27)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                                        .addComponent(jLabel2)
+                                        .addComponent(btnAgregarNuevoCliente, javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(jLabel6)
+                                        .addComponent(dateTimePicker1, javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(cbxCliente, javax.swing.GroupLayout.Alignment.LEADING,
+                                                javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(18, 18, 18)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                        .addComponent(jLabel7)
+                                                        .addComponent(jLabel12))
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                        .addComponent(jLabel8)
+                                                        .addComponent(jLabel13))
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                        .addComponent(jLabel9)
+                                                        .addComponent(jLabel14))
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                        .addComponent(jLabel10)
+                                                        .addComponent(txtMontoAbonado,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                        .addGroup(jPanel1Layout
+                                                                .createParallelGroup(
+                                                                        javax.swing.GroupLayout.Alignment.CENTER)
+                                                                .addComponent(jLabel3)
+                                                                .addComponent(cbxEstadoComprobante,
+                                                                        javax.swing.GroupLayout.Alignment.TRAILING,
+                                                                        javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                                        javax.swing.GroupLayout.PREFERRED_SIZE))
+                                                        .addGroup(jPanel1Layout
+                                                                .createParallelGroup(
+                                                                        javax.swing.GroupLayout.Alignment.CENTER)
+                                                                .addComponent(radioNotaVenta)
+                                                                .addComponent(radioBoleta)
+                                                                .addComponent(radioFactura)))
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                        .addComponent(cbxMetodoPago,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                        .addComponent(jLabel1))
+                                                .addGap(18, 18, 18)
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                        .addComponent(jLabel4)
+                                                        .addComponent(jLabel5)
+                                                        .addComponent(txtRUC, javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                        .addComponent(txtRazonSocial,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addGap(28, 28, 28)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                        .addComponent(jLabel15)
+                                        .addComponent(jLabel11))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(jPanel1Layout
+                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
+                                                jPanel1Layout.createSequentialGroup()
+                                                        .addComponent(jScrollPane1)
+                                                        .addPreferredGap(
+                                                                javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                        .addComponent(btnGenerarComprobante,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 44,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                                                        .addComponent(cbxServicio,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                        .addComponent(btnAgregarServicioComprobante,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE))
+                                                .addGap(18, 18, 18)
+                                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 138,
+                                                        javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addContainerGap(194, Short.MAX_VALUE)));
 
         getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 0, 1070, 680));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btnAgregarServicioComprobanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarServicioComprobanteActionPerformed
-        // Get the selected service
+    private void btnAgregarServicioComprobanteActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_btnAgregarServicioComprobanteActionPerformed
+        // Resolve the selected service robustly. For editable/autocompleted combos
+        // require an exact match against the combo model (case-insensitive).
         Object selectedService = cbxServicio.getSelectedItem();
-        // Check if a valid service is selected (not the placeholder)
-        if (selectedService == null || selectedService.toString().startsWith("--")) {
+        String serviceName = null;
+        if (selectedService != null)
+            serviceName = selectedService.toString().trim();
+        // If selected is invalid, try the editor's current text and match it to the
+        // model
+        if (serviceName == null || serviceName.isEmpty() || serviceName.startsWith("--")) {
+            try {
+                Object editorItem = cbxServicio.getEditor().getItem();
+                if (editorItem != null) {
+                    String ed = editorItem.toString().trim();
+                    if (!ed.isEmpty() && !ed.startsWith("--")) {
+                        // search model for a case-insensitive match; do NOT accept free-typed values
+                        ComboBoxModel<String> m = cbxServicio.getModel();
+                        for (int i = 0; i < m.getSize(); i++) {
+                            String it = m.getElementAt(i);
+                            if (it != null && it.equalsIgnoreCase(ed)) {
+                                serviceName = it; // use the canonical model value
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignore) {
+            }
+        }
+        // Require an exact match (no free-typed services)
+        if (serviceName == null || serviceName.isEmpty() || serviceName.startsWith("--")) {
             JOptionPane.showMessageDialog(this,
                     "Por favor seleccione un servicio válido.",
                     "Servicio no seleccionado", JOptionPane.WARNING_MESSAGE);
             return;
         }
-    // Extra guard: avoid adding a service that is already present in the table (in case it wasn't removed from combo por algún motivo)
-    if (isServiceAlreadyInTable(selectedService.toString())) {
-        JOptionPane.showMessageDialog(this,
-            "El servicio ya fue añadido. Primero elimínelo de la tabla si desea volver a agregarlo.",
-            "Servicio duplicado", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+        // Extra guard: avoid adding a service that is already present in the table (in
+        // case it wasn't removed from combo por algún motivo)
+        if (isServiceAlreadyInTable(serviceName)) {
+            JOptionPane.showMessageDialog(this,
+                    "El servicio ya fue añadido. Primero elimínelo de la tabla si desea volver a agregarlo.",
+                    "Servicio duplicado", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         // Get the price per kg for this service from database
-        double precioPorKg = getPrecioServicio(selectedService.toString());
+        double precioPorKg = getPrecioServicio(serviceName);
         // Add to table with empty PESO field and editable cells
-        addServiceToTable(selectedService.toString(), "", String.format("%.2f", precioPorKg), "0.00", "X");
-    // Remove the added service from the combo to prevent duplicates
-    removeServiceFromCombo(selectedService.toString());
+        addServiceToTable(serviceName, "", String.format("%.2f", precioPorKg), "0.00", "X");
+        // Remove the added service from the combo to prevent duplicates
+        removeServiceFromCombo(serviceName);
         // Reset the combo box to the placeholder
         cbxServicio.setSelectedIndex(0);
         // Set up cell editors for PESO and PRECIO columns if not already set
@@ -731,7 +894,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Set up delete button renderer/editor
         setupTableButtons();
     }
-//GEN-LAST:event_btnAgregarServicioComprobanteActionPerformed
+    // GEN-LAST:event_btnAgregarServicioComprobanteActionPerformed
 
     /**
      * Gets the price per kg for a given service from the database
@@ -759,11 +922,12 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
     /**
      * Adds a service to the table with editable PESO and PRECIO fields
-     * @param servicio The service name
-     * @param peso The weight in kg (as String, initially empty)
+     *
+     * @param servicio    The service name
+     * @param peso        The weight in kg (as String, initially empty)
      * @param precioPorKg The price per kg (as String)
-     * @param total The total price (as String, initially "0.00")
-     * @param acciones The value for the ACCIONES column ("X")
+     * @param total       The total price (as String, initially "0.00")
+     * @param acciones    The value for the ACCIONES column ("X")
      */
     private void addServiceToTable(String servicio, String peso, String precioPorKg, String total, String acciones) {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
@@ -787,7 +951,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             model.setValueAt(acciones, firstEmptyRow, 4);
         } else {
             // If no empty row found, add a new row
-            model.addRow(new Object[]{servicio, peso, precioPorKg, total, acciones});
+            model.addRow(new Object[] { servicio, peso, precioPorKg, total, acciones });
         }
 
         updateTotals();
@@ -799,13 +963,13 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     private void setupTableCellEditors() {
         // Ensure TOTAL column (index 3) is not editable by using a custom table model
         DefaultTableModel oldModel = (DefaultTableModel) jTable1.getModel();
-    @SuppressWarnings("unchecked")
-    Vector<Vector<Object>> data = (Vector<Vector<Object>>) (Vector<?>) oldModel.getDataVector();
-    Vector<String> cols = new Vector<>();
+        @SuppressWarnings("unchecked")
+        Vector<Vector<Object>> data = (Vector<Vector<Object>>) (Vector<?>) oldModel.getDataVector();
+        Vector<String> cols = new Vector<>();
         for (int i = 0; i < oldModel.getColumnCount(); i++) {
             cols.add(oldModel.getColumnName(i));
         }
-    DefaultTableModel newModel = new DefaultTableModel(data, cols) {
+        DefaultTableModel newModel = new DefaultTableModel(data, cols) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 // If the SERVICIO cell is empty for this row, make the entire row non-editable
@@ -832,7 +996,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             public boolean stopCellEditing() {
                 try {
                     String value = getCellEditorValue().toString();
-                    if (!value.isEmpty()) Double.parseDouble(value);
+                    if (!value.isEmpty())
+                        Double.parseDouble(value);
                     return super.stopCellEditing();
                 } catch (NumberFormatException e) {
                     JOptionPane.showMessageDialog(jTable1,
@@ -851,7 +1016,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             public boolean stopCellEditing() {
                 try {
                     String value = getCellEditorValue().toString();
-                    if (!value.isEmpty()) Double.parseDouble(value);
+                    if (!value.isEmpty())
+                        Double.parseDouble(value);
                     return super.stopCellEditing();
                 } catch (NumberFormatException e) {
                     JOptionPane.showMessageDialog(jTable1,
@@ -876,18 +1042,22 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     }
 
     /**
-     * Reusable DocumentFilter allowing only integer or decimal numbers (e.g. 10, 10., 10.5, 10.50).
+     * Reusable DocumentFilter allowing only integer or decimal numbers (e.g. 10,
+     * 10., 10.5, 10.50).
      * Empty string is allowed while user is typing.
      */
     private static class NumericDocumentFilter extends DocumentFilter {
         private boolean isValid(String text) {
-            if (text.isEmpty()) return true;
+            if (text.isEmpty())
+                return true;
             return text.matches("\\d+(\\.\\d*)?");
         }
 
         @Override
-        public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
-            if (string == null) return;
+        public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                throws BadLocationException {
+            if (string == null)
+                return;
             StringBuilder sb = new StringBuilder(fb.getDocument().getText(0, fb.getDocument().getLength()));
             sb.insert(offset, string);
             if (isValid(sb.toString())) {
@@ -896,8 +1066,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         }
 
         @Override
-        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
-            if (text == null) text = "";
+        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                throws BadLocationException {
+            if (text == null)
+                text = "";
             StringBuilder sb = new StringBuilder(fb.getDocument().getText(0, fb.getDocument().getLength()));
             sb.replace(offset, offset + length, text);
             if (isValid(sb.toString())) {
@@ -916,6 +1088,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
     /**
      * Updates the total for a specific row based on weight and price
+     *
      * @param row The row to update
      */
     private void updateRowTotal(int row) {
@@ -934,7 +1107,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         }
     }
 
-// Class to render the delete button in the table
+    // Class to render the delete button in the table
     class ButtonRenderer extends JButton implements TableCellRenderer {
 
         public ButtonRenderer() {
@@ -973,7 +1146,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         }
     }
 
-// Class to handle the delete button click
+    // Class to handle the delete button click
     class ButtonEditor extends DefaultCellEditor {
 
         protected JButton button;
@@ -1077,16 +1250,17 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
         }
 
-    // Following the web behaviour: total = sum of service totals; IGV = total * 0.18;
-    // subtotal (OP. GRAVADAS) = total - IGV
-    double total = subtotal;
-    double igv = total * 0.18;
-    double subtotalVisible = total - igv;
+        // Following the web behaviour: total = sum of service totals; IGV = total *
+        // 0.18;
+        // subtotal (OP. GRAVADAS) = total - IGV
+        double total = subtotal;
+        double igv = total * 0.18;
+        double subtotalVisible = total - igv;
 
-    // Update the labels
-    jLabel12.setText("S/. " + String.format("%.2f", subtotalVisible));
-    jLabel13.setText("S/. " + String.format("%.2f", igv));
-    jLabel14.setText("S/. " + String.format("%.2f", total));
+        // Update the labels
+        jLabel12.setText("S/. " + String.format("%.2f", subtotalVisible));
+        jLabel13.setText("S/. " + String.format("%.2f", igv));
+        jLabel14.setText("S/. " + String.format("%.2f", total));
         // If estado is CANCELADO keep monto abonado synced with total
         Object estadoSel = cbxEstadoComprobante.getSelectedItem();
         if (estadoSel != null && "CANCELADO".equalsIgnoreCase(estadoSel.toString().trim())) {
@@ -1095,7 +1269,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     }
 
     private String extractNumeric(String labelText) {
-        if (labelText == null) return "";
+        if (labelText == null)
+            return "";
         // Expect format "S/. 123.45" -> return 123.45
         String cleaned = labelText.replace("S/.", "").replace("S/", "").trim();
         return cleaned;
@@ -1133,12 +1308,15 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     }
 
     /**
-     * Adds a service back into the combo box (after deletion) if it's not already there.
-     * Inserts after the placeholder and keeps alphabetical order relative to existing items (optional improvement).
+     * Adds a service back into the combo box (after deletion) if it's not already
+     * there.
+     * Inserts after the placeholder and keeps alphabetical order relative to
+     * existing items (optional improvement).
      */
     private void addServiceBackToCombo(String serviceName) {
         ComboBoxModel<String> m = cbxServicio.getModel();
-        if (!(m instanceof DefaultComboBoxModel)) return;
+        if (!(m instanceof DefaultComboBoxModel))
+            return;
         DefaultComboBoxModel<String> model = (DefaultComboBoxModel<String>) m;
         // Check if already present
         for (int i = 0; i < model.getSize(); i++) {
@@ -1203,7 +1381,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     // Assumptions (adjust as needed):
     // - local_id fixed to 5
     // - estado_ropa_id fixed to 1
-    // - user_id & last_updated_by temporarily fixed to 1 (no auth system in Swing client yet)
+    // - user_id & last_updated_by temporarily fixed to 1 (no auth system in Swing
+    // client yet)
     private static final int DEFAULT_LOCAL_ID = 5;
     private static final int DEFAULT_ESTADO_ROPA_ID = 1;
     private static final int DEFAULT_USER_ID = 1;
@@ -1212,12 +1391,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // VALIDATIONS
         String clienteNombre = (String) cbxCliente.getSelectedItem();
         if (clienteNombre == null || clienteNombre.startsWith("--")) {
-            JOptionPane.showMessageDialog(this, "Seleccione un cliente válido.", "Validación", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Seleccione un cliente válido.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
         String estadoNombre = (String) cbxEstadoComprobante.getSelectedItem();
         if (estadoNombre == null || estadoNombre.startsWith("--")) {
-            JOptionPane.showMessageDialog(this, "Seleccione un estado de comprobante.", "Validación", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Seleccione un estado de comprobante.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
         String metodoPagoNombre = (String) cbxMetodoPago.getSelectedItem();
@@ -1225,7 +1406,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         boolean estadoEsDebe = "DEBE".equals(estadoUpperTmp);
         if (!estadoEsDebe) { // For non-DEBE states require a payment method
             if (metodoPagoNombre == null || metodoPagoNombre.startsWith("--")) {
-                JOptionPane.showMessageDialog(this, "Seleccione un método de pago.", "Validación", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Seleccione un método de pago.", "Validación",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
         } else {
@@ -1233,18 +1415,23 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             metodoPagoNombre = null;
         }
         char tipoComprobante;
-        if (radioNotaVenta.isSelected()) tipoComprobante = 'N';
-        else if (radioBoleta.isSelected()) tipoComprobante = 'B';
-        else if (radioFactura.isSelected()) tipoComprobante = 'F';
+        if (radioNotaVenta.isSelected())
+            tipoComprobante = 'N';
+        else if (radioBoleta.isSelected())
+            tipoComprobante = 'B';
+        else if (radioFactura.isSelected())
+            tipoComprobante = 'F';
         else {
-            JOptionPane.showMessageDialog(this, "Seleccione un tipo de comprobante.", "Validación", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Seleccione un tipo de comprobante.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
         String numRuc = txtRUC.getText().trim();
         String razonSocial = txtRazonSocial.getText().trim();
         if (tipoComprobante == 'F') { // factura requires RUC & razon social
             if (numRuc.isEmpty() || razonSocial.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Ingrese RUC y Razón Social para FACTURA.", "Validación", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Ingrese RUC y Razón Social para FACTURA.", "Validación",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
         } else { // clear if not factura
@@ -1256,30 +1443,36 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         java.util.List<ServiceDetail> details = new java.util.ArrayList<>();
         for (int i = 0; i < model.getRowCount(); i++) {
             Object servicioObj = model.getValueAt(i, 0);
-            if (servicioObj == null) continue;
+            if (servicioObj == null)
+                continue;
             String servicio = servicioObj.toString().trim();
-            if (servicio.isEmpty()) continue;
+            if (servicio.isEmpty())
+                continue;
             String pesoStr = safeStr(model.getValueAt(i, 1));
             String precioStr = safeStr(model.getValueAt(i, 2));
             if (pesoStr.isEmpty() || precioStr.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Fila " + (i + 1) + ": complete PESO y PRECIO.", "Validación", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Fila " + (i + 1) + ": complete PESO y PRECIO.", "Validación",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
             try {
                 double peso = Double.parseDouble(pesoStr);
                 double precio = Double.parseDouble(precioStr);
                 if (peso <= 0 || precio < 0) {
-                    JOptionPane.showMessageDialog(this, "Fila " + (i + 1) + ": valores numéricos inválidos.", "Validación", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Fila " + (i + 1) + ": valores numéricos inválidos.",
+                            "Validación", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
                 details.add(new ServiceDetail(servicio, peso, precio));
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Fila " + (i + 1) + ": formato numérico inválido.", "Validación", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Fila " + (i + 1) + ": formato numérico inválido.", "Validación",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         if (details.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Agregue al menos un servicio.", "Validación", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Agregue al menos un servicio.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
         // Totals (labels contain e.g. "S/. 123.45")
@@ -1289,12 +1482,20 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         if ("ABONO".equals(estadoUpper)) {
             String montoAbonadoStr = txtMontoAbonado.getText().trim();
             if (montoAbonadoStr.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Ingrese el monto abonado.", "Validación", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Ingrese el monto abonado.", "Validación",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            try { montoAbonado = Double.parseDouble(montoAbonadoStr); } catch (NumberFormatException ex) { JOptionPane.showMessageDialog(this, "Monto abonado inválido.", "Validación", JOptionPane.WARNING_MESSAGE); return; }
+            try {
+                montoAbonado = Double.parseDouble(montoAbonadoStr);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Monto abonado inválido.", "Validación",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             if (montoAbonado < 0 || montoAbonado > total) {
-                JOptionPane.showMessageDialog(this, "Monto abonado fuera de rango.", "Validación", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Monto abonado fuera de rango.", "Validación",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
         } else if ("CANCELADO".equals(estadoUpper) || "PAGADO".equals(estadoUpper)) {
@@ -1305,7 +1506,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
         LocalDateTime fecha = dateTimePicker1.getDateTimePermissive();
         if (fecha == null) {
-            JOptionPane.showMessageDialog(this, "Seleccione una fecha válida.", "Validación", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Seleccione una fecha válida.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
         String observaciones = txtObservaciones.getText().trim();
@@ -1317,33 +1519,51 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             Integer metodoPagoId = null;
             if (metodoPagoNombre != null && !metodoPagoNombre.startsWith("--")) {
                 int tmp = fetchId(conn, "SELECT id FROM metodo_pago WHERE nom_metodo_pago = ?", metodoPagoNombre);
-                if (tmp != -1) metodoPagoId = tmp; else {
+                if (tmp != -1)
+                    metodoPagoId = tmp;
+                else {
                     conn.rollback();
-                    JOptionPane.showMessageDialog(this, "Método de pago no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Método de pago no encontrado.", "Error",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
             }
-            int estadoComprobanteId = fetchId(conn, "SELECT id FROM estado_comprobantes WHERE nom_estado = ?", estadoNombre);
+            int estadoComprobanteId = fetchId(conn, "SELECT id FROM estado_comprobantes WHERE nom_estado = ?",
+                    estadoNombre);
             if (clienteId == -1 || estadoComprobanteId == -1) {
                 conn.rollback();
-                JOptionPane.showMessageDialog(this, "No se pudo resolver IDs requeridos.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "No se pudo resolver IDs requeridos.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
             String codComprobante = generateComprobanteCode(conn, tipoComprobante);
             // Insert comprobante
             String insertComprobanteSql = "INSERT INTO comprobantes (tipo_comprobante, cliente_id, user_id, fecha, metodo_pago_id, num_ruc, razon_social, estado_comprobante_id, estado_ropa_id, local_id, observaciones, monto_abonado, last_updated_by, cod_comprobante, costo_total) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-            try (PreparedStatement ps = conn.prepareStatement(insertComprobanteSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement ps = conn.prepareStatement(insertComprobanteSql,
+                    PreparedStatement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, String.valueOf(tipoComprobante));
                 ps.setInt(2, clienteId);
                 ps.setInt(3, DEFAULT_USER_ID);
                 ps.setTimestamp(4, java.sql.Timestamp.valueOf(fecha));
-                if (metodoPagoId != null) ps.setInt(5, metodoPagoId); else ps.setNull(5, java.sql.Types.INTEGER);
-                if (numRuc != null) ps.setLong(6, Long.parseLong(numRuc)); else ps.setNull(6, java.sql.Types.BIGINT);
-                if (razonSocial != null) ps.setString(7, razonSocial); else ps.setNull(7, java.sql.Types.VARCHAR);
+                if (metodoPagoId != null)
+                    ps.setInt(5, metodoPagoId);
+                else
+                    ps.setNull(5, java.sql.Types.INTEGER);
+                if (numRuc != null)
+                    ps.setLong(6, Long.parseLong(numRuc));
+                else
+                    ps.setNull(6, java.sql.Types.BIGINT);
+                if (razonSocial != null)
+                    ps.setString(7, razonSocial);
+                else
+                    ps.setNull(7, java.sql.Types.VARCHAR);
                 ps.setInt(8, estadoComprobanteId);
                 ps.setInt(9, DEFAULT_ESTADO_ROPA_ID);
                 ps.setInt(10, DEFAULT_LOCAL_ID);
-                if (!observaciones.isEmpty()) ps.setString(11, observaciones); else ps.setNull(11, java.sql.Types.CLOB);
+                if (!observaciones.isEmpty())
+                    ps.setString(11, observaciones);
+                else
+                    ps.setNull(11, java.sql.Types.CLOB);
                 ps.setDouble(12, montoAbonado);
                 ps.setInt(13, DEFAULT_USER_ID);
                 ps.setString(14, codComprobante);
@@ -1351,14 +1571,19 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 ps.executeUpdate();
                 int comprobanteId;
                 try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) comprobanteId = rs.getInt(1); else throw new SQLException("No se obtuvo ID de comprobante");
+                    if (rs.next())
+                        comprobanteId = rs.getInt(1);
+                    else
+                        throw new SQLException("No se obtuvo ID de comprobante");
                 }
                 // Insert details
                 String detailSql = "INSERT INTO comprobantes_detalles (comprobante_id, servicio_id, peso_kg, costo_kilo) VALUES (?,?,?,?)";
                 try (PreparedStatement psDet = conn.prepareStatement(detailSql)) {
                     for (ServiceDetail d : details) {
-                        int servicioId = fetchId(conn, "SELECT id FROM servicios WHERE nom_servicio = ?", d.nombreServicio);
-                        if (servicioId == -1) throw new SQLException("Servicio no encontrado: " + d.nombreServicio);
+                        int servicioId = fetchId(conn, "SELECT id FROM servicios WHERE nom_servicio = ?",
+                                d.nombreServicio);
+                        if (servicioId == -1)
+                            throw new SQLException("Servicio no encontrado: " + d.nombreServicio);
                         psDet.setInt(1, comprobanteId);
                         psDet.setInt(2, servicioId);
                         psDet.setDouble(3, d.pesoKg);
@@ -1372,7 +1597,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 try (PreparedStatement psIng = conn.prepareStatement(ingresoSql)) {
                     psIng.setString(1, codComprobante);
                     psIng.setInt(2, clienteId);
-                    if (metodoPagoId != null) psIng.setInt(3, metodoPagoId); else psIng.setNull(3, java.sql.Types.INTEGER);
+                    if (metodoPagoId != null)
+                        psIng.setInt(3, metodoPagoId);
+                    else
+                        psIng.setNull(3, java.sql.Types.INTEGER);
                     psIng.setTimestamp(4, java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()));
                     psIng.setDouble(5, montoAbonado);
                     psIng.setDouble(6, total);
@@ -1380,10 +1608,12 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
             }
             conn.commit();
-            JOptionPane.showMessageDialog(this, "Comprobante registrado. Código: " + codComprobante, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Comprobante registrado. Código: " + codComprobante, "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
             resetFormAfterSave();
 
-            // After successful save, ask for phone (prefilled if exists) and attempt to send WhatsApp.
+            // After successful save, ask for phone (prefilled if exists) and attempt to
+            // send WhatsApp.
             try {
                 String phoneDigits = null;
                 // Try to read client's phone from clientes row by inspecting likely columns
@@ -1394,11 +1624,15 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                             java.sql.ResultSetMetaData md = rsPhone.getMetaData();
                             for (int ci = 1; ci <= md.getColumnCount(); ci++) {
                                 String col = md.getColumnName(ci).toLowerCase();
-                                if (col.contains("cel") || col.contains("tel") || col.contains("phone") || col.contains("movil")) {
+                                if (col.contains("cel") || col.contains("tel") || col.contains("phone")
+                                        || col.contains("movil")) {
                                     String v = rsPhone.getString(ci);
                                     if (v != null) {
                                         String digits = v.replaceAll("\\D", "");
-                                        if (digits.length() == 9) { phoneDigits = digits; break; }
+                                        if (digits.length() == 9) {
+                                            phoneDigits = digits;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -1408,45 +1642,57 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
                 // Prompt user for number (prefilled with stored number if any)
                 String prefill = phoneDigits != null ? phoneDigits : "";
-                String input = (String) JOptionPane.showInputDialog(this, "Número de celular (9 dígitos):", "Enviar WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, prefill);
+                String input = (String) JOptionPane.showInputDialog(this, "Número de celular (9 dígitos):",
+                        "Enviar WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, prefill);
                 if (input == null) {
                     // user cancelled - do nothing
                 } else {
                     String phone = input.trim().replaceAll("\\D", "");
                     if (phone.length() != 9) {
-                        JOptionPane.showMessageDialog(this, "El número debe tener exactamente 9 dígitos (sin prefijo).", "Validación", JOptionPane.WARNING_MESSAGE);
+                        JOptionPane.showMessageDialog(this, "El número debe tener exactamente 9 dígitos (sin prefijo).",
+                                "Validación", JOptionPane.WARNING_MESSAGE);
                     } else {
                         // Read API key
                         java.nio.file.Path apiPath = java.nio.file.Paths.get("textmebot_api.json");
                         if (!java.nio.file.Files.exists(apiPath)) {
                             // no API configured - skip
                         } else {
-                            String apiJson = new String(java.nio.file.Files.readAllBytes(apiPath), java.nio.charset.StandardCharsets.UTF_8);
-                            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\\"textmebot_api\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"").matcher(apiJson);
-                            String apikey = null; if (m.find()) apikey = m.group(1);
+                            String apiJson = new String(java.nio.file.Files.readAllBytes(apiPath),
+                                    java.nio.charset.StandardCharsets.UTF_8);
+                            java.util.regex.Matcher m = java.util.regex.Pattern
+                                    .compile("\\\"textmebot_api\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"").matcher(apiJson);
+                            String apikey = null;
+                            if (m.find())
+                                apikey = m.group(1);
                             if (apikey == null || apikey.isBlank()) {
                                 // no apikey - skip
                             } else {
                                 String recipient = "+51" + phone;
-                                // Build detailed receipt-like plain-text message similar to DlgPrintPreview.htmlToPlainText
+                                // Build detailed receipt-like plain-text message similar to
+                                // DlgPrintPreview.htmlToPlainText
                                 StringBuilder sbMsg = new StringBuilder();
                                 sbMsg.append("LAVANDERIA SEPRIET\n");
                                 sbMsg.append("Enrique Nerini 995, San Luis 15021\n");
 
                                 // Tipo de comprobante label
                                 String tipoLabel = "COMPROBANTE";
-                                try (PreparedStatement psTipo = conn.prepareStatement("SELECT tipo_comprobante, fecha, num_ruc, razon_social, costo_total FROM comprobantes WHERE cod_comprobante = ?")) {
+                                try (PreparedStatement psTipo = conn.prepareStatement(
+                                        "SELECT tipo_comprobante, fecha, num_ruc, razon_social, costo_total FROM comprobantes WHERE cod_comprobante = ?")) {
                                     psTipo.setString(1, codComprobante);
                                     try (ResultSet rsTipo = psTipo.executeQuery()) {
                                         if (rsTipo.next()) {
                                             String tipo = rsTipo.getString("tipo_comprobante");
-                                            if ("N".equalsIgnoreCase(tipo)) tipoLabel = "NOTA DE VENTA ELECTRÓNICA";
-                                            else if ("B".equalsIgnoreCase(tipo)) tipoLabel = "BOLETA";
-                                            else if ("F".equalsIgnoreCase(tipo)) tipoLabel = "FACTURA";
+                                            if ("N".equalsIgnoreCase(tipo))
+                                                tipoLabel = "NOTA DE VENTA ELECTRÓNICA";
+                                            else if ("B".equalsIgnoreCase(tipo))
+                                                tipoLabel = "BOLETA";
+                                            else if ("F".equalsIgnoreCase(tipo))
+                                                tipoLabel = "FACTURA";
                                             java.sql.Timestamp ts = rsTipo.getTimestamp("fecha");
                                             if (ts != null) {
                                                 java.time.LocalDateTime ldt = ts.toLocalDateTime();
-                                                java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm");
+                                                java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter
+                                                        .ofPattern("dd/MM/yyyy - HH:mm");
                                                 sbMsg.append(tipoLabel).append("\n");
                                                 // cod comprobante
                                                 sbMsg.append(codComprobante).append("\n");
@@ -1465,32 +1711,47 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 }
 
                                 // Cliente info
-                                try (PreparedStatement psCli = conn.prepareStatement("SELECT nombres, dni, direccion FROM clientes WHERE id = ?")) {
+                                try (PreparedStatement psCli = conn.prepareStatement(
+                                        "SELECT nombres, dni, direccion FROM clientes WHERE id = ?")) {
                                     psCli.setInt(1, clienteId);
                                     try (ResultSet rsCli = psCli.executeQuery()) {
                                         if (rsCli.next()) {
                                             String nombres = rsCli.getString("nombres");
-                                            if (nombres != null && !nombres.isBlank()) sbMsg.append("CLIENTE: ").append(nombres).append("\n");
+                                            if (nombres != null && !nombres.isBlank())
+                                                sbMsg.append("CLIENTE: ").append(nombres).append("\n");
                                             String dni = null;
-                                            try { dni = rsCli.getString("dni"); } catch (Exception ex) { /* ignore */ }
+                                            try {
+                                                dni = rsCli.getString("dni");
+                                            } catch (Exception ex) {
+                                                /* ignore */ }
                                             if (dni == null || dni.isBlank()) {
                                                 // try alternate column names
-                                                try { dni = rsCli.getString("num_documento"); } catch (Exception ex) { }
+                                                try {
+                                                    dni = rsCli.getString("num_documento");
+                                                } catch (Exception ex) {
+                                                }
                                             }
-                                            if (dni != null && !dni.isBlank()) sbMsg.append("DNI: ").append(dni).append("\n");
+                                            if (dni != null && !dni.isBlank())
+                                                sbMsg.append("DNI: ").append(dni).append("\n");
                                             String dir = null;
-                                            try { dir = rsCli.getString("direccion"); } catch (Exception ex) { }
-                                            if (dir != null && !dir.isBlank()) sbMsg.append(dir).append("\n");
+                                            try {
+                                                dir = rsCli.getString("direccion");
+                                            } catch (Exception ex) {
+                                            }
+                                            if (dir != null && !dir.isBlank())
+                                                sbMsg.append(dir).append("\n");
                                         }
                                     }
-                                } catch (Exception ignore) {}
+                                } catch (Exception ignore) {
+                                }
 
                                 sbMsg.append("\n");
                                 sbMsg.append("DETALLES (Servicio: Peso(Kilos) x Precio al Kilo):\n");
 
                                 // Details rows
                                 try (PreparedStatement psDet = conn.prepareStatement(
-                                        "SELECT s.nom_servicio AS servicio, d.peso_kg, d.costo_kilo, (d.peso_kg * d.costo_kilo) AS total, d.comprobante_id " +
+                                        "SELECT s.nom_servicio AS servicio, d.peso_kg, d.costo_kilo, (d.peso_kg * d.costo_kilo) AS total, d.comprobante_id "
+                                                +
                                                 "FROM comprobantes_detalles d JOIN servicios s ON d.servicio_id = s.id WHERE d.comprobante_id = (SELECT id FROM comprobantes WHERE cod_comprobante = ?)")) {
                                     psDet.setString(1, codComprobante);
                                     try (ResultSet rsDet = psDet.executeQuery()) {
@@ -1505,10 +1766,12 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                     .append(String.format("%.2f", tot)).append("\n");
                                         }
                                     }
-                                } catch (Exception ignore) {}
+                                } catch (Exception ignore) {
+                                }
 
                                 // Total
-                                try (PreparedStatement psTot = conn.prepareStatement("SELECT costo_total FROM comprobantes WHERE cod_comprobante = ?")) {
+                                try (PreparedStatement psTot = conn.prepareStatement(
+                                        "SELECT costo_total FROM comprobantes WHERE cod_comprobante = ?")) {
                                     psTot.setString(1, codComprobante);
                                     try (ResultSet rsTot = psTot.executeQuery()) {
                                         if (rsTot.next()) {
@@ -1516,11 +1779,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                             sbMsg.append("\nTOTAL: ").append(String.format("%.2f", grand)).append("\n");
                                         }
                                     }
-                                } catch (Exception ignore) {}
+                                } catch (Exception ignore) {
+                                }
 
                                 String text = sbMsg.toString().trim();
-                                if (text.length() > 3000) text = text.substring(0, 3000);
-                                String req = "https://api.textmebot.com/send.php?recipient=" + java.net.URLEncoder.encode(recipient, "UTF-8")
+                                if (text.length() > 3000)
+                                    text = text.substring(0, 3000);
+                                String req = "https://api.textmebot.com/send.php?recipient="
+                                        + java.net.URLEncoder.encode(recipient, "UTF-8")
                                         + "&apikey=" + java.net.URLEncoder.encode(apikey, "UTF-8")
                                         + "&text=" + java.net.URLEncoder.encode(text, "UTF-8")
                                         + "&json=yes";
@@ -1531,56 +1797,82 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 conn2.setReadTimeout(15000);
                                 int code2 = conn2.getResponseCode();
                                 String resp;
-                                try (java.io.InputStream is = code2 >= 400 ? conn2.getErrorStream() : conn2.getInputStream()) {
-                                    resp = is == null ? "" : new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                                try (java.io.InputStream is = code2 >= 400 ? conn2.getErrorStream()
+                                        : conn2.getInputStream()) {
+                                    resp = is == null ? ""
+                                            : new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
                                 }
 
                                 boolean ok = false;
                                 String r = resp == null ? "" : resp.trim();
                                 // If JSON, look for status: success
                                 if (r.startsWith("{")) {
-                                    java.util.regex.Matcher jm = java.util.regex.Pattern.compile("\"status\"\\s*:\\s*\"(success|ok)\"", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(r);
-                                    if (jm.find()) ok = true;
+                                    java.util.regex.Matcher jm = java.util.regex.Pattern
+                                            .compile("\"status\"\\s*:\\s*\"(success|ok)\"",
+                                                    java.util.regex.Pattern.CASE_INSENSITIVE)
+                                            .matcher(r);
+                                    if (jm.find())
+                                        ok = true;
                                 } else {
-                                    // HTML or plain: look for words Result and Success, or the pattern Result: <b>Success!</b>
+                                    // HTML or plain: look for words Result and Success, or the pattern Result:
+                                    // <b>Success!</b>
                                     if (r.toLowerCase().contains("\"status\"") || r.toLowerCase().contains("status")) {
-                                        java.util.regex.Matcher jm2 = java.util.regex.Pattern.compile("\"status\"\\s*:\\s*\"(success|ok)\"", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(r);
-                                        if (jm2.find()) ok = true;
+                                        java.util.regex.Matcher jm2 = java.util.regex.Pattern
+                                                .compile("\"status\"\\s*:\\s*\"(success|ok)\"",
+                                                        java.util.regex.Pattern.CASE_INSENSITIVE)
+                                                .matcher(r);
+                                        if (jm2.find())
+                                            ok = true;
                                     }
                                     if (!ok) {
-                                        if (r.toLowerCase().contains("result") && r.toLowerCase().contains("success")) ok = true;
-                                        java.util.regex.Matcher hm = java.util.regex.Pattern.compile("(?i)Result\\s*:\\s*.*?Success").matcher(r);
-                                        if (hm.find()) ok = true;
+                                        if (r.toLowerCase().contains("result") && r.toLowerCase().contains("success"))
+                                            ok = true;
+                                        java.util.regex.Matcher hm = java.util.regex.Pattern
+                                                .compile("(?i)Result\\s*:\\s*.*?Success").matcher(r);
+                                        if (hm.find())
+                                            ok = true;
                                     }
                                 }
 
                                 if (ok) {
-                                    JOptionPane.showMessageDialog(this, "WhatsApp enviado correctamente a " + recipient, "Enviado", JOptionPane.INFORMATION_MESSAGE);
-                                    System.out.println("Auto-send WhatsApp OK to " + recipient + " for comprobante " + codComprobante + " resp=" + r);
+                                    JOptionPane.showMessageDialog(this, "WhatsApp enviado correctamente a " + recipient,
+                                            "Enviado", JOptionPane.INFORMATION_MESSAGE);
+                                    System.out.println("Auto-send WhatsApp OK to " + recipient + " for comprobante "
+                                            + codComprobante + " resp=" + r);
                                 } else {
-                                    JOptionPane.showMessageDialog(this, "No se pudo enviar WhatsApp al número indicado.\nRespuesta API:\n" + r, "Aviso", JOptionPane.WARNING_MESSAGE);
+                                    JOptionPane.showMessageDialog(this,
+                                            "No se pudo enviar WhatsApp al número indicado.\nRespuesta API:\n" + r,
+                                            "Aviso", JOptionPane.WARNING_MESSAGE);
                                 }
                             }
                         }
                     }
                 }
             } catch (Exception exSend) {
-                JOptionPane.showMessageDialog(this, "Error intentando enviar WhatsApp automático:\n" + exSend.getMessage(), "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        "Error intentando enviar WhatsApp automático:\n" + exSend.getMessage(), "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error guardando comprobante:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error guardando comprobante:\n" + ex.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private String safeStr(Object o) { return o == null ? "" : o.toString().trim(); }
+    private String safeStr(Object o) {
+        return o == null ? "" : o.toString().trim();
+    }
 
     private double parseMoneyLabel(String lbl) {
-        if (lbl == null) return 0.0;
-        // Expected formats: "S/. 123.45" or "S/.0.00"; remove currency part and spaces/commas
+        if (lbl == null)
+            return 0.0;
+        // Expected formats: "S/. 123.45" or "S/.0.00"; remove currency part and
+        // spaces/commas
         String cleaned = lbl.replace("S/.", "").replace("S/", "").trim();
         cleaned = cleaned.replace(",", "");
-        if (cleaned.isEmpty()) return 0.0;
+        if (cleaned.isEmpty())
+            return 0.0;
         try {
             return Double.parseDouble(cleaned);
         } catch (NumberFormatException e) {
@@ -1592,7 +1884,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, value);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
+                if (rs.next())
+                    return rs.getInt(1);
             }
         }
         return -1;
@@ -1602,18 +1895,21 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Manage counter inside transaction
         int newValue = 1;
         // Try select for update
-        try (PreparedStatement ps = conn.prepareStatement("SELECT last_value FROM comprobante_counter WHERE tipo_comprobante = ? FOR UPDATE")) {
+        try (PreparedStatement ps = conn
+                .prepareStatement("SELECT last_value FROM comprobante_counter WHERE tipo_comprobante = ? FOR UPDATE")) {
             ps.setString(1, String.valueOf(tipo));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     newValue = rs.getInt(1) + 1;
-                    try (PreparedStatement upd = conn.prepareStatement("UPDATE comprobante_counter SET last_value = ? WHERE tipo_comprobante = ?")) {
+                    try (PreparedStatement upd = conn.prepareStatement(
+                            "UPDATE comprobante_counter SET last_value = ? WHERE tipo_comprobante = ?")) {
                         upd.setInt(1, newValue);
                         upd.setString(2, String.valueOf(tipo));
                         upd.executeUpdate();
                     }
                 } else {
-                    try (PreparedStatement ins = conn.prepareStatement("INSERT INTO comprobante_counter (tipo_comprobante, last_value) VALUES (?,?)")) {
+                    try (PreparedStatement ins = conn.prepareStatement(
+                            "INSERT INTO comprobante_counter (tipo_comprobante, last_value) VALUES (?,?)")) {
                         ins.setString(1, String.valueOf(tipo));
                         ins.setInt(2, newValue);
                         ins.executeUpdate();
@@ -1646,7 +1942,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Reload servicios so previously-removed items become selectable again
         try {
             loadServicios();
-            if (cbxServicio.getItemCount() > 0) cbxServicio.setSelectedIndex(0);
+            if (cbxServicio.getItemCount() > 0)
+                cbxServicio.setSelectedIndex(0);
             cbxServicio.setEnabled(true);
             // re-setup table editors/buttons in case model changed
             setupTableCellEditors();
@@ -1656,7 +1953,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     }
 
     private static class ServiceDetail {
-        String nombreServicio; double pesoKg; double costoKilo;
-        ServiceDetail(String n, double p, double c) { nombreServicio = n; pesoKg = p; costoKilo = c; }
+        String nombreServicio;
+        double pesoKg;
+        double costoKilo;
+
+        ServiceDetail(String n, double p, double c) {
+            nombreServicio = n;
+            pesoKg = p;
+            costoKilo = c;
+        }
     }
 }
