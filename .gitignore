@@ -52,3 +52,6 @@ nbproject/genfiles.properties
 
 # Portable directory
 /portable/
+
+# NetBeans GUI Builder files
+*.form
