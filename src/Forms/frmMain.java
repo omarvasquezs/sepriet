@@ -168,7 +168,10 @@ public class frmMain extends javax.swing.JFrame {
                 // Close any existing instances first
                 for (javax.swing.JInternalFrame f : desktopPane.getAllFrames()) {
                     if (f instanceof frmUsuarios) {
-                        try { f.setClosed(true); } catch (Exception ignored) {}
+                        try {
+                            f.setClosed(true);
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
                 frmUsuarios frm = new frmUsuarios();
@@ -181,7 +184,10 @@ public class frmMain extends javax.swing.JFrame {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 for (javax.swing.JInternalFrame f : desktopPane.getAllFrames()) {
                     if (f instanceof frmServicios) {
-                        try { f.setClosed(true); } catch (Exception ignored) {}
+                        try {
+                            f.setClosed(true);
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
                 frmServicios frm = new frmServicios();
@@ -197,10 +203,19 @@ public class frmMain extends javax.swing.JFrame {
      */
     public frmMain(int roleId) {
         this();
+        // keep role id so child frames can enforce role-based behavior
+        this.currentUserRole = roleId;
         // role 1 is admin; hide menus for other roles
         boolean isAdmin = (roleId == 1);
         menuOpcionesAvanzadas.setVisible(isAdmin);
         menuReportes.setVisible(isAdmin);
+    }
+
+    // store current user's role for internal frames to query
+    private int currentUserRole = 1;
+
+    public int getCurrentUserRole() {
+        return currentUserRole;
     }
 
     private void menuConsultarClientsAction() {
@@ -404,6 +419,8 @@ public class frmMain extends javax.swing.JFrame {
 
         // Create a new instance of frmRegistrarComprobante
         frmRegistrarComprobante registrarForm = new frmRegistrarComprobante();
+        // pass current user's role so the child frame can enforce edit rules
+        registrarForm.setCurrentUserRole(this.currentUserRole);
 
         // Add the internal frame to the desktop pane
         desktopPane.add(registrarForm);
@@ -461,8 +478,9 @@ public class frmMain extends javax.swing.JFrame {
         // </editor-fold>
 
         /* Create and display the form */
-    // When run directly from IDE, open as admin so menus are visible for development
-    java.awt.EventQueue.invokeLater(() -> new frmMain(1).setVisible(true));
+        // When run directly from IDE, open as admin so menus are visible for
+        // development
+        java.awt.EventQueue.invokeLater(() -> new frmMain(1).setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

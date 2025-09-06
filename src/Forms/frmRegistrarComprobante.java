@@ -46,6 +46,13 @@ import javax.swing.ComboBoxModel;
 public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
     /**
+     * Role id of the currently logged user. Default to 1 (admin) for backward
+     * compatibility. Set this from the caller (e.g., frmMain) when constructing
+     * the form so role-based editability can be enforced.
+     */
+    private int currentUserRole = 1;
+
+    /**
      * Creates new form frmRegistrarComprobante
      */
     public frmRegistrarComprobante() {
@@ -162,6 +169,19 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Action for generating (saving) the comprobante
         btnGenerarComprobante.addActionListener(_ -> saveComprobante());
         btnAgregarNuevoCliente.addActionListener(_ -> openNuevoClienteDialog());
+    }
+
+    /**
+     * Set the current logged user's role id. Call this before the form is shown
+     * (or after) to enable role-based UI restrictions.
+     */
+    public void setCurrentUserRole(int roleId) {
+        this.currentUserRole = roleId;
+        // Rebuild editors so cell editability rules take effect immediately
+        try {
+            setupTableCellEditors();
+        } catch (Exception ignored) {
+        }
     }
 
     /**
@@ -1049,6 +1069,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                     return false;
                 }
                 // Allow editing only for PESO (1), PRECIO (2) and ACCIONES (4)
+                // But only users with role 1 may edit the PRECIO column (index 2)
+                if (column == 2 && currentUserRole != 1) {
+                    return false;
+                }
                 return column == 1 || column == 2 || column == 4;
             }
         };

@@ -139,16 +139,16 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 openAddComprobante();
             }
         });
-    // Print preview button
-    JButton btnPrintPreview = new JButton("Vista Impresión");
-    crudBar.add(btnPrintPreview);
+        // Print preview button
+        JButton btnPrintPreview = new JButton("Vista Impresión");
+        crudBar.add(btnPrintPreview);
         btnEdit.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 openEditDialog();
             }
         });
-    btnPrintPreview.setCursor(hand);
+        btnPrintPreview.setCursor(hand);
         btnDelete.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -176,8 +176,6 @@ public class frmConsultarComprobantes extends JInternalFrame {
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowSelectionAllowed(true);
         table.setColumnSelectionAllowed(false);
-
-        
 
         // Populate cliente names and estados for filters
         SwingUtilities.invokeLater(() -> {
@@ -265,27 +263,32 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-    // Build HTML from DB (header + details) following the app's 58mm template
-    // Compute pixel width that corresponds to 164pt (58mm) on this screen: px = points * DPI / 72
-    int pxWidth = Math.round(164f * Toolkit.getDefaultToolkit().getScreenResolution() / 72f);
-    // no logo for 58mm preview
-    StringBuilder sb = new StringBuilder();
-    sb.append("<html><head><meta charset=\"utf-8\"><style>");
-    sb.append("body{font-family:'Courier New',Consolas,monospace;color:#111;font-size:12px;margin:0;padding:0;} ");
-    sb.append(".container{width:100%;margin:6px 0;padding:0;} ");
-    sb.append(".receipt{display:block;width:300px;max-width:300px;margin-left:auto;margin-right:auto;padding:16px 8px 12px 8px;background:#fff;font-family:monospace;} ");
-    sb.append("img.logo{display:block;margin:0 auto 6px auto;max-width:120px;height:auto;} ");
-    sb.append(".company{font-size:16px;font-weight:700;letter-spacing:1px;text-align:center;margin-bottom:4px;} ");
-    sb.append(".company-sub{font-size:11px;text-align:center;margin-bottom:6px;} ");
-    sb.append(".tipo{font-weight:700;text-align:center;margin:6px 0 4px 0;} .cod{font-weight:700;text-align:center;margin-bottom:8px;} ");
-    sb.append("table{width:100%;border-collapse:collapse;font-size:11px;} th,td{padding:4px 6px;} ");
-    sb.append("th.service{width:52%;text-align:left;} th.num{width:16%;text-align:right;} td.service{white-space:normal;} td.num{text-align:right;} ");
-    sb.append(".totals{width:100%;margin-top:8px;font-size:11px;} .totals td{padding:2px 6px;} .totals .label{text-align:right;padding-right:10px;} .totals .val{text-align:right;font-weight:700;} ");
-    sb.append(".footer{margin-top:10px;text-align:center;font-weight:700;} ");
-    sb.append("</style></head><body>");
+        // Build HTML from DB (header + details) following the app's 58mm template
+        // Compute pixel width that corresponds to 164pt (58mm) on this screen: px =
+        // points * DPI / 72
+        int pxWidth = Math.round(164f * Toolkit.getDefaultToolkit().getScreenResolution() / 72f);
+        // no logo for 58mm preview
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><head><meta charset=\"utf-8\"><style>");
+        sb.append("body{font-family:'Courier New',Consolas,monospace;color:#111;font-size:12px;margin:0;padding:0;} ");
+        sb.append(".container{width:100%;margin:6px 0;padding:0;} ");
+        sb.append(
+                ".receipt{display:block;width:300px;max-width:300px;margin-left:auto;margin-right:auto;padding:16px 8px 12px 8px;background:#fff;font-family:monospace;} ");
+        sb.append("img.logo{display:block;margin:0 auto 6px auto;max-width:120px;height:auto;} ");
+        sb.append(".company{font-size:16px;font-weight:700;letter-spacing:1px;text-align:center;margin-bottom:4px;} ");
+        sb.append(".company-sub{font-size:11px;text-align:center;margin-bottom:6px;} ");
+        sb.append(
+                ".tipo{font-weight:700;text-align:center;margin:6px 0 4px 0;} .cod{font-weight:700;text-align:center;margin-bottom:8px;} ");
+        sb.append("table{width:100%;border-collapse:collapse;font-size:11px;} th,td{padding:4px 6px;} ");
+        sb.append(
+                "th.service{width:52%;text-align:left;} th.num{width:16%;text-align:right;} td.service{white-space:normal;} td.num{text-align:right;} ");
+        sb.append(
+                ".totals{width:100%;margin-top:8px;font-size:11px;} .totals td{padding:2px 6px;} .totals .label{text-align:right;padding-right:10px;} .totals .val{text-align:right;font-weight:700;} ");
+        sb.append(".footer{margin-top:10px;text-align:center;font-weight:700;} ");
+        sb.append("</style></head><body>");
 
         String telefonoCliente = null;
-         try (Connection conn = DatabaseConfig.getConnection()) {
+        try (Connection conn = DatabaseConfig.getConnection()) {
             // Header
             String hdrSql = "SELECT c.tipo_comprobante,c.cod_comprobante,c.fecha,c.num_ruc,c.razon_social,c.costo_total, "
                     + "cl.nombres,cl.dni,cl.direccion,cl.telefono,ec.nom_estado as estado_comprobante "
@@ -294,7 +297,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 ph.setInt(1, id);
                 try (ResultSet rh = ph.executeQuery()) {
                     if (!rh.next()) {
-                        JOptionPane.showMessageDialog(this, "Comprobante no encontrado.", "Info", JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(this, "Comprobante no encontrado.", "Info",
+                                JOptionPane.INFORMATION_MESSAGE);
                         return;
                     }
                     String tipo = rh.getString("tipo_comprobante");
@@ -319,25 +323,33 @@ public class frmConsultarComprobantes extends JInternalFrame {
                         default -> "";
                     };
                     if (!tipoLabel.isEmpty()) {
-                        sb.append("<div style=\"text-align:center;margin-top:6px;font-weight:700;\">" + tipoLabel + "</div>");
+                        sb.append("<div style=\"text-align:center;margin-top:6px;font-weight:700;\">" + tipoLabel
+                                + "</div>");
                     }
-                    sb.append("<div style=\"text-align:center;font-weight:700;margin-bottom:6px;\">" + escapeHtml(cod) + "</div>");
+                    sb.append("<div style=\"text-align:center;font-weight:700;margin-bottom:6px;\">" + escapeHtml(cod)
+                            + "</div>");
                     // format fecha consistently with other screens
                     String fechaFmt = "";
                     try {
-                        if (ts != null) fechaFmt = ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm"));
+                        if (ts != null)
+                            fechaFmt = ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm"));
                     } catch (Exception ignore) {
                         fechaFmt = ts != null ? ts.toString() : "";
                     }
                     sb.append("<div style=\"font-size:11px;\">FECHA Y HORA: " + escapeHtml(fechaFmt) + "</div>");
                     if ("F".equals(tipo)) {
-                        sb.append("<div style=\"font-size:12px;\">N° DE RUC: " + escapeHtml(numRuc == null ? "" : numRuc) + "</div>");
-                        sb.append("<div style=\"font-size:12px;\">RAZON SOCIAL: " + escapeHtml(razon == null ? "" : razon) + "</div>");
+                        sb.append("<div style=\"font-size:12px;\">N° DE RUC: "
+                                + escapeHtml(numRuc == null ? "" : numRuc) + "</div>");
+                        sb.append("<div style=\"font-size:12px;\">RAZON SOCIAL: "
+                                + escapeHtml(razon == null ? "" : razon) + "</div>");
                     }
-                    sb.append("<div style=\"font-size:12px;\">CLIENTE: " + escapeHtml(cliente == null ? "" : cliente) + "</div>");
+                    sb.append("<div style=\"font-size:12px;\">CLIENTE: " + escapeHtml(cliente == null ? "" : cliente)
+                            + "</div>");
                     sb.append("<div style=\"font-size:12px;\">DNI: " + escapeHtml(dni == null ? "" : dni) + "</div>");
-                    sb.append("<div style=\"font-size:12px;\">DIRECCIÓN: " + escapeHtml(direccion == null ? "" : direccion) + "</div>");
-                    sb.append("<div style=\"font-size:12px;\">ESTADO: " + escapeHtml(estado == null ? "" : estado) + "</div>");
+                    sb.append("<div style=\"font-size:12px;\">DIRECCIÓN: "
+                            + escapeHtml(direccion == null ? "" : direccion) + "</div>");
+                    sb.append("<div style=\"font-size:12px;\">ESTADO: " + escapeHtml(estado == null ? "" : estado)
+                            + "</div>");
                     sb.append("<div style=\"text-align:center;margin-top:8px;font-weight:700;\">DETALLES</div>");
 
                     // Details
@@ -346,7 +358,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
                         pd.setInt(1, id);
                         try (ResultSet rd = pd.executeQuery()) {
                             sb.append("<table>");
-                            sb.append("<thead><tr><th class=\"service\">SERVICIO</th><th class=\"num\">PESO</th><th class=\"num\">C/ KG</th><th class=\"num\">TOTAL</th></tr></thead>");
+                            sb.append(
+                                    "<thead><tr><th class=\"service\">SERVICIO</th><th class=\"num\">PESO</th><th class=\"num\">C/ KG</th><th class=\"num\">TOTAL</th></tr></thead>");
                             sb.append("<tbody>");
                             double calcTotal = 0.0;
                             while (rd.next()) {
@@ -356,7 +369,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
                                 double rowTotal = peso * costoK;
                                 calcTotal += rowTotal;
                                 sb.append("<tr>");
-                                sb.append("<td class=\"service\">" + escapeHtml(nomServ == null ? "" : nomServ) + "</td>");
+                                sb.append("<td class=\"service\">" + escapeHtml(nomServ == null ? "" : nomServ)
+                                        + "</td>");
                                 sb.append("<td class=\"num\">" + formatNumber(peso) + "</td>");
                                 sb.append("<td class=\"num\">" + formatNumber(costoK) + "</td>");
                                 sb.append("<td class=\"num\">" + formatNumber(rowTotal) + "</td>");
@@ -368,9 +382,13 @@ public class frmConsultarComprobantes extends JInternalFrame {
                             double igv = calcTotal * 0.18;
                             double subtotal = calcTotal - igv;
                             sb.append("<table class=\"totals\">\n<tbody>\n");
-                            sb.append("<tr><td class=\"label\">SUBTOTAL</td><td class=\"val\">S/. " + formatNumber(subtotal) + "</td></tr>");
-                            sb.append("<tr><td class=\"label\">IGV 18%</td><td class=\"val\">S/. " + formatNumber(igv) + "</td></tr>");
-                            sb.append("<tr><td class=\"label\" style=\"font-weight:700;\">TOTAL</td><td class=\"val\" style=\"font-weight:700;\">S/. " + formatNumber(calcTotal) + "</td></tr>");
+                            sb.append("<tr><td class=\"label\">SUBTOTAL</td><td class=\"val\">S/. "
+                                    + formatNumber(subtotal) + "</td></tr>");
+                            sb.append("<tr><td class=\"label\">IGV 18%</td><td class=\"val\">S/. " + formatNumber(igv)
+                                    + "</td></tr>");
+                            sb.append(
+                                    "<tr><td class=\"label\" style=\"font-weight:700;\">TOTAL</td><td class=\"val\" style=\"font-weight:700;\">S/. "
+                                            + formatNumber(calcTotal) + "</td></tr>");
                             sb.append("</tbody></table>\n");
 
                             sb.append("<div class=\"footer\">¡Gracias por su preferencia!</div>");
@@ -380,23 +398,26 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 }
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error generando vista previa:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error generando vista previa:\n" + ex.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         sb.append("</body></html>");
 
-    // Embed receipt id inside HTML as a comment so preview can always retrieve it
-    sb.append("<!--RECEIPT_ID:" + id + "-->");
+        // Embed receipt id inside HTML as a comment so preview can always retrieve it
+        sb.append("<!--RECEIPT_ID:" + id + "-->");
 
-    DlgPrintPreview dlg = new DlgPrintPreview(SwingUtilities.getWindowAncestor(this), pxWidth);
-    // pass the selected comprobante id so the preview dialog can use it when sending
-    dlg.getRootPane().putClientProperty("receiptId", id.toString());
-    // pass telefonoCliente (may be null) so the preview dialog can prefill send dialog
-    dlg.showForHtml(sb.toString(), telefonoCliente);
+        DlgPrintPreview dlg = new DlgPrintPreview(SwingUtilities.getWindowAncestor(this), pxWidth);
+        // pass the selected comprobante id so the preview dialog can use it when
+        // sending
+        dlg.getRootPane().putClientProperty("receiptId", id.toString());
+        // pass telefonoCliente (may be null) so the preview dialog can prefill send
+        // dialog
+        dlg.showForHtml(sb.toString(), telefonoCliente);
 
-    // Debugging: Print the selected ID
-    System.out.println("Selected Comprobante ID: " + id);
+        // Debugging: Print the selected ID
+        System.out.println("Selected Comprobante ID: " + id);
     }
 
     private Integer getSelectedId() {
@@ -423,6 +444,11 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 }
             }
             frmRegistrarComprobante reg = new frmRegistrarComprobante();
+            // Try to obtain the role id from the top-level main frame (if possible)
+            java.awt.Container top = SwingUtilities.getWindowAncestor(this);
+            if (top instanceof frmMain) {
+                reg.setCurrentUserRole(((frmMain) top).getCurrentUserRole());
+            }
             dp.add(reg);
             reg.setVisible(true);
         }
@@ -873,7 +899,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
     // Simple escaping for HTML content
     private static String escapeHtml(String s) {
-        if (s == null) return "";
+        if (s == null)
+            return "";
         StringBuilder out = new StringBuilder(Math.max(16, s.length()));
         for (char c : s.toCharArray()) {
             switch (c) {
