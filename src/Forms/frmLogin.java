@@ -280,15 +280,18 @@ public class frmLogin extends javax.swing.JFrame {
 
         // Obtain a live DB connection using DatabaseConfig
         try (Connection conn = DatabaseConfig.getConnection()) {
-            String query = "SELECT password FROM users WHERE username = ?";
+            // Query password and role_id in a single query
+            String query = "SELECT password, role_id FROM users WHERE username = ?";
             try (PreparedStatement stmt = conn.prepareStatement(query)) {
                 stmt.setString(1, username);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         String encrypted = rs.getString("password");
+                        int roleId = rs.getInt("role_id");
                         if (verifyPassword(password, encrypted)) {
                             this.setVisible(false);
-                            new frmMain().setVisible(true);
+                            // Open main frame with role so it can hide menus for non-admins
+                            new frmMain(roleId).setVisible(true);
                         } else {
                             JOptionPane.showMessageDialog(this,
                                     "Usuario o Clave inválidos!",
