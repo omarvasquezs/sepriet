@@ -29,6 +29,12 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import javax.swing.text.JTextComponent;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.DocumentEvent;
 import javax.swing.event.TableModelEvent;
 import java.util.Vector;
 import javax.swing.ComboBoxModel;
@@ -51,6 +57,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // make all combo-boxes filter as you type
         AutoCompleteDecorator.decorate(cbxCliente);
         AutoCompleteDecorator.decorate(cbxServicio);
+    // Make combos editable and install placeholder behavior so the placeholder
+    // disappears on click/focus and when the user erases the text it stays empty
+    setupComboPlaceholderBehavior(cbxCliente, "-- Seleccione un cliente --");
+    setupComboPlaceholderBehavior(cbxServicio, "-- Seleccione un servicio --");
         this.setSize(1100, 600);
         this.setTitle("REGISTRAR COMPROBANTE");
         // Set the DateTimePicker to the current date and time
@@ -146,6 +156,82 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     // Action for generating (saving) the comprobante
     btnGenerarComprobante.addActionListener(_ -> saveComprobante());
     btnAgregarNuevoCliente.addActionListener(_ -> openNuevoClienteDialog());
+    }
+
+    /**
+     * Make a combo editable and ensure placeholder handling:
+     * - when focused or clicked, if the editor text equals the placeholder it is cleared
+     * - if user deletes all text, the editor stays empty (and placeholder is not re-selected)
+     */
+    private void setupComboPlaceholderBehavior(javax.swing.JComboBox<String> combo, String placeholder) {
+        combo.setEditable(true);
+        // Ensure the model still contains the placeholder as first element
+        ComboBoxModel<String> model = combo.getModel();
+        if (model.getSize() == 0 || model.getElementAt(0) == null || !model.getElementAt(0).equals(placeholder)) {
+            DefaultComboBoxModel<String> m = new DefaultComboBoxModel<>();
+            m.addElement(placeholder);
+            // copy existing items if any
+            for (int i = 0; i < model.getSize(); i++) {
+                String it = model.getElementAt(i);
+                if (it != null && !it.equals(placeholder)) m.addElement(it);
+            }
+            combo.setModel(m);
+        }
+
+        // Access the editor component (a JTextComponent) for listening
+        java.awt.Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextComponent) {
+            JTextComponent tc = (JTextComponent) editorComp;
+
+            // initialize editor text with placeholder if placeholder selected
+            if (combo.getSelectedIndex() == 0) tc.setText(placeholder);
+
+            // When focus gained or clicked, if placeholder present clear it so user types
+            tc.addFocusListener(new FocusAdapter() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (tc.getText() != null && tc.getText().equals(placeholder)) {
+                        tc.setText("");
+                    }
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    // if user left empty, keep it empty (do not reselect placeholder as selection)
+                    String t = tc.getText();
+                    if (t == null || t.trim().isEmpty()) {
+                        // nothing to select; leave editor empty and set selected index to -1
+                        combo.setSelectedIndex(-1);
+                        tc.setText("");
+                    }
+                }
+            });
+
+            // mouse click should also clear placeholder
+            tc.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(java.awt.event.MouseEvent e) {
+                    if (tc.getText() != null && tc.getText().equals(placeholder)) {
+                        tc.setText("");
+                    }
+                }
+            });
+
+            // Listen to document changes: when user erases everything, ensure combo selection is cleared
+            tc.getDocument().addDocumentListener(new DocumentListener() {
+                private void update() {
+                    String t = tc.getText();
+                    if (t == null || t.trim().isEmpty()) {
+                        // keep combo not selecting the placeholder
+                        combo.setSelectedIndex(-1);
+                    }
+                }
+
+                public void insertUpdate(DocumentEvent e) { update(); }
+                public void removeUpdate(DocumentEvent e) { update(); }
+                public void changedUpdate(DocumentEvent e) { update(); }
+            });
+        }
     }
 
     private void toggleRucFields() {
