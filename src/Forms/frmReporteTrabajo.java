@@ -42,6 +42,10 @@ public class frmReporteTrabajo extends JInternalFrame {
     public frmReporteTrabajo() {
         super("Reporte Trabajo", true, true, true, true);
         initUI();
+        java.net.URL iconUrl = getClass().getResource("/Forms/icon.png");
+        if (iconUrl != null) {
+            setFrameIcon(new ImageIcon(iconUrl));
+        }
         setSize(900, 480);
         loadPage(1);
     }
@@ -50,7 +54,10 @@ public class frmReporteTrabajo extends JInternalFrame {
     public void addNotify() {
         super.addNotify();
         SwingUtilities.invokeLater(() -> {
-            try { setMaximum(true); } catch (Exception ignored) {}
+            try {
+                setMaximum(true);
+            } catch (Exception ignored) {
+            }
         });
     }
 
@@ -110,20 +117,25 @@ public class frmReporteTrabajo extends JInternalFrame {
         btnPrev.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                if (currentPage > 1) loadPage(currentPage - 1);
+                if (currentPage > 1)
+                    loadPage(currentPage - 1);
             }
         });
         btnNext.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                if (currentPage < totalPages) loadPage(currentPage + 1);
+                if (currentPage < totalPages)
+                    loadPage(currentPage + 1);
             }
         });
         pageSizeCombo.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 Integer sel = (Integer) pageSizeCombo.getSelectedItem();
-                if (sel != null && sel != pageSize) { pageSize = sel; loadPage(1); }
+                if (sel != null && sel != pageSize) {
+                    pageSize = sel;
+                    loadPage(1);
+                }
             }
         });
 
@@ -162,13 +174,16 @@ public class frmReporteTrabajo extends JInternalFrame {
             params.add(new java.sql.Date(endDate.getDate().getTime()));
         }
 
-        String countSql = "SELECT COUNT(*) FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id = cl.id " + baseWhere;
+        String countSql = "SELECT COUNT(*) FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id = cl.id "
+                + baseWhere;
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pc = conn.prepareStatement(countSql)) {
-            for (int i = 0; i < params.size(); i++) pc.setObject(i + 1, params.get(i));
+                PreparedStatement pc = conn.prepareStatement(countSql)) {
+            for (int i = 0; i < params.size(); i++)
+                pc.setObject(i + 1, params.get(i));
             try (ResultSet rc = pc.executeQuery()) {
                 int total = 0;
-                if (rc.next()) total = rc.getInt(1);
+                if (rc.next())
+                    total = rc.getInt(1);
                 totalPages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
             }
 
@@ -182,7 +197,8 @@ public class frmReporteTrabajo extends JInternalFrame {
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 int idx = 1;
-                for (Object p : params) ps.setObject(idx++, p);
+                for (Object p : params)
+                    ps.setObject(idx++, p);
                 ps.setInt(idx++, pageSize);
                 ps.setInt(idx, offset);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -191,7 +207,10 @@ public class frmReporteTrabajo extends JInternalFrame {
                         String cod = rs.getString("cod_comprobante");
                         String cliente = rs.getString("nombres");
                         Date f = null;
-                        try { f = rs.getDate("fecha"); } catch (Exception ignored) {}
+                        try {
+                            f = rs.getDate("fecha");
+                        } catch (Exception ignored) {
+                        }
                         String fecha = f != null ? df.format(f) : "";
                         double monto = rs.getDouble("costo_total");
                         model.addRow(new Object[] { cod, cliente, fecha, formatNumber(monto) });
@@ -199,7 +218,8 @@ public class frmReporteTrabajo extends JInternalFrame {
                 }
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error cargando reporte:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error cargando reporte:\n" + ex.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -209,9 +229,11 @@ public class frmReporteTrabajo extends JInternalFrame {
             return;
         }
         JFileChooser fc = new JFileChooser();
-        fc.setSelectedFile(new java.io.File("registro_trabajo_comprobantes_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".csv"));
+        fc.setSelectedFile(new java.io.File(
+                "registro_trabajo_comprobantes_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".csv"));
         int sel = fc.showSaveDialog(this);
-        if (sel != JFileChooser.APPROVE_OPTION) return;
+        if (sel != JFileChooser.APPROVE_OPTION)
+            return;
         java.io.File f = fc.getSelectedFile();
         try (FileWriter fw = new FileWriter(f)) {
             fw.write("COMPROBANTE,CLIENTE,FECHA,COSTO TOTAL\n");
@@ -220,8 +242,10 @@ public class frmReporteTrabajo extends JInternalFrame {
                 for (int c = 0; c < model.getColumnCount(); c++) {
                     Object v = model.getValueAt(r, c);
                     String cell = v == null ? "" : v.toString().replace("\"", "\"\"");
-                    if (cell.contains(",") || cell.contains("\n")) cell = '"' + cell + '"';
-                    if (c > 0) line.append(',');
+                    if (cell.contains(",") || cell.contains("\n"))
+                        cell = '"' + cell + '"';
+                    if (c > 0)
+                        line.append(',');
                     line.append(cell);
                 }
                 line.append('\n');
@@ -230,7 +254,8 @@ public class frmReporteTrabajo extends JInternalFrame {
             fw.flush();
             JOptionPane.showMessageDialog(this, "CSV exportado: " + f.getAbsolutePath());
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error exportando CSV:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error exportando CSV:\n" + ex.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
