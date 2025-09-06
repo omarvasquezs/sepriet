@@ -991,14 +991,16 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
         }
 
-        // Calculate IGV (18%)
-        double igv = subtotal * 0.18;
-        double total = subtotal + igv;
+    // Following the web behaviour: total = sum of service totals; IGV = total * 0.18;
+    // subtotal (OP. GRAVADAS) = total - IGV
+    double total = subtotal;
+    double igv = total * 0.18;
+    double subtotalVisible = total - igv;
 
-        // Update the labels
-        jLabel12.setText("S/. " + String.format("%.2f", subtotal));
-        jLabel13.setText("S/. " + String.format("%.2f", igv));
-        jLabel14.setText("S/. " + String.format("%.2f", total));
+    // Update the labels
+    jLabel12.setText("S/. " + String.format("%.2f", subtotalVisible));
+    jLabel13.setText("S/. " + String.format("%.2f", igv));
+    jLabel14.setText("S/. " + String.format("%.2f", total));
         // If estado is CANCELADO keep monto abonado synced with total
         Object estadoSel = cbxEstadoComprobante.getSelectedItem();
         if (estadoSel != null && "CANCELADO".equalsIgnoreCase(estadoSel.toString().trim())) {

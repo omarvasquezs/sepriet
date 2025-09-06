@@ -177,6 +177,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
         table.setRowSelectionAllowed(true);
         table.setColumnSelectionAllowed(false);
 
+        
+
         // Populate cliente names and estados for filters
         SwingUtilities.invokeLater(() -> {
             populateClienteNames();
@@ -239,17 +241,13 @@ public class frmConsultarComprobantes extends JInternalFrame {
             }
         });
         table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = table.getSelectedRow();
+                if (e.getClickCount() == 2 && javax.swing.SwingUtilities.isLeftMouseButton(e)) {
+                    int row = table.rowAtPoint(e.getPoint());
                     if (row >= 0) {
-                        int modelRow = table.convertRowIndexToModel(row);
-                        ComprobanteRow cr = model.rows.get(modelRow);
-                        JOptionPane.showMessageDialog(frmConsultarComprobantes.this,
-                                "Comprobante: " + cr.codComprobante + "\nCliente: " + cr.cliente +
-                                        "\nCosto Total: " + cr.costoTotal + "\nDeuda: " + cr.deuda +
-                                        "\nFecha: " + cr.fecha,
-                                "Detalle", JOptionPane.INFORMATION_MESSAGE);
+                        table.setRowSelectionInterval(row, row);
+                        openPrintPreview();
                     }
                 }
             }
