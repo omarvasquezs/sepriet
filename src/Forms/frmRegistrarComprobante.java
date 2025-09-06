@@ -1296,6 +1296,191 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             conn.commit();
             JOptionPane.showMessageDialog(this, "Comprobante registrado. Código: " + codComprobante, "Éxito", JOptionPane.INFORMATION_MESSAGE);
             resetFormAfterSave();
+
+            // After successful save, ask for phone (prefilled if exists) and attempt to send WhatsApp.
+            try {
+                String phoneDigits = null;
+                // Try to read client's phone from clientes row by inspecting likely columns
+                try (PreparedStatement psPhone = conn.prepareStatement("SELECT * FROM clientes WHERE id = ?")) {
+                    psPhone.setInt(1, clienteId);
+                    try (ResultSet rsPhone = psPhone.executeQuery()) {
+                        if (rsPhone.next()) {
+                            java.sql.ResultSetMetaData md = rsPhone.getMetaData();
+                            for (int ci = 1; ci <= md.getColumnCount(); ci++) {
+                                String col = md.getColumnName(ci).toLowerCase();
+                                if (col.contains("cel") || col.contains("tel") || col.contains("phone") || col.contains("movil")) {
+                                    String v = rsPhone.getString(ci);
+                                    if (v != null) {
+                                        String digits = v.replaceAll("\\D", "");
+                                        if (digits.length() == 9) { phoneDigits = digits; break; }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Prompt user for number (prefilled with stored number if any)
+                String prefill = phoneDigits != null ? phoneDigits : "";
+                String input = (String) JOptionPane.showInputDialog(this, "Número de celular (9 dígitos):", "Enviar WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, prefill);
+                if (input == null) {
+                    // user cancelled - do nothing
+                } else {
+                    String phone = input.trim().replaceAll("\\D", "");
+                    if (phone.length() != 9) {
+                        JOptionPane.showMessageDialog(this, "El número debe tener exactamente 9 dígitos (sin prefijo).", "Validación", JOptionPane.WARNING_MESSAGE);
+                    } else {
+                        // Read API key
+                        java.nio.file.Path apiPath = java.nio.file.Paths.get("textmebot_api.json");
+                        if (!java.nio.file.Files.exists(apiPath)) {
+                            // no API configured - skip
+                        } else {
+                            String apiJson = new String(java.nio.file.Files.readAllBytes(apiPath), java.nio.charset.StandardCharsets.UTF_8);
+                            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\\"textmebot_api\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"").matcher(apiJson);
+                            String apikey = null; if (m.find()) apikey = m.group(1);
+                            if (apikey == null || apikey.isBlank()) {
+                                // no apikey - skip
+                            } else {
+                                String recipient = "+51" + phone;
+                                // Build detailed receipt-like plain-text message similar to DlgPrintPreview.htmlToPlainText
+                                StringBuilder sbMsg = new StringBuilder();
+                                sbMsg.append("LAVANDERIA SEPRIET\n");
+                                sbMsg.append("Enrique Nerini 995, San Luis 15021\n");
+
+                                // Tipo de comprobante label
+                                String tipoLabel = "COMPROBANTE";
+                                try (PreparedStatement psTipo = conn.prepareStatement("SELECT tipo_comprobante, fecha, num_ruc, razon_social, costo_total FROM comprobantes WHERE cod_comprobante = ?")) {
+                                    psTipo.setString(1, codComprobante);
+                                    try (ResultSet rsTipo = psTipo.executeQuery()) {
+                                        if (rsTipo.next()) {
+                                            String tipo = rsTipo.getString("tipo_comprobante");
+                                            if ("N".equalsIgnoreCase(tipo)) tipoLabel = "NOTA DE VENTA ELECTRÓNICA";
+                                            else if ("B".equalsIgnoreCase(tipo)) tipoLabel = "BOLETA";
+                                            else if ("F".equalsIgnoreCase(tipo)) tipoLabel = "FACTURA";
+                                            java.sql.Timestamp ts = rsTipo.getTimestamp("fecha");
+                                            if (ts != null) {
+                                                java.time.LocalDateTime ldt = ts.toLocalDateTime();
+                                                java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm");
+                                                sbMsg.append(tipoLabel).append("\n");
+                                                // cod comprobante
+                                                sbMsg.append(codComprobante).append("\n");
+                                                sbMsg.append("FECHA Y HORA: ").append(ldt.format(fmt)).append("\n");
+                                            } else {
+                                                sbMsg.append(tipoLabel).append("\n");
+                                                sbMsg.append(codComprobante).append("\n");
+                                            }
+                                            // consume num_ruc / razon_social if needed (not required here)
+                                            // append razon social if present later from cliente
+                                            // leave numRuc/razon if needed
+                                            // keep costo_total for totals
+                                        }
+                                    }
+                                } catch (Exception ignore) {
+                                }
+
+                                // Cliente info
+                                try (PreparedStatement psCli = conn.prepareStatement("SELECT nombres, dni, direccion FROM clientes WHERE id = ?")) {
+                                    psCli.setInt(1, clienteId);
+                                    try (ResultSet rsCli = psCli.executeQuery()) {
+                                        if (rsCli.next()) {
+                                            String nombres = rsCli.getString("nombres");
+                                            if (nombres != null && !nombres.isBlank()) sbMsg.append("CLIENTE: ").append(nombres).append("\n");
+                                            String dni = null;
+                                            try { dni = rsCli.getString("dni"); } catch (Exception ex) { /* ignore */ }
+                                            if (dni == null || dni.isBlank()) {
+                                                // try alternate column names
+                                                try { dni = rsCli.getString("num_documento"); } catch (Exception ex) { }
+                                            }
+                                            if (dni != null && !dni.isBlank()) sbMsg.append("DNI: ").append(dni).append("\n");
+                                            String dir = null;
+                                            try { dir = rsCli.getString("direccion"); } catch (Exception ex) { }
+                                            if (dir != null && !dir.isBlank()) sbMsg.append(dir).append("\n");
+                                        }
+                                    }
+                                } catch (Exception ignore) {}
+
+                                sbMsg.append("\n");
+                                sbMsg.append("DETALLES (Servicio: Peso(Kilos) x Precio al Kilo):\n");
+
+                                // Details rows
+                                try (PreparedStatement psDet = conn.prepareStatement(
+                                        "SELECT s.nom_servicio AS servicio, d.peso_kg, d.costo_kilo, (d.peso_kg * d.costo_kilo) AS total, d.comprobante_id " +
+                                                "FROM comprobantes_detalles d JOIN servicios s ON d.servicio_id = s.id WHERE d.comprobante_id = (SELECT id FROM comprobantes WHERE cod_comprobante = ?)")) {
+                                    psDet.setString(1, codComprobante);
+                                    try (ResultSet rsDet = psDet.executeQuery()) {
+                                        while (rsDet.next()) {
+                                            String serv = rsDet.getString("servicio");
+                                            double peso = rsDet.getDouble("peso_kg");
+                                            double precioK = rsDet.getDouble("costo_kilo");
+                                            double tot = rsDet.getDouble("total");
+                                            sbMsg.append("- ").append(serv == null ? "" : serv).append(": ")
+                                                    .append(String.format("%.2f", peso)).append(" kg x ")
+                                                    .append(String.format("%.2f", precioK)).append(" = ")
+                                                    .append(String.format("%.2f", tot)).append("\n");
+                                        }
+                                    }
+                                } catch (Exception ignore) {}
+
+                                // Total
+                                try (PreparedStatement psTot = conn.prepareStatement("SELECT costo_total FROM comprobantes WHERE cod_comprobante = ?")) {
+                                    psTot.setString(1, codComprobante);
+                                    try (ResultSet rsTot = psTot.executeQuery()) {
+                                        if (rsTot.next()) {
+                                            double grand = rsTot.getDouble("costo_total");
+                                            sbMsg.append("\nTOTAL: ").append(String.format("%.2f", grand)).append("\n");
+                                        }
+                                    }
+                                } catch (Exception ignore) {}
+
+                                String text = sbMsg.toString().trim();
+                                if (text.length() > 3000) text = text.substring(0, 3000);
+                                String req = "https://api.textmebot.com/send.php?recipient=" + java.net.URLEncoder.encode(recipient, "UTF-8")
+                                        + "&apikey=" + java.net.URLEncoder.encode(apikey, "UTF-8")
+                                        + "&text=" + java.net.URLEncoder.encode(text, "UTF-8")
+                                        + "&json=yes";
+                                java.net.URL u = java.net.URI.create(req).toURL();
+                                java.net.HttpURLConnection conn2 = (java.net.HttpURLConnection) u.openConnection();
+                                conn2.setRequestMethod("GET");
+                                conn2.setConnectTimeout(10000);
+                                conn2.setReadTimeout(15000);
+                                int code2 = conn2.getResponseCode();
+                                String resp;
+                                try (java.io.InputStream is = code2 >= 400 ? conn2.getErrorStream() : conn2.getInputStream()) {
+                                    resp = is == null ? "" : new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                                }
+
+                                boolean ok = false;
+                                String r = resp == null ? "" : resp.trim();
+                                // If JSON, look for status: success
+                                if (r.startsWith("{")) {
+                                    java.util.regex.Matcher jm = java.util.regex.Pattern.compile("\"status\"\\s*:\\s*\"(success|ok)\"", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(r);
+                                    if (jm.find()) ok = true;
+                                } else {
+                                    // HTML or plain: look for words Result and Success, or the pattern Result: <b>Success!</b>
+                                    if (r.toLowerCase().contains("\"status\"") || r.toLowerCase().contains("status")) {
+                                        java.util.regex.Matcher jm2 = java.util.regex.Pattern.compile("\"status\"\\s*:\\s*\"(success|ok)\"", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(r);
+                                        if (jm2.find()) ok = true;
+                                    }
+                                    if (!ok) {
+                                        if (r.toLowerCase().contains("result") && r.toLowerCase().contains("success")) ok = true;
+                                        java.util.regex.Matcher hm = java.util.regex.Pattern.compile("(?i)Result\\s*:\\s*.*?Success").matcher(r);
+                                        if (hm.find()) ok = true;
+                                    }
+                                }
+
+                                if (ok) {
+                                    JOptionPane.showMessageDialog(this, "WhatsApp enviado correctamente a " + recipient, "Enviado", JOptionPane.INFORMATION_MESSAGE);
+                                    System.out.println("Auto-send WhatsApp OK to " + recipient + " for comprobante " + codComprobante + " resp=" + r);
+                                } else {
+                                    JOptionPane.showMessageDialog(this, "No se pudo enviar WhatsApp al número indicado.\nRespuesta API:\n" + r, "Aviso", JOptionPane.WARNING_MESSAGE);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception exSend) {
+                JOptionPane.showMessageDialog(this, "Error intentando enviar WhatsApp automático:\n" + exSend.getMessage(), "Aviso", JOptionPane.WARNING_MESSAGE);
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error guardando comprobante:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
