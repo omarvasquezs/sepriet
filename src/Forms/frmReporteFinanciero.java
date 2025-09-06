@@ -41,9 +41,13 @@ public class frmReporteFinanciero extends JInternalFrame {
 
     public frmReporteFinanciero() {
         super("Reporte Ingresos", true, true, true, true);
+        java.net.URL iconUrl = getClass().getResource("/Forms/icon.png");
+        if (iconUrl != null) {
+            setFrameIcon(new ImageIcon(iconUrl));
+        }
         initUI();
         setSize(900, 480);
-    loadPage(1);
+        loadPage(1);
     }
 
     @Override
@@ -114,13 +118,15 @@ public class frmReporteFinanciero extends JInternalFrame {
         btnPrev.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                if (currentPage > 1) loadPage(currentPage - 1);
+                if (currentPage > 1)
+                    loadPage(currentPage - 1);
             }
         });
         btnNext.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                if (currentPage < totalPages) loadPage(currentPage + 1);
+                if (currentPage < totalPages)
+                    loadPage(currentPage + 1);
             }
         });
         pageSizeCombo.addActionListener(new java.awt.event.ActionListener() {
@@ -159,6 +165,7 @@ public class frmReporteFinanciero extends JInternalFrame {
         }
         loadPage(1);
     }
+
     private void loadPage(int page) {
         model.setRowCount(0);
         String baseWhere = " WHERE r.monto_abonado > 0 ";
@@ -171,11 +178,13 @@ public class frmReporteFinanciero extends JInternalFrame {
 
         String countSql = "SELECT COUNT(*) FROM reporte_ingresos r " + baseWhere;
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pc = conn.prepareStatement(countSql)) {
-            for (int i = 0; i < params.size(); i++) pc.setObject(i + 1, params.get(i));
+                PreparedStatement pc = conn.prepareStatement(countSql)) {
+            for (int i = 0; i < params.size(); i++)
+                pc.setObject(i + 1, params.get(i));
             try (ResultSet rc = pc.executeQuery()) {
                 int total = 0;
-                if (rc.next()) total = rc.getInt(1);
+                if (rc.next())
+                    total = rc.getInt(1);
                 totalPages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
             }
 
@@ -192,7 +201,8 @@ public class frmReporteFinanciero extends JInternalFrame {
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 int idx = 1;
-                for (Object p : params) ps.setObject(idx++, p);
+                for (Object p : params)
+                    ps.setObject(idx++, p);
                 ps.setInt(idx++, pageSize);
                 ps.setInt(idx, offset);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -201,7 +211,10 @@ public class frmReporteFinanciero extends JInternalFrame {
                         String cod = rs.getString("cod_comprobante");
                         String cliente = rs.getString("nombres");
                         Date f = null;
-                        try { f = rs.getDate("fecha"); } catch (Exception ignored) {}
+                        try {
+                            f = rs.getDate("fecha");
+                        } catch (Exception ignored) {
+                        }
                         String fecha = f != null ? df.format(f) : "";
                         String metodo = rs.getString("nom_metodo_pago");
                         double monto = rs.getDouble("monto_abonado");
@@ -210,7 +223,8 @@ public class frmReporteFinanciero extends JInternalFrame {
                 }
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error cargando reporte:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error cargando reporte:\n" + ex.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -220,9 +234,11 @@ public class frmReporteFinanciero extends JInternalFrame {
             return;
         }
         JFileChooser fc = new JFileChooser();
-        fc.setSelectedFile(new java.io.File("registro_ingresos_comprobantes_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".csv"));
+        fc.setSelectedFile(new java.io.File("registro_ingresos_comprobantes_"
+                + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".csv"));
         int sel = fc.showSaveDialog(this);
-        if (sel != JFileChooser.APPROVE_OPTION) return;
+        if (sel != JFileChooser.APPROVE_OPTION)
+            return;
         java.io.File f = fc.getSelectedFile();
         try (FileWriter fw = new FileWriter(f)) {
             // header
@@ -233,8 +249,10 @@ public class frmReporteFinanciero extends JInternalFrame {
                     Object v = model.getValueAt(r, c);
                     String cell = v == null ? "" : v.toString().replace("\"", "\"\"");
                     // simple CSV quoting
-                    if (cell.contains(",") || cell.contains("\n")) cell = '"' + cell + '"';
-                    if (c > 0) line.append(',');
+                    if (cell.contains(",") || cell.contains("\n"))
+                        cell = '"' + cell + '"';
+                    if (c > 0)
+                        line.append(',');
                     line.append(cell);
                 }
                 line.append('\n');
@@ -243,7 +261,8 @@ public class frmReporteFinanciero extends JInternalFrame {
             fw.flush();
             JOptionPane.showMessageDialog(this, "CSV exportado: " + f.getAbsolutePath());
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error exportando CSV:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error exportando CSV:\n" + ex.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -252,7 +271,7 @@ public class frmReporteFinanciero extends JInternalFrame {
         endDate.setDate(null);
         chkHoy.setSelected(false);
         chkMes.setSelected(false);
-    loadPage(1);
+        loadPage(1);
     }
 
     private static String formatNumber(double v) {
