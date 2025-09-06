@@ -191,6 +191,18 @@ public class frmMain extends javax.swing.JFrame {
         });
     }
 
+    /**
+     * Create main frame and apply role-based menu visibility.
+     * If roleId != 1 then hide advanced options and reports menus.
+     */
+    public frmMain(int roleId) {
+        this();
+        // role 1 is admin; hide menus for other roles
+        boolean isAdmin = (roleId == 1);
+        menuOpcionesAvanzadas.setVisible(isAdmin);
+        menuReportes.setVisible(isAdmin);
+    }
+
     private void menuConsultarClientsAction() {
         menuConsultarClientes.addActionListener(new java.awt.event.ActionListener() {
             @Override
@@ -449,7 +461,8 @@ public class frmMain extends javax.swing.JFrame {
         // </editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new frmMain().setVisible(true));
+    // When run directly from IDE, open as admin so menus are visible for development
+    java.awt.EventQueue.invokeLater(() -> new frmMain(1).setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
