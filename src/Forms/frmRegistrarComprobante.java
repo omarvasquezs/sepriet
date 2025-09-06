@@ -33,8 +33,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import javax.swing.text.JTextComponent;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.DocumentEvent;
 import javax.swing.event.TableModelEvent;
 import java.util.Vector;
 import javax.swing.ComboBoxModel;
