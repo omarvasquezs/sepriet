@@ -32,6 +32,10 @@ public class frmServicios extends JInternalFrame {
     public frmServicios() {
         super("Servicios", true, true, true, true);
         buildUI();
+        java.net.URL iconUrl = getClass().getResource("/Forms/icon.png");
+        if (iconUrl != null) {
+            setFrameIcon(new ImageIcon(iconUrl));
+        }
         setSize(900, 520);
         loadPage(1);
     }
@@ -39,7 +43,12 @@ public class frmServicios extends JInternalFrame {
     @Override
     public void addNotify() {
         super.addNotify();
-        SwingUtilities.invokeLater(() -> { try { setMaximum(true); } catch (Exception ignored) {} });
+        SwingUtilities.invokeLater(() -> {
+            try {
+                setMaximum(true);
+            } catch (Exception ignored) {
+            }
+        });
     }
 
     private void buildUI() {
@@ -51,80 +60,332 @@ public class frmServicios extends JInternalFrame {
         top.add(btnReset);
 
         JPanel crudBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        crudBar.add(btnAdd); crudBar.add(btnEdit); crudBar.add(btnDelete);
-        btnEdit.setEnabled(false); btnDelete.setEnabled(false);
+        crudBar.add(btnAdd);
+        crudBar.add(btnEdit);
+        crudBar.add(btnDelete);
+        btnEdit.setEnabled(false);
+        btnDelete.setEnabled(false);
 
-        btnBuscar.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ loadPage(1); } });
-        btnReset.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ txtSearch.setText(""); loadPage(1); } });
-        btnAdd.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ openDialog(null); } });
-        btnEdit.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ Integer id = getSelectedId(); if (id!=null) openDialog(id); } });
-        btnDelete.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ deleteSelected(); } });
+        btnBuscar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                loadPage(1);
+            }
+        });
+        btnReset.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                txtSearch.setText("");
+                loadPage(1);
+            }
+        });
+        btnAdd.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                openDialog(null);
+            }
+        });
+        btnEdit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Integer id = getSelectedId();
+                if (id != null)
+                    openDialog(id);
+            }
+        });
+        btnDelete.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                deleteSelected();
+            }
+        });
 
-        table.setModel(model); table.setFillsViewportHeight(true); table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.getSelectionModel().addListSelectionListener(new ListSelectionListener(){ public void valueChanged(ListSelectionEvent ev){ boolean sel = table.getSelectedRow()>=0; btnEdit.setEnabled(sel); btnDelete.setEnabled(sel); } });
+        table.setModel(model);
+        table.setFillsViewportHeight(true);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            public void valueChanged(ListSelectionEvent ev) {
+                boolean sel = table.getSelectedRow() >= 0;
+                btnEdit.setEnabled(sel);
+                btnDelete.setEnabled(sel);
+            }
+        });
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        final JButton btnPrev = new JButton("<"); final JButton btnNext = new JButton(">");
+        final JButton btnPrev = new JButton("<");
+        final JButton btnNext = new JButton(">");
         final JLabel lblPagina = new JLabel("Página 1 de 1");
-        final JComboBox<Integer> pageSizeCombo = new JComboBox<>(new Integer[]{10,25,50,100}); pageSizeCombo.setSelectedItem(Integer.valueOf(pageSize));
-        btnPrev.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ if (currentPage>1) loadPage(currentPage-1); } });
-        btnNext.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ if (currentPage<totalPages) loadPage(currentPage+1); } });
-        pageSizeCombo.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ Integer sel = (Integer) pageSizeCombo.getSelectedItem(); if (sel!=null && sel!=pageSize) { pageSize = sel; loadPage(1); } } });
+        final JComboBox<Integer> pageSizeCombo = new JComboBox<>(new Integer[] { 10, 25, 50, 100 });
+        pageSizeCombo.setSelectedItem(Integer.valueOf(pageSize));
+        btnPrev.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (currentPage > 1)
+                    loadPage(currentPage - 1);
+            }
+        });
+        btnNext.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (currentPage < totalPages)
+                    loadPage(currentPage + 1);
+            }
+        });
+        pageSizeCombo.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Integer sel = (Integer) pageSizeCombo.getSelectedItem();
+                if (sel != null && sel != pageSize) {
+                    pageSize = sel;
+                    loadPage(1);
+                }
+            }
+        });
 
-        bottom.add(new JLabel("Mostrar")); bottom.add(pageSizeCombo); bottom.add(btnPrev); bottom.add(btnNext); bottom.add(lblPagina);
+        bottom.add(new JLabel("Mostrar"));
+        bottom.add(pageSizeCombo);
+        bottom.add(btnPrev);
+        bottom.add(btnNext);
+        bottom.add(lblPagina);
 
         getContentPane().setLayout(new BorderLayout());
-        JPanel north = new JPanel(new BorderLayout()); north.add(top, BorderLayout.NORTH); north.add(crudBar, BorderLayout.SOUTH);
-        add(north, BorderLayout.NORTH); add(new JScrollPane(table), BorderLayout.CENTER); add(bottom, BorderLayout.SOUTH);
+        JPanel north = new JPanel(new BorderLayout());
+        north.add(top, BorderLayout.NORTH);
+        north.add(crudBar, BorderLayout.SOUTH);
+        add(north, BorderLayout.NORTH);
+        add(new JScrollPane(table), BorderLayout.CENTER);
+        add(bottom, BorderLayout.SOUTH);
         table.putClientProperty("pageLabel", lblPagina);
     }
 
-    private Integer getSelectedId(){ int r = table.getSelectedRow(); if (r<0) return null; int mr = table.convertRowIndexToModel(r); return model.rows.get(mr).id; }
-
-    private void deleteSelected(){ Integer id = getSelectedId(); if (id==null) return; int c = JOptionPane.showConfirmDialog(this, "¿Eliminar el servicio?","Confirmar",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE); if (c!=JOptionPane.YES_OPTION) return; try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement ps = conn.prepareStatement("DELETE FROM servicios WHERE id=?")) { ps.setInt(1, id); ps.executeUpdate(); loadPage(currentPage); JOptionPane.showMessageDialog(this, "Eliminado."); } catch (Exception ex){ JOptionPane.showMessageDialog(this, "Error:\n"+ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); } }
-
-    private void openDialog(Integer id){ JDialog dlg = new JDialog(SwingUtilities.getWindowAncestor(this), id==null?"Añadir SERVICIO":"Editar SERVICIO", Dialog.ModalityType.APPLICATION_MODAL);
-        JPanel p = new JPanel(new GridBagLayout()); GridBagConstraints c = new GridBagConstraints(); c.insets = new Insets(6,6,6,6); c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx=0; c.gridy=0; p.add(new JLabel("Servicio:"), c); JTextField txtNom = new JTextField(); txtNom.setColumns(30); c.gridx=1; p.add(txtNom,c);
-        c.gridx=0; c.gridy++; p.add(new JLabel("Precio por kilo (S/.):"), c); JTextField txtPrecio = new JTextField(); txtPrecio.setColumns(12); c.gridx=1; p.add(txtPrecio,c);
-        c.gridx=0; c.gridy++; p.add(new JLabel("Estado:"), c); JCheckBox chk = new JCheckBox("Habilitado"); chk.setSelected(true); c.gridx=1; p.add(chk,c);
-
-        if (id!=null){ try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement ps = conn.prepareStatement("SELECT nom_servicio, precio_kilo, habilitado FROM servicios WHERE id=?")) { ps.setInt(1,id); try (ResultSet rs = ps.executeQuery()){ if (rs.next()){ txtNom.setText(rs.getString(1)); txtPrecio.setText(rs.getString(2)); chk.setSelected(rs.getInt(3)!=0); } } } catch (Exception ex){ JOptionPane.showMessageDialog(this, "Error cargando:\n"+ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); return; } }
-
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT)); JButton btnSave = new JButton("Guardar"); JButton btnCancel = new JButton("Cancelar"); btns.add(btnSave); btns.add(btnCancel);
-        btnCancel.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ dlg.dispose(); } });
-        btnSave.addActionListener(new ActionListener(){ public void actionPerformed(ActionEvent e){ String nom = txtNom.getText().trim(); String precio = txtPrecio.getText().trim(); int habil = chk.isSelected()?1:0; if (nom.isEmpty()){ JOptionPane.showMessageDialog(dlg, "Servicio requerido."); return; } try (Connection conn = DatabaseConfig.getConnection()){ if (id==null){ try (PreparedStatement ps = conn.prepareStatement("INSERT INTO servicios(nom_servicio,precio_kilo,habilitado) VALUES(?,?,?)")){ ps.setString(1, nom); if (precio.isEmpty()) ps.setObject(2,null); else ps.setFloat(2, Float.parseFloat(precio)); ps.setInt(3, habil); ps.executeUpdate(); } } else { if (precio.isEmpty()){ try (PreparedStatement ps = conn.prepareStatement("UPDATE servicios SET nom_servicio=?, precio_kilo=NULL, habilitado=? WHERE id=?")){ ps.setString(1, nom); ps.setInt(2, habil); ps.setInt(3, id); ps.executeUpdate(); } } else { try (PreparedStatement ps = conn.prepareStatement("UPDATE servicios SET nom_servicio=?, precio_kilo=?, habilitado=? WHERE id=?")){ ps.setString(1, nom); ps.setFloat(2, Float.parseFloat(precio)); ps.setInt(3, habil); ps.setInt(4, id); ps.executeUpdate(); } } }
-                dlg.dispose(); loadPage(currentPage);
-            } catch (Exception ex){ JOptionPane.showMessageDialog(dlg, "Error guardando:\n"+ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); }
-        } });
-
-        dlg.getContentPane().setLayout(new BorderLayout()); dlg.getContentPane().add(p, BorderLayout.CENTER); dlg.getContentPane().add(btns, BorderLayout.SOUTH); dlg.pack(); dlg.setLocationRelativeTo(this); dlg.setVisible(true);
+    private Integer getSelectedId() {
+        int r = table.getSelectedRow();
+        if (r < 0)
+            return null;
+        int mr = table.convertRowIndexToModel(r);
+        return model.rows.get(mr).id;
     }
 
-    private static class ServiceRow { int id; String nom; float precio; int habil; }
+    private void deleteSelected() {
+        Integer id = getSelectedId();
+        if (id == null)
+            return;
+        int c = JOptionPane.showConfirmDialog(this, "¿Eliminar el servicio?", "Confirmar", JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        if (c != JOptionPane.YES_OPTION)
+            return;
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement ps = conn.prepareStatement("DELETE FROM servicios WHERE id=?")) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+            loadPage(currentPage);
+            JOptionPane.showMessageDialog(this, "Eliminado.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void openDialog(Integer id) {
+        JDialog dlg = new JDialog(SwingUtilities.getWindowAncestor(this),
+                id == null ? "Añadir SERVICIO" : "Editar SERVICIO", Dialog.ModalityType.APPLICATION_MODAL);
+        JPanel p = new JPanel(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(6, 6, 6, 6);
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 0;
+        p.add(new JLabel("Servicio:"), c);
+        JTextField txtNom = new JTextField();
+        txtNom.setColumns(30);
+        c.gridx = 1;
+        p.add(txtNom, c);
+        c.gridx = 0;
+        c.gridy++;
+        p.add(new JLabel("Precio por kilo (S/.):"), c);
+        JTextField txtPrecio = new JTextField();
+        txtPrecio.setColumns(12);
+        c.gridx = 1;
+        p.add(txtPrecio, c);
+        c.gridx = 0;
+        c.gridy++;
+        p.add(new JLabel("Estado:"), c);
+        JCheckBox chk = new JCheckBox("Habilitado");
+        chk.setSelected(true);
+        c.gridx = 1;
+        p.add(chk, c);
+
+        if (id != null) {
+            try (Connection conn = DatabaseConfig.getConnection();
+                    PreparedStatement ps = conn.prepareStatement(
+                            "SELECT nom_servicio, precio_kilo, habilitado FROM servicios WHERE id=?")) {
+                ps.setInt(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        txtNom.setText(rs.getString(1));
+                        txtPrecio.setText(rs.getString(2));
+                        chk.setSelected(rs.getInt(3) != 0);
+                    }
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error cargando:\n" + ex.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnSave = new JButton("Guardar");
+        JButton btnCancel = new JButton("Cancelar");
+        btns.add(btnSave);
+        btns.add(btnCancel);
+        btnCancel.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                dlg.dispose();
+            }
+        });
+        btnSave.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String nom = txtNom.getText().trim();
+                String precio = txtPrecio.getText().trim();
+                int habil = chk.isSelected() ? 1 : 0;
+                if (nom.isEmpty()) {
+                    JOptionPane.showMessageDialog(dlg, "Servicio requerido.");
+                    return;
+                }
+                try (Connection conn = DatabaseConfig.getConnection()) {
+                    if (id == null) {
+                        try (PreparedStatement ps = conn.prepareStatement(
+                                "INSERT INTO servicios(nom_servicio,precio_kilo,habilitado) VALUES(?,?,?)")) {
+                            ps.setString(1, nom);
+                            if (precio.isEmpty())
+                                ps.setObject(2, null);
+                            else
+                                ps.setFloat(2, Float.parseFloat(precio));
+                            ps.setInt(3, habil);
+                            ps.executeUpdate();
+                        }
+                    } else {
+                        if (precio.isEmpty()) {
+                            try (PreparedStatement ps = conn.prepareStatement(
+                                    "UPDATE servicios SET nom_servicio=?, precio_kilo=NULL, habilitado=? WHERE id=?")) {
+                                ps.setString(1, nom);
+                                ps.setInt(2, habil);
+                                ps.setInt(3, id);
+                                ps.executeUpdate();
+                            }
+                        } else {
+                            try (PreparedStatement ps = conn.prepareStatement(
+                                    "UPDATE servicios SET nom_servicio=?, precio_kilo=?, habilitado=? WHERE id=?")) {
+                                ps.setString(1, nom);
+                                ps.setFloat(2, Float.parseFloat(precio));
+                                ps.setInt(3, habil);
+                                ps.setInt(4, id);
+                                ps.executeUpdate();
+                            }
+                        }
+                    }
+                    dlg.dispose();
+                    loadPage(currentPage);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dlg, "Error guardando:\n" + ex.getMessage(), "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        dlg.getContentPane().setLayout(new BorderLayout());
+        dlg.getContentPane().add(p, BorderLayout.CENTER);
+        dlg.getContentPane().add(btns, BorderLayout.SOUTH);
+        dlg.pack();
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
+    }
+
+    private static class ServiceRow {
+        int id;
+        String nom;
+        float precio;
+        int habil;
+    }
 
     private static class ServiciosTableModel extends AbstractTableModel {
-        private final String[] cols = {"SERVICIO","PRECIO POR KILO (S/.)","ESTADO"};
+        private final String[] cols = { "SERVICIO", "PRECIO POR KILO (S/.)", "ESTADO" };
         private java.util.List<ServiceRow> rows = new java.util.ArrayList<>();
-        public void setRows(java.util.List<ServiceRow> data){ rows = data; fireTableDataChanged(); }
-        @Override public int getRowCount(){ return rows.size(); }
-        @Override public int getColumnCount(){ return cols.length; }
-        @Override public String getColumnName(int c){ return cols[c]; }
-        @Override public Object getValueAt(int r,int c){ ServiceRow s = rows.get(r); if (c==0) return s.nom; else if (c==1) return s.precio; else if (c==2) return s.habil==1?"HABILITADO":"DESHABILITADO"; else return null; }
+
+        public void setRows(java.util.List<ServiceRow> data) {
+            rows = data;
+            fireTableDataChanged();
+        }
+
+        @Override
+        public int getRowCount() {
+            return rows.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return cols.length;
+        }
+
+        @Override
+        public String getColumnName(int c) {
+            return cols[c];
+        }
+
+        @Override
+        public Object getValueAt(int r, int c) {
+            ServiceRow s = rows.get(r);
+            if (c == 0)
+                return s.nom;
+            else if (c == 1)
+                return s.precio;
+            else if (c == 2)
+                return s.habil == 1 ? "HABILITADO" : "DESHABILITADO";
+            else
+                return null;
+        }
     }
 
-    private void loadPage(int page){ model.setRows(new ArrayList<>());
-        String where = " WHERE 1=1 "; List<Object> params = new ArrayList<>(); String q = txtSearch.getText().trim(); if (!q.isEmpty()){ where += " AND nom_servicio LIKE ? "; params.add('%'+q+'%'); }
+    private void loadPage(int page) {
+        model.setRows(new ArrayList<>());
+        String where = " WHERE 1=1 ";
+        List<Object> params = new ArrayList<>();
+        String q = txtSearch.getText().trim();
+        if (!q.isEmpty()) {
+            where += " AND nom_servicio LIKE ? ";
+            params.add('%' + q + '%');
+        }
         String countSql = "SELECT COUNT(*) FROM servicios" + where;
-        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement pc = conn.prepareStatement(countSql)){
-            for (int i=0;i<params.size();i++) pc.setObject(i+1, params.get(i)); try (ResultSet rc = pc.executeQuery()){ int total=0; if (rc.next()) total = rc.getInt(1); totalPages = Math.max(1, (int)Math.ceil(total/(double)pageSize)); }
-            currentPage = Math.min(page, totalPages); int offset = (currentPage-1)*pageSize;
-            String sql = "SELECT id, nom_servicio, precio_kilo, habilitado FROM servicios" + where + " ORDER BY id DESC LIMIT ? OFFSET ?";
-            try (PreparedStatement ps = conn.prepareStatement(sql)){
-                int idx=1; for (Object p:params) ps.setObject(idx++, p); ps.setInt(idx++, pageSize); ps.setInt(idx, offset);
-                try (ResultSet rs = ps.executeQuery()){ java.util.List<ServiceRow> list = new java.util.ArrayList<>(); while (rs.next()){ ServiceRow s = new ServiceRow(); s.id = rs.getInt(1); s.nom = rs.getString(2); s.precio = rs.getFloat(3); s.habil = rs.getInt(4); list.add(s); } model.setRows(list); }
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement pc = conn.prepareStatement(countSql)) {
+            for (int i = 0; i < params.size(); i++)
+                pc.setObject(i + 1, params.get(i));
+            try (ResultSet rc = pc.executeQuery()) {
+                int total = 0;
+                if (rc.next())
+                    total = rc.getInt(1);
+                totalPages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
             }
-            JLabel lbl = (JLabel) table.getClientProperty("pageLabel"); if (lbl!=null) lbl.setText("Página " + currentPage + " de " + totalPages);
-        } catch (Exception ex){ JOptionPane.showMessageDialog(this, "Error cargando servicios:\n"+ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); }
+            currentPage = Math.min(page, totalPages);
+            int offset = (currentPage - 1) * pageSize;
+            String sql = "SELECT id, nom_servicio, precio_kilo, habilitado FROM servicios" + where
+                    + " ORDER BY id DESC LIMIT ? OFFSET ?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                int idx = 1;
+                for (Object p : params)
+                    ps.setObject(idx++, p);
+                ps.setInt(idx++, pageSize);
+                ps.setInt(idx, offset);
+                try (ResultSet rs = ps.executeQuery()) {
+                    java.util.List<ServiceRow> list = new java.util.ArrayList<>();
+                    while (rs.next()) {
+                        ServiceRow s = new ServiceRow();
+                        s.id = rs.getInt(1);
+                        s.nom = rs.getString(2);
+                        s.precio = rs.getFloat(3);
+                        s.habil = rs.getInt(4);
+                        list.add(s);
+                    }
+                    model.setRows(list);
+                }
+            }
+            JLabel lbl = (JLabel) table.getClientProperty("pageLabel");
+            if (lbl != null)
+                lbl.setText("Página " + currentPage + " de " + totalPages);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error cargando servicios:\n" + ex.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
