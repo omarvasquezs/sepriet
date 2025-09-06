@@ -347,7 +347,7 @@ public class DlgPrintPreview extends JDialog {
 
             if (upper.contains("DETALLES")) {
                 inDetails = true;
-                out.append("DETALLES:\n");
+                out.append("DETALLES (Servicio: Peso(Kilos) x Precio al Kilo):\n");
                 continue;
             }
 
