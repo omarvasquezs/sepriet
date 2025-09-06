@@ -1557,6 +1557,16 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         }
         updateTotals();
         toggleMontoAbonado();
+        // Reload servicios so previously-removed items become selectable again
+        try {
+            loadServicios();
+            if (cbxServicio.getItemCount() > 0) cbxServicio.setSelectedIndex(0);
+            cbxServicio.setEnabled(true);
+            // re-setup table editors/buttons in case model changed
+            setupTableCellEditors();
+            setupTableButtons();
+        } catch (Exception ignore) {
+        }
     }
 
     private static class ServiceDetail {
