@@ -448,6 +448,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
             java.awt.Container top = SwingUtilities.getWindowAncestor(this);
             if (top instanceof frmMain) {
                 reg.setCurrentUserRole(((frmMain) top).getCurrentUserRole());
+                // pass current user's id as well
+                reg.setCurrentUserId(((frmMain) top).getCurrentUserId());
             }
             dp.add(reg);
             reg.setVisible(true);

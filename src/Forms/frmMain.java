@@ -207,11 +207,26 @@ public class frmMain extends javax.swing.JFrame {
         menuReportes.setVisible(isAdmin);
     }
 
+    /**
+     * Constructor that receives both roleId and userId from the login form.
+     */
+    public frmMain(int roleId, int userId) {
+        this(roleId);
+        this.currentUserId = userId;
+    }
+
     // store current user's role for internal frames to query
     private int currentUserRole = 1;
 
+    // store current user's id (from users.id)
+    private int currentUserId = 1;
+
     public int getCurrentUserRole() {
         return currentUserRole;
+    }
+
+    public int getCurrentUserId() {
+        return currentUserId;
     }
 
     private void menuConsultarClientsAction() {
@@ -395,6 +410,8 @@ public class frmMain extends javax.swing.JFrame {
         frmRegistrarComprobante registrarForm = new frmRegistrarComprobante();
         // pass current user's role so the child frame can enforce edit rules
         registrarForm.setCurrentUserRole(this.currentUserRole);
+    // pass current user's id so the child frame can record who created the comprobante
+    registrarForm.setCurrentUserId(this.currentUserId);
 
         // Add the internal frame to the desktop pane
         desktopPane.add(registrarForm);

@@ -185,6 +185,17 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     }
 
     /**
+     * Set the currently logged user id (users.id). This should be called by the
+     * parent frame (frmMain) when creating the registrar form so DB inserts
+     * record the correct user instead of using a hardcoded default.
+     */
+    private int currentUserId = 1;
+
+    public void setCurrentUserId(int userId) {
+        this.currentUserId = userId;
+    }
+
+    /**
      * Make a combo editable and ensure placeholder handling:
      * - when focused or clicked, if the editor text equals the placeholder it is
      * cleared
@@ -1477,7 +1488,6 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     // client yet)
     private static final int DEFAULT_LOCAL_ID = 5;
     private static final int DEFAULT_ESTADO_ROPA_ID = 1;
-    private static final int DEFAULT_USER_ID = 1;
 
     private void saveComprobante() {
         // VALIDATIONS
@@ -1635,7 +1645,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                     PreparedStatement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, String.valueOf(tipoComprobante));
                 ps.setInt(2, clienteId);
-                ps.setInt(3, DEFAULT_USER_ID);
+                ps.setInt(3, this.currentUserId);
                 ps.setTimestamp(4, java.sql.Timestamp.valueOf(fecha));
                 if (metodoPagoId != null)
                     ps.setInt(5, metodoPagoId);
@@ -1657,7 +1667,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 else
                     ps.setNull(11, java.sql.Types.CLOB);
                 ps.setDouble(12, montoAbonado);
-                ps.setInt(13, DEFAULT_USER_ID);
+                ps.setInt(13, this.currentUserId);
                 ps.setString(14, codComprobante);
                 ps.setDouble(15, total);
                 ps.executeUpdate();
