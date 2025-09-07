@@ -35,9 +35,13 @@ public class DlgEditarCliente extends JDialog {
         c.weightx = 0;
 
         addRow(form, c, 0, new JLabel("Nombres:"), txtNombres);
+        TextCaseUtils.applyUppercase(txtNombres);
         addRow(form, c, 1, new JLabel("DNI:"), txtDni);
+        TextCaseUtils.applyUppercase(txtDni);
         addRow(form, c, 2, new JLabel("Teléfono:"), txtTelefono);
+        TextCaseUtils.applyUppercase(txtTelefono);
         addRow(form, c, 3, new JLabel("E-mail:"), txtEmail);
+        TextCaseUtils.applyUppercase(txtEmail);
 
         c.gridy = 4;
         c.gridx = 0;
@@ -48,6 +52,7 @@ public class DlgEditarCliente extends JDialog {
         c.weightx = 1;
         c.fill = GridBagConstraints.BOTH;
         JScrollPane sp = new JScrollPane(txtDireccion);
+        TextCaseUtils.applyUppercase(txtDireccion);
         sp.setPreferredSize(new Dimension(420, 120));
         form.add(sp, c);
 
