@@ -60,7 +60,7 @@ public class DlgNuevoCliente extends JDialog {
         TextCaseUtils.applyUppercase(txtNombres);
         addRow(form, c, row++, lblNombre, txtNombres);
 
-        JLabel lblDni = new JLabel("DNI *:");
+    JLabel lblDni = new JLabel("DNI:");
         lblDni.setFont(labelFont);
         txtDni.setFont(fieldFont);
         txtDni.setPreferredSize(new Dimension(240, 34));
@@ -195,33 +195,44 @@ public class DlgNuevoCliente extends JDialog {
         String email = txtEmail.getText().trim();
         String direccion = txtDireccion.getText().trim();
 
-        if (nombres.isEmpty() || dni.isEmpty() || telefono.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Complete los campos obligatorios (Nombre, DNI, Teléfono).",
-                    "Validación", JOptionPane.WARNING_MESSAGE);
+    // DNI is optional now; required: nombres and telefono
+    if (nombres.isEmpty() || telefono.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Complete los campos obligatorios (Nombre, Teléfono).",
+            "Validación", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if (!dni.matches("\\d+")) {
-            JOptionPane.showMessageDialog(this, "El DNI debe contener solo dígitos.", "Validación",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+    if (!dni.isEmpty() && !dni.matches("\\d+")) {
+        JOptionPane.showMessageDialog(this, "El DNI debe contener solo dígitos.", "Validación",
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    if (!email.isEmpty() && !TextCaseUtils.isValidEmail(email)) {
+        JOptionPane.showMessageDialog(this, "Ingrese un correo electrónico válido.", "Validación",
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
         // Insert into DB ensuring unique DNI
         try (Connection conn = DatabaseConfig.getConnection()) {
-            // Check uniqueness
-            try (PreparedStatement chk = conn.prepareStatement("SELECT COUNT(*) FROM clientes WHERE dni = ?")) {
-                chk.setString(1, dni);
-                try (ResultSet rs = chk.executeQuery()) {
-                    if (rs.next() && rs.getInt(1) > 0) {
-                        JOptionPane.showMessageDialog(this, "El DNI ya existe.", "Validación",
-                                JOptionPane.WARNING_MESSAGE);
-                        return;
+            // Check uniqueness only if DNI provided
+            if (!dni.isEmpty()) {
+                try (PreparedStatement chk = conn.prepareStatement("SELECT COUNT(*) FROM clientes WHERE dni = ?")) {
+                    chk.setString(1, dni);
+                    try (ResultSet rs = chk.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            JOptionPane.showMessageDialog(this, "El DNI ya existe.", "Validación",
+                                    JOptionPane.WARNING_MESSAGE);
+                            return;
+                        }
                     }
                 }
             }
             String sql = "INSERT INTO clientes (nombres, dni, telefono, email, direccion) VALUES (?,?,?,?,?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, nombres);
-                ps.setString(2, dni);
+                if (!dni.isEmpty())
+                    ps.setString(2, dni);
+                else
+                    ps.setNull(2, java.sql.Types.VARCHAR);
                 ps.setString(3, telefono);
                 if (!email.isEmpty())
                     ps.setString(4, email);

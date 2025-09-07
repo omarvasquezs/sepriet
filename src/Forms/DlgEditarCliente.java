@@ -164,16 +164,31 @@ public class DlgEditarCliente extends JDialog {
         String telefono = txtTelefono.getText().trim();
         String email = txtEmail.getText().trim();
         String direccion = txtDireccion.getText().trim();
-        if (nombres.isEmpty() || dni.isEmpty() || telefono.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Complete los campos obligatorios.", "Validación",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+    // DNI is optional now; required: nombres and telefono
+    if (nombres.isEmpty() || telefono.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Complete los campos obligatorios.", "Validación",
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    if (!dni.isEmpty() && !dni.matches("\\d+")) {
+        JOptionPane.showMessageDialog(this, "El DNI debe contener solo dígitos.", "Validación",
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    if (!email.isEmpty() && !TextCaseUtils.isValidEmail(email)) {
+        JOptionPane.showMessageDialog(this, "Ingrese un correo electrónico válido.", "Validación",
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
         try (Connection conn = DatabaseConfig.getConnection()) {
             try (PreparedStatement ps = conn.prepareStatement(
                     "UPDATE clientes SET nombres=?,dni=?,telefono=?,email=?,direccion=? WHERE id=?")) {
                 ps.setString(1, nombres);
-                ps.setString(2, dni);
+                if (!dni.isEmpty())
+                    ps.setString(2, dni);
+                else
+                    ps.setNull(2, java.sql.Types.VARCHAR);
                 ps.setString(3, telefono);
                 if (!email.isEmpty())
                     ps.setString(4, email);

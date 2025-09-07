@@ -6,6 +6,7 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.JTextComponent;
+import java.util.regex.Pattern;
 
 /**
  * Small helper to apply an uppercase DocumentFilter to text components.
@@ -37,5 +38,15 @@ public final class TextCaseUtils {
             });
         } catch (Exception ignore) {
         }
+    }
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$",
+            Pattern.CASE_INSENSITIVE);
+
+    public static boolean isValidEmail(String email) {
+        if (email == null)
+            return false;
+        return EMAIL_PATTERN.matcher(email.trim()).matches();
     }
 }
