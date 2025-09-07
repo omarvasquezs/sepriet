@@ -2019,7 +2019,27 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
             }
         }
-        return tipo + String.format("-%06d", newValue); // e.g. N-001234
+        // Legacy desktop app used prefixes like NV001-, B001- and F001-.
+        // Map the single-char tipo to those prefixes so generated codes match
+        // existing records (e.g. NV001-1031, B001-45, F001-7).
+        String prefix;
+        switch (tipo) {
+            case 'N':
+                prefix = "NV001";
+                break;
+            case 'B':
+                prefix = "B001";
+                break;
+            case 'F':
+                prefix = "F001";
+                break;
+            default:
+                prefix = String.valueOf(tipo);
+                break;
+        }
+        // Keep counter as an integer suffix (no extra zero-padding) to match
+        // historical values like NV001-1031
+        return prefix + "-" + newValue;
     }
 
     private void resetFormAfterSave() {
