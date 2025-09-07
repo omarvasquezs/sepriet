@@ -4,6 +4,10 @@ import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -204,6 +208,27 @@ public class frmServicios extends JInternalFrame {
         p.add(new JLabel("Servicio:"), c);
         JTextField txtNom = new JTextField();
         txtNom.setColumns(30);
+        // Force uppercase while typing
+        try {
+            ((AbstractDocument) txtNom.getDocument()).setDocumentFilter(new DocumentFilter() {
+                @Override
+                public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                        throws BadLocationException {
+                    if (string != null)
+                        string = string.toUpperCase(java.util.Locale.getDefault());
+                    super.insertString(fb, offset, string, attr);
+                }
+
+                @Override
+                public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                        throws BadLocationException {
+                    if (text != null)
+                        text = text.toUpperCase(java.util.Locale.getDefault());
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            });
+        } catch (Exception ignored) {
+        }
         c.gridx = 1;
         p.add(txtNom, c);
         c.gridx = 0;

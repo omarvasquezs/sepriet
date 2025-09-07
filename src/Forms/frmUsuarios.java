@@ -1,6 +1,10 @@
 package Forms;
 
 import javax.swing.*;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -278,6 +282,27 @@ public class frmUsuarios extends JInternalFrame {
         p.add(new JLabel("Usuario:"), c);
         JTextField txtUser = new JTextField();
         txtUser.setColumns(30);
+        // Force uppercase while typing
+        try {
+            ((AbstractDocument) txtUser.getDocument()).setDocumentFilter(new DocumentFilter() {
+                @Override
+                public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                        throws BadLocationException {
+                    if (string != null)
+                        string = string.toUpperCase(java.util.Locale.getDefault());
+                    super.insertString(fb, offset, string, attr);
+                }
+
+                @Override
+                public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                        throws BadLocationException {
+                    if (text != null)
+                        text = text.toUpperCase(java.util.Locale.getDefault());
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            });
+        } catch (Exception ignored) {
+        }
         c.gridx = 1;
         p.add(txtUser, c);
         c.gridx = 0;
