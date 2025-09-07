@@ -100,7 +100,7 @@ public class frmMain extends javax.swing.JFrame {
         menuConsultarTodosComprobantes.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                openComprobantesFrame(frmConsultarComprobantes.Mode.TODOS);
+                openComprobantesFrame(frmConsultarComprobantes.Mode.DEFAULT);
             }
         });
         menuConsultarComprobantesNoCancelados.addActionListener(new java.awt.event.ActionListener() {
@@ -118,6 +118,7 @@ public class frmMain extends javax.swing.JFrame {
         menuConsultarClientsAction();
         menuReportesHistorico.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
+                // 'Historico comprobantes' should open the unfiltered Todos listing
                 openComprobantesFrame(frmConsultarComprobantes.Mode.TODOS);
             }
         });
@@ -418,6 +419,8 @@ public class frmMain extends javax.swing.JFrame {
             frm = new frmConsultarComprobantesNoCancelados();
         } else if (mode == frmConsultarComprobantes.Mode.CANCELADOS) {
             frm = new frmConsultarComprobantesCancelados();
+        } else if (mode == frmConsultarComprobantes.Mode.TODOS) {
+            frm = new frmConsultarComprobantesTodos();
         } else {
             frm = new frmConsultarComprobantes(mode);
         }
