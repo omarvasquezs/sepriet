@@ -612,7 +612,46 @@ public class frmConsultarComprobantes extends JInternalFrame {
      * remove or lock specific checkboxes (e.g., remove CANCELADO).
      */
     protected void postPopulateEstadoItems() {
-        // default: no-op
+        // Default behavior: when in DEFAULT mode, apply the web-app default
+        // pre-filters by removing estado_ropa id 4 (RECOGIDO) and removing
+        // estado_comprobante id 3 (ANULADO). Subclasses (RECIBIDOS/CANCELADOS)
+        // override this method to provide stricter rules.
+        if (this.mode == Mode.DEFAULT) {
+            try {
+                for (JCheckBox cb : getEstadoRopaItems()) {
+                    try {
+                        int id = Integer.parseInt(cb.getActionCommand());
+                        if (id == 4) {
+                            cb.setSelected(false);
+                            cb.setVisible(false);
+                        } else {
+                            cb.setSelected(true);
+                            cb.setVisible(true);
+                        }
+                    } catch (Exception ignore) {
+                    }
+                }
+            } catch (Exception ignore) {
+            }
+            try {
+                for (JCheckBox cb : getEstadoComprobanteItems()) {
+                    try {
+                        int id = Integer.parseInt(cb.getActionCommand());
+                        // keep 1 (DEBE), 2 (ABONO), 4 (CANCELADO) -> hide 3 (ANULADO)
+                        if (id == 3) {
+                            cb.setSelected(false);
+                            cb.setVisible(false);
+                        } else {
+                            cb.setSelected(true);
+                            cb.setVisible(true);
+                        }
+                    } catch (Exception ignore) {
+                    }
+                }
+            } catch (Exception ignore) {
+            }
+        }
+        // Other modes are handled by subclasses overriding this hook.
     }
 
     // Protected accessors for subclasses
