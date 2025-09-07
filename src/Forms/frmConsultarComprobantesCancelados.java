@@ -16,19 +16,42 @@ public class frmConsultarComprobantesCancelados extends frmConsultarComprobantes
 
     @Override
     protected void postPopulateEstadoItems() {
-        for (JCheckBox cb : getEstadoComprobanteItems()) {
-            try {
-                if (cb.getText() != null && cb.getText().trim().equalsIgnoreCase("CANCELADO")) {
-                    cb.setSelected(true);
-                    cb.setEnabled(false); // lock it
-                    cb.setVisible(true);
-                } else {
-                    cb.setSelected(false);
-                    cb.setEnabled(false);
-                    cb.setVisible(false);
+        try {
+            // estado_ropa: keep only ids 1 and 3
+            for (JCheckBox cb : getEstadoRopaItems()) {
+                try {
+                    int id = Integer.parseInt(cb.getActionCommand());
+                    if (id == 1 || id == 3) {
+                        cb.setVisible(true);
+                        cb.setEnabled(true);
+                        cb.setSelected(true);
+                    } else {
+                        cb.setVisible(false);
+                        cb.setSelected(false);
+                    }
+                } catch (Exception ignore) {
                 }
-            } catch (Exception ignore) {
             }
+        } catch (Exception ignore) {
+        }
+        try {
+            // estado_comprobante: only CANCELADO (4) and lock it
+            for (JCheckBox cb : getEstadoComprobanteItems()) {
+                try {
+                    int id = Integer.parseInt(cb.getActionCommand());
+                    if (id == 4) {
+                        cb.setVisible(true);
+                        cb.setEnabled(false);
+                        cb.setSelected(true);
+                    } else {
+                        cb.setVisible(false);
+                        cb.setSelected(false);
+                        cb.setEnabled(false);
+                    }
+                } catch (Exception ignore) {
+                }
+            }
+        } catch (Exception ignore) {
         }
     }
 }
