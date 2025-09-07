@@ -6,6 +6,10 @@ import java.awt.event.ActionEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 
 public class DlgEditarCliente extends JDialog {
     private final JTextField txtNombres = new JTextField();
@@ -37,9 +41,57 @@ public class DlgEditarCliente extends JDialog {
         addRow(form, c, 0, new JLabel("Nombres:"), txtNombres);
         TextCaseUtils.applyUppercase(txtNombres);
         addRow(form, c, 1, new JLabel("DNI:"), txtDni);
-        TextCaseUtils.applyUppercase(txtDni);
+        // DNI digit-only
+        try {
+            ((AbstractDocument) txtDni.getDocument()).setDocumentFilter(new DocumentFilter() {
+                @Override
+                public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                        throws BadLocationException {
+                    if (string == null)
+                        return;
+                    String filtered = string.replaceAll("[^0-9]", "");
+                    super.insertString(fb, offset, filtered, attr);
+                }
+
+                @Override
+                public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                        throws BadLocationException {
+                    if (text == null) {
+                        super.replace(fb, offset, length, text, attrs);
+                        return;
+                    }
+                    String filtered = text.replaceAll("[^0-9]", "");
+                    super.replace(fb, offset, length, filtered, attrs);
+                }
+            });
+        } catch (Exception ignore) {
+        }
         addRow(form, c, 2, new JLabel("Teléfono:"), txtTelefono);
-        TextCaseUtils.applyUppercase(txtTelefono);
+        // Telefono digit-only
+        try {
+            ((AbstractDocument) txtTelefono.getDocument()).setDocumentFilter(new DocumentFilter() {
+                @Override
+                public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                        throws BadLocationException {
+                    if (string == null)
+                        return;
+                    String filtered = string.replaceAll("[^0-9]", "");
+                    super.insertString(fb, offset, filtered, attr);
+                }
+
+                @Override
+                public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                        throws BadLocationException {
+                    if (text == null) {
+                        super.replace(fb, offset, length, text, attrs);
+                        return;
+                    }
+                    String filtered = text.replaceAll("[^0-9]", "");
+                    super.replace(fb, offset, length, filtered, attrs);
+                }
+            });
+        } catch (Exception ignore) {
+        }
         addRow(form, c, 3, new JLabel("E-mail:"), txtEmail);
         TextCaseUtils.applyUppercase(txtEmail);
 

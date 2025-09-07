@@ -4,6 +4,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.sql.*;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 
 /**
  * Dialog to add a new Cliente. Required: nombres, dni, telefono. DNI must be
@@ -60,14 +64,62 @@ public class DlgNuevoCliente extends JDialog {
         lblDni.setFont(labelFont);
         txtDni.setFont(fieldFont);
         txtDni.setPreferredSize(new Dimension(240, 34));
-        TextCaseUtils.applyUppercase(txtDni);
+        // DNI: allow only digits
+        try {
+            ((AbstractDocument) txtDni.getDocument()).setDocumentFilter(new DocumentFilter() {
+                @Override
+                public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                        throws BadLocationException {
+                    if (string == null)
+                        return;
+                    String filtered = string.replaceAll("[^0-9]", "");
+                    super.insertString(fb, offset, filtered, attr);
+                }
+
+                @Override
+                public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                        throws BadLocationException {
+                    if (text == null) {
+                        super.replace(fb, offset, length, text, attrs);
+                        return;
+                    }
+                    String filtered = text.replaceAll("[^0-9]", "");
+                    super.replace(fb, offset, length, filtered, attrs);
+                }
+            });
+        } catch (Exception ignore) {
+        }
         addRow(form, c, row++, lblDni, txtDni);
 
         JLabel lblTelefono = new JLabel("Teléfono *:");
         lblTelefono.setFont(labelFont);
         txtTelefono.setFont(fieldFont);
         txtTelefono.setPreferredSize(new Dimension(240, 34));
-        TextCaseUtils.applyUppercase(txtTelefono);
+        // Telefono: allow only digits
+        try {
+            ((AbstractDocument) txtTelefono.getDocument()).setDocumentFilter(new DocumentFilter() {
+                @Override
+                public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                        throws BadLocationException {
+                    if (string == null)
+                        return;
+                    String filtered = string.replaceAll("[^0-9]", "");
+                    super.insertString(fb, offset, filtered, attr);
+                }
+
+                @Override
+                public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                        throws BadLocationException {
+                    if (text == null) {
+                        super.replace(fb, offset, length, text, attrs);
+                        return;
+                    }
+                    String filtered = text.replaceAll("[^0-9]", "");
+                    super.replace(fb, offset, length, filtered, attrs);
+                }
+            });
+        } catch (Exception ignore) {
+        }
         addRow(form, c, row++, lblTelefono, txtTelefono);
 
         JLabel lblEmail = new JLabel("E-mail:");
