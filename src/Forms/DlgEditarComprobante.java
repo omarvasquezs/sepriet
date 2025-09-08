@@ -20,6 +20,8 @@ public class DlgEditarComprobante extends JDialog {
     // original estado at dialog open (used to prevent backward transitions)
     private int originalEstadoComprobanteId = -1;
     private String originalEstadoComprobanteLabel = null;
+    // remember original estado_ropa to restore on invalid attempts
+    private int originalEstadoRopaId = -1;
     private boolean suppressEstadoListener = false;
 
     record Item(int id, String label){ public String toString(){ return label; }}
@@ -68,6 +70,9 @@ public class DlgEditarComprobante extends JDialog {
                 ps.setInt(1, comprobanteId);
                 try(ResultSet rs=ps.executeQuery()){ if(rs.next()){ int est=rs.getInt(1); int estR=rs.getInt(2); int mp=rs.getInt(3); montoAbonadoPrevio=rs.getFloat(4); costoTotal=rs.getFloat(5); selectCombo(cboEstado, est); selectCombo(cboEstadoRopa, estR); selectCombo(cboMetodoPago, mp==0? -1: mp); }}
             }
+            // remember original estado_ropa so we can revert invalid attempts
+            Object curR = cboEstadoRopa.getSelectedItem();
+            if (curR instanceof Item) originalEstadoRopaId = ((Item) curR).id();
             // remember original estado to enforce allowed transitions
             Object cur = cboEstado.getSelectedItem();
             if (cur instanceof Item) {
@@ -117,6 +122,31 @@ public class DlgEditarComprobante extends JDialog {
                     });
                     return;
                 }
+            });
+            // prevent selecting "RECOGIDO" in estado_ropa unless comprobante estado is or will be CANCELADO
+            cboEstadoRopa.addItemListener(iEv -> {
+                if (iEv.getStateChange() != java.awt.event.ItemEvent.SELECTED) return;
+                Object it = iEv.getItem();
+                if (!(it instanceof Item)) return;
+                String selLabel = it.toString().trim().toUpperCase();
+                if (!"RECOGIDO".equals(selLabel)) return;
+                // allow RECOGIDO if current estado is CANCELADO
+                Object estSel = cboEstado.getSelectedItem();
+                String estLabelLocal = estSel instanceof Item ? ((Item) estSel).label().toUpperCase() : "";
+                if ("CANCELADO".equals(estLabelLocal)) return;
+                // or allow if the current monto input would make the comprobante fully paid
+                try {
+                    float montoInput = 0f;
+                    String txt = txtMontoAbonar.getText().trim();
+                    if (!txt.isEmpty()) montoInput = Float.parseFloat(txt);
+                    float wouldBe = montoAbonadoPrevio + montoInput;
+                    if (wouldBe >= costoTotal - 0.001f) return; // allowed because saving will force CANCELADO
+                } catch (Exception ignore) {}
+                // not allowed: revert and inform
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(this, "No puede escoger 'RECOGIDO' a menos que el comprobante esté o vaya a ser CANCELADO.", "Validación", JOptionPane.WARNING_MESSAGE);
+                    selectCombo(cboEstadoRopa, originalEstadoRopaId);
+                });
             });
             // regular action listener to update UI elements when selection changes
             cboEstado.addActionListener(this::applyEstadoRules);
@@ -218,6 +248,27 @@ public class DlgEditarComprobante extends JDialog {
             Object selR = cboEstadoRopa.getSelectedItem();
             if (selR instanceof Item) {
                 finalEstadoRopaId = ((Item) selR).id();
+            }
+            // Validate: cannot save estado_ropa = RECOGIDO unless final estado is CANCELADO
+            if (finalEstadoRopaId != -1) {
+                // find label for finalEstadoRopaId
+                String chosenRopaLabel = null;
+                for (int i = 0; i < cboEstadoRopa.getItemCount(); i++) {
+                    Item it = cboEstadoRopa.getItemAt(i);
+                    if (it != null && it.id() == finalEstadoRopaId) { chosenRopaLabel = it.label().toUpperCase(); break; }
+                }
+                if ("RECOGIDO".equals(chosenRopaLabel)) {
+                    // find label for the computed finalEstadoId (it may have been forced to CANCELADO above)
+                    String finalEstadoLabel = null;
+                    for (int i = 0; i < cboEstado.getItemCount(); i++) {
+                        Item it = cboEstado.getItemAt(i);
+                        if (it != null && it.id() == finalEstadoId) { finalEstadoLabel = it.label().toUpperCase(); break; }
+                    }
+                    if (!"CANCELADO".equals(finalEstadoLabel)) {
+                        JOptionPane.showMessageDialog(this, "No puede establecer ESTADO ROPA = RECOGIDO a menos que ESTADO COMPROBANTE sea CANCELADO.", "Validación", JOptionPane.WARNING_MESSAGE);
+                        return; // abort save
+                    }
+                }
             }
             // Update comprobante (now also persist estado_ropa_id)
             try (PreparedStatement ps = conn.prepareStatement("UPDATE comprobantes SET estado_comprobante_id=?, metodo_pago_id=?, monto_abonado=?, estado_ropa_id=? WHERE id=?")){
