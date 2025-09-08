@@ -70,7 +70,105 @@ public class DlgPrintPreview extends JDialog {
             String digits = telefono.replaceAll("\\D", "");
             if (digits.length() == 9) this.getRootPane().putClientProperty("telefonoCliente", digits);
         }
+        // Try to resolve the receipt id or code from the HTML and, if the
+        // comprobante is in ABONO or DEBE, append the remaining debt to the preview
+        try {
+            String receiptId = resolveReceiptIdFromHtml(html);
+            if (receiptId != null && !receiptId.isBlank()) {
+                this.getRootPane().putClientProperty("receiptId", receiptId);
+                DebtInfo info = fetchDebtInfo(receiptId);
+                if (info != null) {
+                    String estado = info.estadoLabel == null ? "" : info.estadoLabel.toUpperCase();
+                    if ("ABONO".equals(estado) || "DEBE".equals(estado) || "DEUDA".equals(estado)) {
+                        String deudaStr = String.format(java.util.Locale.US, "%.2f", info.deuda);
+                        String debtHtml = "<span style=\"font-weight:bold;display:block;margin-top:4px\">DEUDA: S/. " + deudaStr + "</span>";
+                        // avoid inserting twice
+                        if (!html.toUpperCase().contains("DEUDA:")) {
+                            String newHtml;
+                            try {
+                                // try to inject right after the first occurrence of 'ESTADO:' (case-insensitive)
+                                if (html.toUpperCase().contains("ESTADO:")) {
+                                    newHtml = html.replaceFirst("(?i)ESTADO\\s*:", "ESTADO:" + debtHtml);
+                                } else {
+                                    // fallback: append near top of receipt (after first header) if possible
+                                    newHtml = html + "<hr/>" + debtHtml;
+                                }
+                            } catch (Exception ex) { newHtml = html + "<hr/>" + debtHtml; }
+                            editor.setText(newHtml);
+                            editor.setCaretPosition(0);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignore) {}
         setVisible(true);
+    }
+
+    private static class DebtInfo { final String estadoLabel; final float deuda; final int id; DebtInfo(int id, String estadoLabel, float deuda){ this.id = id; this.estadoLabel = estadoLabel; this.deuda = deuda; }}
+
+    /** Try to find a receipt id embedded in the HTML or resolve cod_comprobante -> id. */
+    private String resolveReceiptIdFromHtml(String html) {
+        if (html == null) return null;
+        // First try embedded RECEIPT_ID comment
+        try {
+            java.util.regex.Matcher cmt = java.util.regex.Pattern.compile("RECEIPT_ID:\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(html);
+            if (cmt.find()) return cmt.group(1);
+        } catch (Exception ignore) {}
+        // Try to find a code-like token then lookup id by cod_comprobante
+        try (java.sql.Connection conn = DatabaseConfig.getConnection()) {
+            if (conn == null) return null;
+            java.util.regex.Matcher mm = java.util.regex.Pattern.compile(
+                    ">([A-Z0-9\\-]{3,50})<",
+                    java.util.regex.Pattern.CASE_INSENSITIVE).matcher(html);
+            while (mm.find()) {
+                String c = mm.group(1).trim();
+                if (c.matches(".*\\d.*") && c.contains("-")) {
+                    try (java.sql.PreparedStatement ps = conn.prepareStatement("SELECT id FROM comprobantes WHERE cod_comprobante = ? LIMIT 1")) {
+                        ps.setString(1, c);
+                        try (java.sql.ResultSet rs = ps.executeQuery()) { if (rs.next()) return Integer.toString(rs.getInt(1)); }
+                    } catch (Exception ignore) {}
+                }
+            }
+        } catch (Exception ignore) {}
+        return null;
+    }
+
+    /** Fetch estado label and compute debt for a comprobante id. */
+    private DebtInfo fetchDebtInfo(String receiptId) {
+        try (java.sql.Connection conn = DatabaseConfig.getConnection()) {
+            if (conn == null) return null;
+            // try by numeric id
+            try (java.sql.PreparedStatement ps = conn.prepareStatement("SELECT c.id, c.costo_total, IFNULL(c.monto_abonado,0) monto_abonado, ec.nom_estado FROM comprobantes c LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id = ec.id WHERE c.id = ?")) {
+                ps.setInt(1, Integer.parseInt(receiptId));
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        int id = rs.getInt(1);
+                        float costo = rs.getFloat(2);
+                        float abon = rs.getFloat(3);
+                        String estado = rs.getString(4);
+                        return new DebtInfo(id, estado, Math.max(0f, costo - abon));
+                    }
+                }
+            } catch (NumberFormatException ignore) {
+                // maybe receiptId is actually a cod string, fallthrough
+            }
+            // fallback: try by cod_comprobante
+            try (java.sql.PreparedStatement ps2 = conn.prepareStatement("SELECT c.id, c.costo_total, IFNULL(c.monto_abonado,0) monto_abonado, ec.nom_estado FROM comprobantes c LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id = ec.id WHERE c.cod_comprobante = ? LIMIT 1")) {
+                ps2.setString(1, receiptId);
+                try (java.sql.ResultSet rs = ps2.executeQuery()) {
+                    if (rs.next()) {
+                        int id = rs.getInt(1);
+                        float costo = rs.getFloat(2);
+                        float abon = rs.getFloat(3);
+                        String estado = rs.getString(4);
+                        return new DebtInfo(id, estado, Math.max(0f, costo - abon));
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            // ignore
+        }
+        return null;
     }
 
 
@@ -185,6 +283,22 @@ public class DlgPrintPreview extends JDialog {
 
         // Append database details to the message, then add closing footer so it is last
         message += "\n" + receiptDetails;
+        // If this comprobante has a remaining debt and its estado is ABONO/DEBE,
+        // append a DEUDA line to the WhatsApp message so the recipient sees outstanding balance.
+        try {
+            String resolved = (String) this.getRootPane().getClientProperty("receiptId");
+            if (resolved == null || resolved.isBlank()) resolved = resolveReceiptIdFromHtml(html);
+            if (resolved != null && !resolved.isBlank()) {
+                DebtInfo di = fetchDebtInfo(resolved);
+                if (di != null) {
+                    String est = di.estadoLabel == null ? "" : di.estadoLabel.toUpperCase();
+                    if ("ABONO".equals(est) || "DEBE".equals(est) || "DEUDA".equals(est)) {
+                        String deudaStr = String.format(java.util.Locale.US, "%.2f", di.deuda);
+                        message += "\nDEUDA: S/. " + deudaStr;
+                    }
+                }
+            }
+        } catch (Exception ignore) {}
         message = message.trim();
 
         try {

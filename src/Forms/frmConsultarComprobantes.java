@@ -290,8 +290,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
         String telefonoCliente = null;
         try (Connection conn = DatabaseConfig.getConnection()) {
             // Header
-            String hdrSql = "SELECT c.tipo_comprobante,c.cod_comprobante,c.fecha,c.num_ruc,c.razon_social,c.costo_total, "
-                    + "cl.nombres,cl.dni,cl.direccion,cl.telefono,ec.nom_estado as estado_comprobante "
+        String hdrSql = "SELECT c.tipo_comprobante,c.cod_comprobante,c.fecha,c.num_ruc,c.razon_social,c.costo_total, IFNULL(c.monto_abonado,0) AS monto_abonado, "
+            + "cl.nombres,cl.dni,cl.direccion,cl.telefono,ec.nom_estado as estado_comprobante "
                     + "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id WHERE c.id=?";
             try (PreparedStatement ph = conn.prepareStatement(hdrSql)) {
                 ph.setInt(1, id);
@@ -311,6 +311,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     String direccion = rh.getString("direccion");
                     telefonoCliente = rh.getString("telefono");
                     String estado = rh.getString("estado_comprobante");
+                    double costoTotal = rh.getDouble("costo_total");
+                    double montoAbonado = rh.getDouble("monto_abonado");
+                    double deuda = Math.max(0.0, costoTotal - montoAbonado);
 
                     sb.append("<div class=\"container\"><div class=\"receipt\">");
                     sb.append("<div class=\"company\">LAVANDERIA SEPRIET</div>");
@@ -348,8 +351,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     sb.append("<div style=\"font-size:12px;\">DNI: " + escapeHtml(dni == null ? "" : dni) + "</div>");
                     sb.append("<div style=\"font-size:12px;\">DIRECCIÓN: "
                             + escapeHtml(direccion == null ? "" : direccion) + "</div>");
-                    sb.append("<div style=\"font-size:12px;\">ESTADO: " + escapeHtml(estado == null ? "" : estado)
-                            + "</div>");
+            sb.append("<div style=\"font-size:12px;\">ESTADO: " + escapeHtml(estado == null ? "" : estado)
+                + "</div>");
+            // show deuda under estado when applicable
+            sb.append("<div style=\"font-size:12px;\">DEUDA: S/. " + formatNumber(deuda) + "</div>");
                     sb.append("<div style=\"text-align:center;margin-top:8px;font-weight:700;\">DETALLES</div>");
 
                     // Details
