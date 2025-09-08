@@ -36,6 +36,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private final JButton btnAdd = new JButton("Añadir");
     private final JButton btnEdit = new JButton("Editar");
     private final JButton btnDelete = new JButton("Eliminar");
+    private final JButton btnHistory = new JButton("Historial");
     private final JButton btnPrev = new JButton("<");
     private final JButton btnNext = new JButton(">");
     private final JLabel lblPagina = new JLabel("Página 1 de 1");
@@ -128,9 +129,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
         // CRUD toolbar
         JPanel crudBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        crudBar.add(btnAdd);
-        crudBar.add(btnEdit);
-        crudBar.add(btnDelete);
+    crudBar.add(btnAdd);
+    crudBar.add(btnEdit);
+    crudBar.add(btnDelete);
+    crudBar.add(btnHistory);
         btnEdit.setEnabled(false);
         btnDelete.setEnabled(false);
         btnAdd.addActionListener(new java.awt.event.ActionListener() {
@@ -146,6 +148,14 @@ public class frmConsultarComprobantes extends JInternalFrame {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 openEditDialog();
+            }
+        });
+        // history button
+        btnHistory.setCursor(hand);
+        btnHistory.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                openHistory();
             }
         });
         btnPrintPreview.setCursor(hand);
@@ -168,6 +178,18 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 openPrintPreview();
             }
         });
+
+    // Right-click context menu for table rows
+    JPopupMenu rowPopup = new JPopupMenu();
+        JMenuItem miHistory = new JMenuItem("Historial");
+        miHistory.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent ae) {
+                openHistory();
+            }
+        });
+    rowPopup.add(miHistory);
+    table.setComponentPopupMenu(rowPopup);
 
         table.setModel(model);
         table.setFillsViewportHeight(true);
@@ -466,6 +488,18 @@ public class frmConsultarComprobantes extends JInternalFrame {
         if (id == null)
             return;
         DlgEditarComprobante dlg = new DlgEditarComprobante(SwingUtilities.getWindowAncestor(this), id, this::onEdited);
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
+    }
+
+    private void openHistory() {
+        Integer id = getSelectedId();
+        if (id == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione un comprobante para ver el historial.", "Info",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        DlgComprobanteHistorial dlg = new DlgComprobanteHistorial(SwingUtilities.getWindowAncestor(this), id);
         dlg.setLocationRelativeTo(this);
         dlg.setVisible(true);
     }
