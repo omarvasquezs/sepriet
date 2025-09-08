@@ -193,9 +193,29 @@ public class DlgEditarComprobante extends JDialog {
         if (abonadoActualizado > costoTotal + 0.001f) { JOptionPane.showMessageDialog(this,"El abono excede el total.","Validación",JOptionPane.WARNING_MESSAGE); return; }
         try (Connection conn = DatabaseConfig.getConnection()) {
             conn.setAutoCommit(false);
+            // Decide final estado: if after applying the new payment the comprobante
+            // is fully paid, force its estado to CANCELADO regardless of selection.
+            int finalEstadoId = est.id();
+            if (abonadoActualizado >= costoTotal - 0.001f) {
+                // find CANCELADO id in the combo if present
+                for (int i = 0; i < cboEstado.getItemCount(); i++) {
+                    Item it = cboEstado.getItemAt(i);
+                    if (it != null && "CANCELADO".equalsIgnoreCase(it.label())) {
+                        finalEstadoId = it.id();
+                        break;
+                    }
+                }
+                // reflect change in UI while saving (avoid triggering listener side-effects)
+                try {
+                    suppressEstadoListener = true;
+                    selectCombo(cboEstado, finalEstadoId);
+                } finally {
+                    suppressEstadoListener = false;
+                }
+            }
             // Update comprobante
             try (PreparedStatement ps = conn.prepareStatement("UPDATE comprobantes SET estado_comprobante_id=?, metodo_pago_id=?, monto_abonado=? WHERE id=?")){
-                ps.setInt(1, est.id());
+                ps.setInt(1, finalEstadoId);
                 if (mp == null || mp.id() == -1) ps.setNull(2, java.sql.Types.INTEGER); else ps.setInt(2, mp.id());
                 ps.setFloat(3, abonadoActualizado);
                 ps.setInt(4, comprobanteId);
