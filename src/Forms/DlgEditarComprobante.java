@@ -191,7 +191,7 @@ public class DlgEditarComprobante extends JDialog {
             abonadoActualizado = montoAbonadoPrevio + montoNuevo;
         }
         if (abonadoActualizado > costoTotal + 0.001f) { JOptionPane.showMessageDialog(this,"El abono excede el total.","Validación",JOptionPane.WARNING_MESSAGE); return; }
-        try (Connection conn = DatabaseConfig.getConnection()) {
+    try (Connection conn = DatabaseConfig.getConnection()) {
             conn.setAutoCommit(false);
             // Decide final estado: if after applying the new payment the comprobante
             // is fully paid, force its estado to CANCELADO regardless of selection.
@@ -213,12 +213,19 @@ public class DlgEditarComprobante extends JDialog {
                     suppressEstadoListener = false;
                 }
             }
-            // Update comprobante
-            try (PreparedStatement ps = conn.prepareStatement("UPDATE comprobantes SET estado_comprobante_id=?, metodo_pago_id=?, monto_abonado=? WHERE id=?")){
+            // determine selected estado_ropa id
+            int finalEstadoRopaId = -1;
+            Object selR = cboEstadoRopa.getSelectedItem();
+            if (selR instanceof Item) {
+                finalEstadoRopaId = ((Item) selR).id();
+            }
+            // Update comprobante (now also persist estado_ropa_id)
+            try (PreparedStatement ps = conn.prepareStatement("UPDATE comprobantes SET estado_comprobante_id=?, metodo_pago_id=?, monto_abonado=?, estado_ropa_id=? WHERE id=?")){
                 ps.setInt(1, finalEstadoId);
                 if (mp == null || mp.id() == -1) ps.setNull(2, java.sql.Types.INTEGER); else ps.setInt(2, mp.id());
                 ps.setFloat(3, abonadoActualizado);
-                ps.setInt(4, comprobanteId);
+                if (finalEstadoRopaId != -1) ps.setInt(4, finalEstadoRopaId); else ps.setNull(4, java.sql.Types.INTEGER);
+                ps.setInt(5, comprobanteId);
                 ps.executeUpdate();
             }
             if (montoNuevo > 0) {
