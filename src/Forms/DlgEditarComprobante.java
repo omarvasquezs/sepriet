@@ -17,6 +17,10 @@ public class DlgEditarComprobante extends JDialog {
     private final JLabel lblInfo = new JLabel(" ");
     private float costoTotal = 0f;
     private float montoAbonadoPrevio = 0f;
+    // original estado at dialog open (used to prevent backward transitions)
+    private int originalEstadoComprobanteId = -1;
+    private String originalEstadoComprobanteLabel = null;
+    private boolean suppressEstadoListener = false;
 
     record Item(int id, String label){ public String toString(){ return label; }}
 
@@ -64,7 +68,57 @@ public class DlgEditarComprobante extends JDialog {
                 ps.setInt(1, comprobanteId);
                 try(ResultSet rs=ps.executeQuery()){ if(rs.next()){ int est=rs.getInt(1); int estR=rs.getInt(2); int mp=rs.getInt(3); montoAbonadoPrevio=rs.getFloat(4); costoTotal=rs.getFloat(5); selectCombo(cboEstado, est); selectCombo(cboEstadoRopa, estR); selectCombo(cboMetodoPago, mp==0? -1: mp); }}
             }
+            // remember original estado to enforce allowed transitions
+            Object cur = cboEstado.getSelectedItem();
+            if (cur instanceof Item) {
+                originalEstadoComprobanteId = ((Item) cur).id();
+                originalEstadoComprobanteLabel = cur.toString().trim().toUpperCase();
+            }
             // react to estado selection changes
+            // add an ItemListener to prevent invalid backward transitions
+            cboEstado.addItemListener(iEv -> {
+                if (iEv.getStateChange() != java.awt.event.ItemEvent.SELECTED)
+                    return;
+                if (suppressEstadoListener)
+                    return;
+                Object it = iEv.getItem();
+                if (!(it instanceof Item) || originalEstadoComprobanteLabel == null)
+                    return;
+                String selLabel = it.toString().trim().toUpperCase();
+                // ABONO -> cannot go back to DEBE
+                if ("ABONO".equals(originalEstadoComprobanteLabel) && "DEBE".equals(selLabel)) {
+                    final Object prevMetodo = cboMetodoPago.getSelectedItem();
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(this, "No se puede regresar de ABONO a DEBE.", "Validación",
+                                JOptionPane.WARNING_MESSAGE);
+                        suppressEstadoListener = true;
+                        selectCombo(cboEstado, originalEstadoComprobanteId);
+                        // restore metodo selection if it still exists
+                        try {
+                            if (prevMetodo != null) cboMetodoPago.setSelectedItem(prevMetodo);
+                        } catch (Exception ignore) {}
+                        suppressEstadoListener = false;
+                    });
+                    return;
+                }
+        // CANCELADO -> cannot go back to DEBE, ABONO or ANULADO
+                if ("CANCELADO".equals(originalEstadoComprobanteLabel)
+                        && ("DEBE".equals(selLabel) || "ABONO".equals(selLabel) || "ANULADO".equals(selLabel))) {
+                    final Object prevMetodo2 = cboMetodoPago.getSelectedItem();
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(this, "No se puede cambiar desde CANCELADO a DEBE, ABONO o ANULADO.", "Validación",
+                                JOptionPane.WARNING_MESSAGE);
+                        suppressEstadoListener = true;
+                        selectCombo(cboEstado, originalEstadoComprobanteId);
+                        try {
+                            if (prevMetodo2 != null) cboMetodoPago.setSelectedItem(prevMetodo2);
+                        } catch (Exception ignore) {}
+                        suppressEstadoListener = false;
+                    });
+                    return;
+                }
+            });
+            // regular action listener to update UI elements when selection changes
             cboEstado.addActionListener(this::applyEstadoRules);
             // apply rules once now so the UI matches the current estado when dialog opens
             applyEstadoRules(null);
