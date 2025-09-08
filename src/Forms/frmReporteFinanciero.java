@@ -22,6 +22,9 @@ public class frmReporteFinanciero extends JInternalFrame {
     private final JDateChooser endDate = new JDateChooser();
     private final JCheckBox chkHoy = new JCheckBox("FECHA HOY DÍA");
     private final JCheckBox chkMes = new JCheckBox("MES ACTUAL");
+    // When we programmatically update the date fields we temporarily suppress
+    // the property-change listeners so they don't uncheck the quick-range boxes.
+    private boolean suppressDateChange = false;
     private final JButton btnBuscar = new JButton("Buscar");
     private final JButton btnReset = new JButton("Resetear");
     private final JButton btnExportCsv = new JButton("Exportar CSV");
@@ -66,6 +69,71 @@ public class frmReporteFinanciero extends JInternalFrame {
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
         startDate.setPreferredSize(new Dimension(140, 24));
         endDate.setPreferredSize(new Dimension(140, 24));
+        // If the user manually edits either date, clear the quick-range checkboxes.
+        // When we programmatically set the dates we set suppressDateChange=true so
+        // these listeners won't fire.
+        startDate.addPropertyChangeListener("date", evt -> {
+            if (suppressDateChange)
+                return;
+            if (evt.getNewValue() != null || evt.getOldValue() != null) {
+                chkHoy.setSelected(false);
+                chkMes.setSelected(false);
+            }
+        });
+        endDate.addPropertyChangeListener("date", evt -> {
+            if (suppressDateChange)
+                return;
+            if (evt.getNewValue() != null || evt.getOldValue() != null) {
+                chkHoy.setSelected(false);
+                chkMes.setSelected(false);
+            }
+        });
+
+        // Mutually exclusive checkboxes: selecting one deselects the other and
+        // autofills the date range accordingly.
+        chkHoy.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent ev) {
+                if (chkHoy.isSelected()) {
+                    // deselect other
+                    if (chkMes.isSelected())
+                        chkMes.setSelected(false);
+                    // fill both dates with today
+                    try {
+                        suppressDateChange = true;
+                        Date today = new Date();
+                        startDate.setDate(today);
+                        endDate.setDate(today);
+                    } finally {
+                        suppressDateChange = false;
+                    }
+                }
+            }
+        });
+
+        chkMes.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent ev) {
+                if (chkMes.isSelected()) {
+                    if (chkHoy.isSelected())
+                        chkHoy.setSelected(false);
+                    try {
+                        suppressDateChange = true;
+                        Date now = new Date();
+                        java.util.Calendar c = java.util.Calendar.getInstance();
+                        c.setTime(now);
+                        c.set(java.util.Calendar.DAY_OF_MONTH, 1);
+                        startDate.setDate(c.getTime());
+                        c.add(java.util.Calendar.MONTH, 1);
+                        c.set(java.util.Calendar.DAY_OF_MONTH, 1);
+                        c.add(java.util.Calendar.DATE, -1);
+                        endDate.setDate(c.getTime());
+                    } finally {
+                        suppressDateChange = false;
+                    }
+                }
+            }
+        });
         top.add(new JLabel("FECHA INICIO:"));
         top.add(startDate);
         top.add(new JLabel("FECHA FIN:"));
