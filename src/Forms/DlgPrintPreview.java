@@ -104,7 +104,7 @@ public class DlgPrintPreview extends JDialog {
         setVisible(true);
     }
 
-    private static class DebtInfo { final String estadoLabel; final float deuda; final int id; DebtInfo(int id, String estadoLabel, float deuda){ this.id = id; this.estadoLabel = estadoLabel; this.deuda = deuda; }}
+    private static class DebtInfo { final String estadoLabel; final float deuda; DebtInfo(int id, String estadoLabel, float deuda){ this.estadoLabel = estadoLabel; this.deuda = deuda; }}
 
     /** Try to find a receipt id embedded in the HTML or resolve cod_comprobante -> id. */
     private String resolveReceiptIdFromHtml(String html) {

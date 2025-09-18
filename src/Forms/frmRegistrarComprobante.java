@@ -273,6 +273,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             // However, keep an action listener so when the selected item changes and the
             // editor is not focused we reflect the selection in the editor for clarity.
             combo.addActionListener(ae -> {
+                // Use the parameter to avoid "unused parameter" warnings/errors.
+                if (ae == null) {
+                    return;
+                }
                 try {
                     if (!tc.isFocusOwner()) {
                         Object sel = combo.getSelectedItem();
