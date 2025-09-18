@@ -204,7 +204,8 @@ public class frmMain extends javax.swing.JFrame {
         // role 1 is admin; hide menus for other roles
         boolean isAdmin = (roleId == 1);
         menuOpcionesAvanzadas.setVisible(isAdmin);
-        menuReportes.setVisible(isAdmin);
+        // Make reports menu visible for all roles per user request
+        menuReportes.setVisible(true);
     }
 
     /**
@@ -258,7 +259,8 @@ public class frmMain extends javax.swing.JFrame {
      */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated
+    // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         desktopPane = new javax.swing.JDesktopPane();
@@ -289,18 +291,17 @@ public class frmMain extends javax.swing.JFrame {
         javax.swing.GroupLayout desktopPaneLayout = new javax.swing.GroupLayout(desktopPane);
         desktopPane.setLayout(desktopPaneLayout);
         desktopPaneLayout.setHorizontalGroup(
-            desktopPaneLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1132, Short.MAX_VALUE)
-        );
+                desktopPaneLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGap(0, 1132, Short.MAX_VALUE));
         desktopPaneLayout.setVerticalGroup(
-            desktopPaneLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 524, Short.MAX_VALUE)
-        );
+                desktopPaneLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGap(0, 524, Short.MAX_VALUE));
 
         menuRegistrar.setText("Registrar");
         menuRegistrar.setMargin(new java.awt.Insets(3, 8, 3, 8));
 
-        menuRegistrarComprobante.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        menuRegistrarComprobante.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N,
+                java.awt.event.InputEvent.CTRL_DOWN_MASK));
         menuRegistrarComprobante.setText("Comprobante");
         menuRegistrarComprobante.setMargin(new java.awt.Insets(3, 6, 4, 6));
         menuRegistrarComprobante.addActionListener(new java.awt.event.ActionListener() {
@@ -380,13 +381,11 @@ public class frmMain extends javax.swing.JFrame {
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(desktopPane)
-        );
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(desktopPane));
         layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(desktopPane)
-        );
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(desktopPane));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -410,8 +409,9 @@ public class frmMain extends javax.swing.JFrame {
         frmRegistrarComprobante registrarForm = new frmRegistrarComprobante();
         // pass current user's role so the child frame can enforce edit rules
         registrarForm.setCurrentUserRole(this.currentUserRole);
-    // pass current user's id so the child frame can record who created the comprobante
-    registrarForm.setCurrentUserId(this.currentUserId);
+        // pass current user's id so the child frame can record who created the
+        // comprobante
+        registrarForm.setCurrentUserId(this.currentUserId);
 
         // Add the internal frame to the desktop pane
         desktopPane.add(registrarForm);
