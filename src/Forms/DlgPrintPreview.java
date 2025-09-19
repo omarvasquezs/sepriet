@@ -101,6 +101,22 @@ public class DlgPrintPreview extends JDialog {
                 }
             }
         } catch (Exception ignore) {}
+        // Append fixed footer notice to HTML preview if not already present
+        try {
+            // Both lines wrapped inside <b>...</b> so the entire notice appears bold
+            String footerHtml = "<div style=\"margin-top:12px;font-size:11px;line-height:1.2;\"><b>El tiempo máximo para recoger su prenda es de 15 días.<br/>Una vez retirada la prenda o reparación, no se aceptarán reclamos.</b></div>";
+            String current = editor.getText();
+            if (current != null && !current.toUpperCase().contains("TIEMPO MÁXIMO PARA RECOGER") && !current.contains("no se aceptarán reclamos")) {
+                // try to insert before closing body if present
+                if (current.toLowerCase().contains("</body>")) {
+                    current = current.replaceFirst("(?i)</body>", footerHtml + "</body>");
+                } else {
+                    current = current + footerHtml;
+                }
+                editor.setText(current);
+                editor.setCaretPosition(0);
+            }
+        } catch (Exception ignore) {}
         setVisible(true);
     }
 
@@ -277,9 +293,25 @@ public class DlgPrintPreview extends JDialog {
         }
         String receiptDetails = fetchReceiptDetailsFromDatabase(receiptId);
 
-        // Build a plain-text message from the HTML preview
-        String html = editor.getText();
-        String message = htmlToPlainText(html);
+    // Build a plain-text message from the HTML preview.
+    // Remove any previously-injected footer HTML so htmlToPlainText doesn't turn it into list bullets.
+    String html = editor.getText();
+    // Remove only the exact injected footer block (make regex specific to avoid removing other parts)
+    String cleanedHtml = html == null ? "" : html.replaceAll("(?is)<div[^>]*>\\s*<b>\\s*El\\s+tiempo\\s+m[aá]ximo\\s+para\\s+recoger[\\s\\S]*?no\\s+se\\s+aceptar[aá]n\\s+reclamos\\.?\\s*</b>\\s*</div>", "");
+    String message = htmlToPlainText(cleanedHtml);
+    
+    // Remove any duplicate footer text that may have been included in the HTML-to-text conversion
+    message = message.replaceAll("(?i)- El tiempo m[aá]ximo para recoger su prenda es de 15 d[ií]as\\.", "");
+    message = message.replaceAll("(?i)- Una vez retirada la prenda o reparaci[oó]n, no se aceptar[aá]n reclamos\\.", "");
+    message = message.replaceAll("(?i)El tiempo m[aá]ximo para recoger su prenda es de 15 d[ií]as\\.", "");
+    message = message.replaceAll("(?i)Una vez retirada la prenda o reparaci[oó]n, no se aceptar[aá]n reclamos\\.", "");
+    // Remove standalone "- Una" and "- vez retirada..." fragments
+    message = message.replaceAll("(?i)- Una\\s*\n", "");
+    message = message.replaceAll("(?i)- vez retirada[^\\n]*", "");
+    message = message.replaceAll("(?i)vez retirada[^\\n]*", "");
+    message = message.replaceAll("(?i)- Una\\s*$", "");
+    // Clean up extra whitespace and newlines that may result from removal
+    message = message.replaceAll("\\n\\s*\\n\\s*\\n", "\n\n").trim();
 
         // Append database details to the message, then add closing footer so it is last
         message += "\n" + receiptDetails;
@@ -295,10 +327,16 @@ public class DlgPrintPreview extends JDialog {
                     if ("ABONO".equals(est) || "DEBE".equals(est) || "DEUDA".equals(est)) {
                         String deudaStr = String.format(java.util.Locale.US, "%.2f", di.deuda);
                         message += "\nDEUDA: S/. " + deudaStr;
+                        // Append footer immediately after DEUDA line with double asterisks for WhatsApp bold
+                        message += "\n\n**El tiempo máximo para recoger su prenda es de 15 días.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
                     }
                 }
             }
         } catch (Exception ignore) {}
+        // For comprobantes without DEUDA, append footer at the end if not already present
+        if (!message.contains("tiempo máximo para recoger")) {
+            message += "\n\n**El tiempo máximo para recoger su prenda es de 15 días.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
+        }
         message = message.trim();
 
         try {
