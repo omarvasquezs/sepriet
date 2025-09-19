@@ -29,6 +29,12 @@ public class frmReporteFinanciero extends JInternalFrame {
     private final JButton btnReset = new JButton("Resetear");
     private final JButton btnExportCsv = new JButton("Exportar CSV");
     private final JTable table = new JTable();
+    // summary labels shown above the table (similar to web app)
+    private final JLabel lblFilas = new JLabel("FILAS ENCONTRADAS: 0");
+    private final JLabel lblEfectivo = new JLabel("EFECTIVO TOTAL: 0.00");
+    private final JLabel lblYape = new JLabel("YAPE / PLIN TOTAL: 0.00");
+    private final JLabel lblTotalIngresos = new JLabel("INGRESOS TOTALES EN SOLES: 0.00");
+
     private final DefaultTableModel model = new DefaultTableModel(
             new String[] { "COMPROBANTE", "CLIENTE", "FECHA DE ABONO", "METODO DE PAGO", "MONTO ABONADO" }, 0) {
         @Override
@@ -208,9 +214,21 @@ public class frmReporteFinanciero extends JInternalFrame {
             }
         });
 
+        // summary panel under filters
+        JPanel summary = new JPanel(new GridLayout(4, 1, 4, 4));
+        summary.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        summary.add(lblFilas);
+        summary.add(lblEfectivo);
+        summary.add(lblYape);
+        summary.add(lblTotalIngresos);
+
+        JPanel center = new JPanel(new BorderLayout());
+        center.add(summary, BorderLayout.NORTH);
+        center.add(new JScrollPane(table), BorderLayout.CENTER);
+
         getContentPane().setLayout(new BorderLayout());
         add(top, BorderLayout.NORTH);
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add(center, BorderLayout.CENTER);
         add(bottom, BorderLayout.SOUTH);
     }
 
@@ -243,17 +261,49 @@ public class frmReporteFinanciero extends JInternalFrame {
             params.add(new java.sql.Date(startDate.getDate().getTime()));
             params.add(new java.sql.Date(endDate.getDate().getTime()));
         }
+        // compute aggregate totals (EFECTIVO, YAPE/PLIN, TOTAL) for the current filters
+        String aggSql = "SELECT "
+                + "SUM(CASE WHEN COALESCE(NULLIF(m.nom_metodo_pago, ''), 'NINGUNO') = 'EFECTIVO' THEN r.monto_abonado ELSE 0 END) AS efectivo_total, "
+                + "SUM(CASE WHEN COALESCE(NULLIF(m.nom_metodo_pago, ''), 'NINGUNO') = 'YAPE / PLIN' THEN r.monto_abonado ELSE 0 END) AS yape_total, "
+                + "SUM(r.monto_abonado) AS ingresos_total, "
+                + "COUNT(*) AS filas "
+                + "FROM reporte_ingresos r "
+                + "LEFT JOIN metodo_pago m ON r.metodo_pago_id = m.id "
+                + baseWhere;
 
         String countSql = "SELECT COUNT(*) FROM reporte_ingresos r " + baseWhere;
         try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pc = conn.prepareStatement(countSql)) {
+                PreparedStatement aggPs = conn.prepareStatement(aggSql)) {
+            // set params for aggregate query
             for (int i = 0; i < params.size(); i++)
-                pc.setObject(i + 1, params.get(i));
-            try (ResultSet rc = pc.executeQuery()) {
-                int total = 0;
-                if (rc.next())
-                    total = rc.getInt(1);
-                totalPages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
+                aggPs.setObject(i + 1, params.get(i));
+            try (ResultSet aggRs = aggPs.executeQuery()) {
+                if (aggRs.next()) {
+                    double efectivo = aggRs.getDouble("efectivo_total");
+                    double yape = aggRs.getDouble("yape_total");
+                    double ingresos = aggRs.getDouble("ingresos_total");
+                    int filas = aggRs.getInt("filas");
+                    lblFilas.setText("FILAS ENCONTRADAS: " + filas);
+                    lblEfectivo.setText("EFECTIVO TOTAL: " + formatNumber(efectivo));
+                    lblYape.setText("YAPE / PLIN TOTAL: " + formatNumber(yape));
+                    lblTotalIngresos.setText("INGRESOS TOTALES EN SOLES: " + formatNumber(ingresos));
+                } else {
+                    lblFilas.setText("FILAS ENCONTRADAS: 0");
+                    lblEfectivo.setText("EFECTIVO TOTAL: 0.00");
+                    lblYape.setText("YAPE / PLIN TOTAL: 0.00");
+                    lblTotalIngresos.setText("INGRESOS TOTALES EN SOLES: 0.00");
+                }
+            }
+
+            try (PreparedStatement pc = conn.prepareStatement(countSql)) {
+                for (int i = 0; i < params.size(); i++)
+                    pc.setObject(i + 1, params.get(i));
+                try (ResultSet rc = pc.executeQuery()) {
+                    int total = 0;
+                    if (rc.next())
+                        total = rc.getInt(1);
+                    totalPages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
+                }
             }
 
             currentPage = Math.min(page, totalPages);
