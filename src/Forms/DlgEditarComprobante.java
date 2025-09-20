@@ -527,7 +527,7 @@ public class DlgEditarComprobante extends JDialog {
 
                             // Footer (WhatsApp bold with single asterisks as requested)
                             msgSb.append("*El tiempo máximo para recoger su prenda es de 15 días.*\n");
-                            msgSb.append("*Una vez retirada la prenda o reparación, no se aceptarán reclamos.*");
+                            msgSb.append("*Una vez retirada la prenda, no se aceptarán reclamos.*");
 
                             String message = msgSb.toString();
                             boolean ok = sendWhatsAppViaTextmebot(phone, message);
