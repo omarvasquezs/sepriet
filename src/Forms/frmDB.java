@@ -20,6 +20,8 @@ public class frmDB extends javax.swing.JFrame {
         setResizable(false);
         // Cargar ajustes al abrir
         loadSettings();
+    // initialize the UI checkbox state from updater settings
+    try { CheckBoxAutoUpdater.setSelected(Updater.isAutoUpdateEnabled()); } catch (Exception ignored) { CheckBoxAutoUpdater.setSelected(true); }
         setIconImage(new javax.swing.ImageIcon(getClass().getResource("/Forms/icon.png")).getImage());
         btnRegresar.setUI(new javax.swing.plaf.basic.BasicButtonUI());
         btnSaveSettings.setUI(new javax.swing.plaf.basic.BasicButtonUI());
@@ -109,6 +111,7 @@ public class frmDB extends javax.swing.JFrame {
         btnRegresar = new javax.swing.JButton();
         lblApiTextmebot = new javax.swing.JLabel();
         txtApiTextmebot = new javax.swing.JTextField();
+        CheckBoxAutoUpdater = new javax.swing.JCheckBox();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("CONFIGURACIÓN BASE DE DATOS");
@@ -179,6 +182,10 @@ public class frmDB extends javax.swing.JFrame {
 
         txtApiTextmebot.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
+        CheckBoxAutoUpdater.setBackground(new java.awt.Color(255, 255, 255));
+        CheckBoxAutoUpdater.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        CheckBoxAutoUpdater.setText("ACTUALIZAR DE FORMA AUTOMATICA");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -186,11 +193,6 @@ public class frmDB extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(37, 37, 37)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(lblApiTextmebot)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(btnSaveSettings, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnRegresar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblDB)
@@ -209,7 +211,14 @@ public class frmDB extends javax.swing.JFrame {
                                 .addComponent(txtPassword)
                                 .addComponent(txtPort, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(txtApiTextmebot, javax.swing.GroupLayout.PREFERRED_SIZE, 272, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addComponent(btnTestConnection, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(btnTestConnection, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblApiTextmebot)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(btnSaveSettings, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(CheckBoxAutoUpdater))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnRegresar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap(37, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -243,7 +252,9 @@ public class frmDB extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblApiTextmebot)
                     .addComponent(txtApiTextmebot, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
+                .addGap(31, 31, 31)
+                .addComponent(CheckBoxAutoUpdater)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 30, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnSaveSettings)
                     .addComponent(btnRegresar))
@@ -325,6 +336,19 @@ public class frmDB extends javax.swing.JFrame {
             }
         }
 
+        // Save updater.properties with auto_update preference
+        try {
+            java.nio.file.Path upPath = java.nio.file.Paths.get("updater.properties");
+            java.util.Properties props = new java.util.Properties();
+            props.setProperty("auto_update", Boolean.toString(CheckBoxAutoUpdater != null && CheckBoxAutoUpdater.isSelected()));
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(upPath.toFile())) {
+                props.store(fos, "Updater settings");
+            }
+        } catch (Exception ex) {
+            // Non-fatal
+            logger.log(java.util.logging.Level.WARNING, "Could not save updater.properties", ex);
+        }
+
         // Test the connection with saved values
         String url = "jdbc:mariadb://" + host + ":" + port + "/" + database;
         try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, username, password)) {
@@ -377,6 +401,7 @@ public class frmDB extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JCheckBox CheckBoxAutoUpdater;
     private javax.swing.JButton btnRegresar;
     private javax.swing.JButton btnSaveSettings;
     private javax.swing.JButton btnTestConnection;
