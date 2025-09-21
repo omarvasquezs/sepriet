@@ -299,9 +299,17 @@ public class frmServicios extends JInternalFrame {
                 String nom = txtNom.getText().trim();
                 String precio = txtPrecio.getText().trim();
                 int habil = chk.isSelected() ? 1 : 0;
-                String tipoSel = ((String) cboTipo.getSelectedItem());
-                if (tipoSel != null && tipoSel.length() > 0)
-                    tipoSel = tipoSel.substring(0, 1).toLowerCase();
+                // map selected index to storage code: 0->k, 1->s, 2->p
+                String tipoSel;
+                int tipoIndex = cboTipo.getSelectedIndex();
+                if (tipoIndex == 0)
+                    tipoSel = "k";
+                else if (tipoIndex == 1)
+                    tipoSel = "s";
+                else if (tipoIndex == 2)
+                    tipoSel = "p";
+                else
+                    tipoSel = "k"; // fallback
                 if (nom.isEmpty()) {
                     JOptionPane.showMessageDialog(dlg, "Servicio requerido.");
                     return;
