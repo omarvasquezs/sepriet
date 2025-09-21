@@ -47,6 +47,9 @@ db_settings.json
 # API files
 textmebot_api.json
 
+# Updater runtime config (auto-generated)
+updater.properties
+
 # NetBeans metadata for tracking generated files (safe to ignore)
 nbproject/genfiles.properties
 
