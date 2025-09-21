@@ -480,7 +480,7 @@ public class DlgEditarComprobante extends JDialog {
                                 msgSb.append("Comprobante: ").append(msgCode).append("\n\n");
                             }
 
-                            msgSb.append("DETALLES (Servicio: Peso(Kilos) x Precio al Kilo):\n");
+                            // Header removed per client request: do not include the DETALLES header
                             StringBuilder detailsSb = new StringBuilder();
                             try (PreparedStatement psServices = conn.prepareStatement(
                                     "SELECT s.nom_servicio, d.peso_kg, d.costo_kilo FROM comprobantes_detalles d JOIN servicios s ON d.servicio_id = s.id WHERE d.comprobante_id = ?")) {

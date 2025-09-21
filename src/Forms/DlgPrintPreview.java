@@ -574,7 +574,7 @@ public class DlgPrintPreview extends JDialog {
 
             if (upper.contains("DETALLES")) {
                 inDetails = true;
-                out.append("DETALLES (Servicio: Peso(Kilos) x Precio al Kilo):\n");
+                // Header removed per client request: do not append the DETALLES header
                 continue;
             }
 

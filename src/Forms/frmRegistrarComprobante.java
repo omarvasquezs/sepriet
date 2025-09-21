@@ -1852,7 +1852,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 }
 
                                 sbMsg.append("\n");
-                                sbMsg.append("DETALLES (Servicio: Peso(Kilos) x Precio al Kilo):\n");
+                                // Header removed per client request: do not include the DETALLES header
 
                                 // Details rows
                                 try (PreparedStatement psDet = conn.prepareStatement(
@@ -1887,6 +1887,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                     }
                                 } catch (Exception ignore) {
                                 }
+
+                                sbMsg.append("\n");
+                                sbMsg.append("*El tiempo máximo para recoger su prenda es de 15 días.*\n");
+                                sbMsg.append("*Una vez retirada la prenda, no se aceptarán reclamos.*");
 
                                 String text = sbMsg.toString().trim();
                                 if (text.length() > 3000)
