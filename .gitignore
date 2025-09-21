@@ -58,3 +58,6 @@ nbproject/genfiles.properties
 
 # NetBeans GUI Builder files
 *.form
+
+# Compressed release assets
+/release_assets/
