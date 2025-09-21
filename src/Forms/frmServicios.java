@@ -240,6 +240,16 @@ public class frmServicios extends JInternalFrame {
         p.add(txtPrecio, c);
         c.gridx = 0;
         c.gridy++;
+        // Tipo de servicio (k/s/p)
+        c.gridx = 0;
+        c.gridy++;
+        p.add(new JLabel("Tipo de servicio:"), c);
+        JComboBox<String> cboTipo = new JComboBox<>(new String[] { "AL KILO", "AL SECO", "POR PIEZA" });
+        c.gridx = 1;
+        p.add(cboTipo, c);
+
+        c.gridx = 0;
+        c.gridy++;
         p.add(new JLabel("Estado:"), c);
         JCheckBox chk = new JCheckBox("Habilitado");
         chk.setSelected(true);
@@ -249,13 +259,22 @@ public class frmServicios extends JInternalFrame {
         if (id != null) {
             try (Connection conn = DatabaseConfig.getConnection();
                     PreparedStatement ps = conn.prepareStatement(
-                            "SELECT nom_servicio, precio_kilo, habilitado FROM servicios WHERE id=?")) {
+                            "SELECT nom_servicio, tipo_servicio, precio_kilo, habilitado FROM servicios WHERE id=?")) {
                 ps.setInt(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         txtNom.setText(rs.getString(1));
-                        txtPrecio.setText(rs.getString(2));
-                        chk.setSelected(rs.getInt(3) != 0);
+                        String tipo = rs.getString(2);
+                        if (tipo != null) {
+                            if ("k".equalsIgnoreCase(tipo))
+                                cboTipo.setSelectedIndex(0);
+                            else if ("s".equalsIgnoreCase(tipo))
+                                cboTipo.setSelectedIndex(1);
+                            else if ("p".equalsIgnoreCase(tipo))
+                                cboTipo.setSelectedIndex(2);
+                        }
+                        txtPrecio.setText(rs.getString(3));
+                        chk.setSelected(rs.getInt(4) != 0);
                     }
                 }
             } catch (Exception ex) {
@@ -280,6 +299,9 @@ public class frmServicios extends JInternalFrame {
                 String nom = txtNom.getText().trim();
                 String precio = txtPrecio.getText().trim();
                 int habil = chk.isSelected() ? 1 : 0;
+                String tipoSel = ((String) cboTipo.getSelectedItem());
+                if (tipoSel != null && tipoSel.length() > 0)
+                    tipoSel = tipoSel.substring(0, 1).toLowerCase();
                 if (nom.isEmpty()) {
                     JOptionPane.showMessageDialog(dlg, "Servicio requerido.");
                     return;
@@ -287,31 +309,34 @@ public class frmServicios extends JInternalFrame {
                 try (Connection conn = DatabaseConfig.getConnection()) {
                     if (id == null) {
                         try (PreparedStatement ps = conn.prepareStatement(
-                                "INSERT INTO servicios(nom_servicio,precio_kilo,habilitado) VALUES(?,?,?)")) {
+                                "INSERT INTO servicios(nom_servicio,tipo_servicio,precio_kilo,habilitado) VALUES(?,?,?,?)")) {
                             ps.setString(1, nom);
+                            ps.setString(2, tipoSel == null ? "k" : tipoSel);
                             if (precio.isEmpty())
-                                ps.setObject(2, null);
+                                ps.setObject(3, null);
                             else
-                                ps.setFloat(2, Float.parseFloat(precio));
-                            ps.setInt(3, habil);
+                                ps.setFloat(3, Float.parseFloat(precio));
+                            ps.setInt(4, habil);
                             ps.executeUpdate();
                         }
                     } else {
                         if (precio.isEmpty()) {
                             try (PreparedStatement ps = conn.prepareStatement(
-                                    "UPDATE servicios SET nom_servicio=?, precio_kilo=NULL, habilitado=? WHERE id=?")) {
+                                    "UPDATE servicios SET nom_servicio=?, tipo_servicio=?, precio_kilo=NULL, habilitado=? WHERE id=?")) {
                                 ps.setString(1, nom);
-                                ps.setInt(2, habil);
-                                ps.setInt(3, id);
+                                ps.setString(2, tipoSel == null ? "k" : tipoSel);
+                                ps.setInt(3, habil);
+                                ps.setInt(4, id);
                                 ps.executeUpdate();
                             }
                         } else {
                             try (PreparedStatement ps = conn.prepareStatement(
-                                    "UPDATE servicios SET nom_servicio=?, precio_kilo=?, habilitado=? WHERE id=?")) {
+                                    "UPDATE servicios SET nom_servicio=?, tipo_servicio=?, precio_kilo=?, habilitado=? WHERE id=?")) {
                                 ps.setString(1, nom);
-                                ps.setFloat(2, Float.parseFloat(precio));
-                                ps.setInt(3, habil);
-                                ps.setInt(4, id);
+                                ps.setString(2, tipoSel == null ? "k" : tipoSel);
+                                ps.setFloat(3, Float.parseFloat(precio));
+                                ps.setInt(4, habil);
+                                ps.setInt(5, id);
                                 ps.executeUpdate();
                             }
                         }
@@ -336,12 +361,13 @@ public class frmServicios extends JInternalFrame {
     private static class ServiceRow {
         int id;
         String nom;
+        String tipo; // 'k','s','p'
         float precio;
         int habil;
     }
 
     private static class ServiciosTableModel extends AbstractTableModel {
-        private final String[] cols = { "SERVICIO", "PRECIO POR KILO (S/.)", "ESTADO" };
+        private final String[] cols = { "SERVICIO", "TIPO", "PRECIO POR KILO (S/.)", "ESTADO" };
         private java.util.List<ServiceRow> rows = new java.util.ArrayList<>();
 
         public void setRows(java.util.List<ServiceRow> data) {
@@ -369,9 +395,23 @@ public class frmServicios extends JInternalFrame {
             ServiceRow s = rows.get(r);
             if (c == 0)
                 return s.nom;
-            else if (c == 1)
+            else if (c == 1) {
+                // map tipo code to human label
+                if (s.tipo == null)
+                    return "";
+                switch (s.tipo) {
+                    case "k":
+                        return "AL KILO";
+                    case "s":
+                        return "AL SECO";
+                    case "p":
+                        return "POR PIEZA";
+                    default:
+                        return s.tipo;
+                }
+            } else if (c == 2)
                 return s.precio;
-            else if (c == 2)
+            else if (c == 3)
                 return s.habil == 1 ? "HABILITADO" : "DESHABILITADO";
             else
                 return null;
@@ -399,7 +439,7 @@ public class frmServicios extends JInternalFrame {
             }
             currentPage = Math.min(page, totalPages);
             int offset = (currentPage - 1) * pageSize;
-            String sql = "SELECT id, nom_servicio, precio_kilo, habilitado FROM servicios" + where
+            String sql = "SELECT id, nom_servicio, tipo_servicio, precio_kilo, habilitado FROM servicios" + where
                     + " ORDER BY id DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 int idx = 1;
@@ -413,8 +453,9 @@ public class frmServicios extends JInternalFrame {
                         ServiceRow s = new ServiceRow();
                         s.id = rs.getInt(1);
                         s.nom = rs.getString(2);
-                        s.precio = rs.getFloat(3);
-                        s.habil = rs.getInt(4);
+                        s.tipo = rs.getString(3);
+                        s.precio = rs.getFloat(4);
+                        s.habil = rs.getInt(5);
                         list.add(s);
                     }
                     model.setRows(list);
