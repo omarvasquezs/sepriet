@@ -66,9 +66,14 @@ public class DlgPrintPreview extends JDialog {
     public void showForHtml(String html, String telefono) {
         editor.setText(html);
         editor.setCaretPosition(0);
-        // if telefono looks valid (9 digits) prefill it in root property
+        // if telefono provided, normalize digits. Accept values that include
+        // country code by taking the last 9 digits when more are present.
         if (telefono != null) {
             String digits = telefono.replaceAll("\\D", "");
+            if (digits.length() > 9) {
+                // keep last 9 digits (handles +51 prefix, 0051, etc.)
+                digits = digits.substring(digits.length() - 9);
+            }
             if (digits.length() == 9)
                 this.getRootPane().putClientProperty("telefonoCliente", digits);
         }
