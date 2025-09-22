@@ -61,3 +61,11 @@ nbproject/genfiles.properties
 
 # Compressed release assets
 /release_assets/
+
+# Ignore shell scripts, PowerShell scripts and executables
+*.sh
+*.ps1
+*.exe
+*.bat
+*.cmd
+*.run
