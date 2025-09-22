@@ -463,8 +463,15 @@ public class DlgEditarComprobante extends JDialog {
                     } catch (Exception ex) {
                     }
 
-                    String prefill = telefonoCliente == null ? "" : telefonoCliente.replaceAll("\\D", "");
-                    String input = (prefill != null && prefill.length() == 9) ? prefill : "";
+                    String prefill = "";
+                    if (telefonoCliente != null) {
+                        prefill = telefonoCliente.replaceAll("\\D", "");
+                        if (prefill.length() > 9)
+                            prefill = prefill.substring(prefill.length() - 9);
+                        if (prefill.length() != 9)
+                            prefill = "";
+                    }
+                    String input = prefill;
                     String phone = (String) JOptionPane.showInputDialog(this,
                             "Número de celular (9 dígitos):\n(indique sin prefijo, por ejemplo 987654321)",
                             "Confirmar número WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, input);
