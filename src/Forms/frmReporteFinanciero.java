@@ -5,6 +5,10 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.util.zip.ZipOutputStream;
+import java.util.zip.ZipEntry;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,6 +32,7 @@ public class frmReporteFinanciero extends JInternalFrame {
     private final JButton btnBuscar = new JButton("Buscar");
     private final JButton btnReset = new JButton("Resetear");
     private final JButton btnExportCsv = new JButton("Exportar CSV");
+    private final JButton btnExportExcel = new JButton("Exportar Excel");
     private final JTable table = new JTable();
     // summary labels shown above the table (similar to web app)
     private final JLabel lblFilas = new JLabel("FILAS ENCONTRADAS: 0");
@@ -47,6 +52,7 @@ public class frmReporteFinanciero extends JInternalFrame {
     private int currentPage = 1;
     private int totalPages = 1;
     private int pageSize = 50;
+    private JLabel lblPagina; // Reference to pagination label
 
     public frmReporteFinanciero() {
         super("Reporte Ingresos", true, true, true, true);
@@ -148,9 +154,11 @@ public class frmReporteFinanciero extends JInternalFrame {
         top.add(chkMes);
         btnBuscar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnExportCsv.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnExportExcel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         top.add(btnBuscar);
         top.add(btnReset);
         top.add(btnExportCsv);
+        top.add(btnExportExcel);
 
         btnBuscar.addActionListener(this::onBuscar);
         btnExportCsv.addActionListener(new java.awt.event.ActionListener() {
@@ -166,6 +174,18 @@ public class frmReporteFinanciero extends JInternalFrame {
                 resetFilters();
             }
         });
+        btnExportCsv.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent ev) {
+                exportCsv();
+            }
+        });
+        btnExportExcel.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent ev) {
+                exportExcel();
+            }
+        });
 
         table.setModel(model);
         table.setAutoCreateRowSorter(true);
@@ -174,7 +194,7 @@ public class frmReporteFinanciero extends JInternalFrame {
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
         final JButton btnPrev = new JButton("<");
         final JButton btnNext = new JButton(">");
-        final JLabel lblPagina = new JLabel("Página 1 de 1");
+        lblPagina = new JLabel("Página 1 de 1");
         final JComboBox<Integer> pageSizeCombo = new JComboBox<>(new Integer[] { 10, 25, 50, 100 });
         pageSizeCombo.setSelectedItem(Integer.valueOf(pageSize));
         pageSizeCombo.setMaximumRowCount(6);
@@ -230,6 +250,174 @@ public class frmReporteFinanciero extends JInternalFrame {
         add(top, BorderLayout.NORTH);
         add(center, BorderLayout.CENTER);
         add(bottom, BorderLayout.SOUTH);
+    }
+
+    private void exportExcel() {
+        JFileChooser fc = new JFileChooser();
+        fc.setSelectedFile(new java.io.File(
+                "reporte_ingresos_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".xlsx"));
+        int sel = fc.showSaveDialog(this);
+        if (sel != JFileChooser.APPROVE_OPTION)
+            return;
+        java.io.File f = fc.getSelectedFile();
+
+        // Get all data, not just current page
+        java.util.List<Object[]> allData = getAllFilteredData();
+        if (allData.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No hay datos para exportar.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(f); ZipOutputStream zos = new ZipOutputStream(fos)) {
+            // [Content_Types].xml
+            String contentTypes = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                    "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">" +
+                    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>"
+                    +
+                    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>" +
+                    "<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>"
+                    +
+                    "<Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>"
+                    +
+                    "<Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>"
+                    +
+                    "</Types>";
+            putEntry(zos, "[Content_Types].xml", contentTypes);
+
+            // _rels/.rels
+            String rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+                    "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/>"
+                    +
+                    "</Relationships>";
+            putEntry(zos, "_rels/.rels", rels);
+
+            // xl/workbook.xml
+            String workbook = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                    "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">"
+                    +
+                    "<sheets><sheet name=\"Reporte\" sheetId=\"1\" r:id=\"rId1\"/></sheets>" +
+                    "</workbook>";
+            putEntry(zos, "xl/workbook.xml", workbook);
+
+            // xl/_rels/workbook.xml.rels
+            String wbRels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+                    "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/>"
+                    +
+                    "</Relationships>";
+            putEntry(zos, "xl/_rels/workbook.xml.rels", wbRels);
+
+            // xl/worksheets/sheet1.xml
+            StringBuilder sb = new StringBuilder();
+            sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            sb.append("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\n");
+            sb.append("<sheetData>\n");
+            // header row r=1
+            sb.append("<row r=\"1\">\n");
+            for (int c = 0; c < model.getColumnCount(); c++) {
+                String val = escapeXml(model.getColumnName(c));
+                sb.append("<c t=\"inlineStr\"><is><t>").append(val).append("</t></is></c>");
+            }
+            sb.append("</row>\n");
+            // data rows starting r=2 - use all filtered data
+            for (int r = 0; r < allData.size(); r++) {
+                sb.append("<row r=\"" + (r + 2) + "\">\n");
+                Object[] rowData = allData.get(r);
+                for (int c = 0; c < rowData.length; c++) {
+                    Object v = rowData[c];
+                    String cell = v == null ? "" : escapeXml(v.toString());
+                    // write everything as inlineStr to avoid num/date formatting complexity
+                    sb.append("<c t=\"inlineStr\"><is><t>").append(cell).append("</t></is></c>");
+                }
+                sb.append("</row>\n");
+            }
+            sb.append("</sheetData>\n");
+            sb.append("</worksheet>");
+            putEntry(zos, "xl/worksheets/sheet1.xml", sb.toString());
+
+            // xl/styles.xml minimal
+            String styles = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                    "<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">" +
+                    "<fonts count=\"1\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font></fonts>" +
+                    "<fills count=\"1\"><fill><patternFill patternType=\"none\"/></fill></fills>" +
+                    "<borders count=\"1\"><border/></borders>" +
+                    "<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>"
+                    +
+                    "<cellXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/></cellXfs>"
+                    +
+                    "</styleSheet>";
+            putEntry(zos, "xl/styles.xml", styles);
+
+            JOptionPane.showMessageDialog(this, "Excel exportado: " + f.getAbsolutePath());
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error exportando Excel:\n" + ex.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void putEntry(ZipOutputStream zos, String name, String content) throws java.io.IOException {
+        ZipEntry ze = new ZipEntry(name);
+        zos.putNextEntry(ze);
+        byte[] b = content.getBytes(StandardCharsets.UTF_8);
+        zos.write(b);
+        zos.closeEntry();
+    }
+
+    private static String escapeHtml(String s) {
+        if (s == null)
+            return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    private static String escapeXml(String s) {
+        return escapeHtml(s);
+    }
+
+    private java.util.List<Object[]> getAllFilteredData() {
+        java.util.List<Object[]> result = new java.util.ArrayList<>();
+        String baseWhere = " WHERE r.monto_abonado > 0 ";
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        if (startDate.getDate() != null && endDate.getDate() != null) {
+            baseWhere += " AND DATE(r.fecha) >= ? AND DATE(r.fecha) <= ? ";
+            params.add(new java.sql.Date(startDate.getDate().getTime()));
+            params.add(new java.sql.Date(endDate.getDate().getTime()));
+        }
+
+        String sql = "SELECT r.cod_comprobante, c.nombres, DATE(r.fecha) as fecha, "
+                + "COALESCE(NULLIF(m.nom_metodo_pago, ''), 'NINGUNO') as nom_metodo_pago, r.monto_abonado "
+                + "FROM reporte_ingresos r "
+                + "LEFT JOIN metodo_pago m ON r.metodo_pago_id = m.id "
+                + "LEFT JOIN clientes c ON r.cliente_id = c.id "
+                + baseWhere
+                + " ORDER BY r.fecha DESC";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            int idx = 1;
+            for (Object p : params)
+                ps.setObject(idx++, p);
+            try (ResultSet rs = ps.executeQuery()) {
+                SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+                while (rs.next()) {
+                    String cod = rs.getString("cod_comprobante");
+                    String cliente = rs.getString("nombres");
+                    Date f = null;
+                    try {
+                        f = rs.getDate("fecha");
+                    } catch (Exception ignored) {
+                    }
+                    String fecha = f != null ? df.format(f) : "";
+                    String metodo = rs.getString("nom_metodo_pago");
+                    double monto = rs.getDouble("monto_abonado");
+                    result.add(new Object[] { cod, cliente, fecha, metodo, formatNumber(monto) });
+                }
+            }
+        } catch (Exception ex) {
+            // Log error but return empty list
+            ex.printStackTrace();
+        }
+        return result;
     }
 
     private void onBuscar(ActionEvent ev) {
@@ -340,6 +528,8 @@ public class frmReporteFinanciero extends JInternalFrame {
                     }
                 }
             }
+            // Update pagination label
+            lblPagina.setText("Página " + currentPage + " de " + totalPages);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error cargando reporte:\n" + ex.getMessage(), "Error",
                     JOptionPane.ERROR_MESSAGE);
@@ -347,10 +537,6 @@ public class frmReporteFinanciero extends JInternalFrame {
     }
 
     private void exportCsv() {
-        if (model.getRowCount() == 0) {
-            JOptionPane.showMessageDialog(this, "No hay datos para exportar.", "Info", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
         JFileChooser fc = new JFileChooser();
         fc.setSelectedFile(new java.io.File("registro_ingresos_comprobantes_"
                 + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + ".csv"));
@@ -358,13 +544,21 @@ public class frmReporteFinanciero extends JInternalFrame {
         if (sel != JFileChooser.APPROVE_OPTION)
             return;
         java.io.File f = fc.getSelectedFile();
+
+        // Get all data, not just current page
+        java.util.List<Object[]> allData = getAllFilteredData();
+        if (allData.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No hay datos para exportar.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
         try (FileWriter fw = new FileWriter(f)) {
             // header
             fw.write("COMPROBANTE,CLIENTE,FECHA DE ABONO,METODO DE PAGO,MONTO ABONADO\n");
-            for (int r = 0; r < model.getRowCount(); r++) {
+            for (Object[] rowData : allData) {
                 StringBuilder line = new StringBuilder();
-                for (int c = 0; c < model.getColumnCount(); c++) {
-                    Object v = model.getValueAt(r, c);
+                for (int c = 0; c < rowData.length; c++) {
+                    Object v = rowData[c];
                     String cell = v == null ? "" : v.toString().replace("\"", "\"\"");
                     // simple CSV quoting
                     if (cell.contains(",") || cell.contains("\n"))
