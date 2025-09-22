@@ -76,6 +76,8 @@ public class DlgPrintPreview extends JDialog {
             }
             if (digits.length() == 9)
                 this.getRootPane().putClientProperty("telefonoCliente", digits);
+                // Debug log: record the value placed into rootPane property
+                Forms.DebugLogger.log("DlgPrintPreview", "setRoot telefonoCliente='" + digits + "'");
         }
         // Try to resolve the receipt id or code from the HTML and, if the
         // comprobante is in ABONO or DEBE, append the remaining debt to the preview
@@ -241,7 +243,9 @@ public class DlgPrintPreview extends JDialog {
 
     private void onSend(ActionEvent e) {
         // retrieve telefono (may be null)
-        String tel = (String) this.getRootPane().getClientProperty("telefonoCliente");
+    String tel = (String) this.getRootPane().getClientProperty("telefonoCliente");
+    // Debug log: record what the preview send path is using as prefill
+    Forms.DebugLogger.log("DlgPrintPreview", "prefillRoot telefonoCliente='" + (tel == null ? "" : tel) + "'");
         String input = tel != null ? tel : "";
         String phone = (String) JOptionPane.showInputDialog(this, "Número de celular (9 dígitos):",
                 "Enviar por WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, input);

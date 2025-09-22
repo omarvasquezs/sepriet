@@ -465,11 +465,15 @@ public class DlgEditarComprobante extends JDialog {
 
                     String prefill = "";
                     if (telefonoCliente != null) {
-                        prefill = telefonoCliente.replaceAll("\\D", "");
-                        if (prefill.length() > 9)
-                            prefill = prefill.substring(prefill.length() - 9);
-                        if (prefill.length() != 9)
-                            prefill = "";
+                        String raw = telefonoCliente;
+                        String norm = telefonoCliente.replaceAll("\\D", "");
+                        if (norm.length() > 9)
+                            norm = norm.substring(norm.length() - 9);
+                        if (norm.length() != 9)
+                            norm = "";
+                        prefill = norm;
+                        // Debug log: record raw DB phone and normalized prefill
+                        DebugLogger.log("DlgEditarComprobante", "rawPhone='" + raw + "' normalized='" + norm + "' prefill='" + prefill + "'");
                     }
                     String input = prefill;
                     String phone = (String) JOptionPane.showInputDialog(this,

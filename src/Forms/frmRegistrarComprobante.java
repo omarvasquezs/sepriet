@@ -1753,7 +1753,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
 
                 // Prompt user for number (prefilled with stored number if any)
-                String prefill = phoneDigits != null ? phoneDigits : "";
+        String prefill = phoneDigits != null ? phoneDigits : "";
+        // Debug: record what we retrieved from DB and what we'll prefill
+        DebugLogger.log("frmRegistrarComprobante", "dbCandidatePhoneRaw='" + (phoneDigits == null ? "" : phoneDigits) + "' prefill='" + prefill + "'");
                 String input = (String) JOptionPane.showInputDialog(this, "Número de celular (9 dígitos):",
                         "Enviar WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, prefill);
                 if (input == null) {
