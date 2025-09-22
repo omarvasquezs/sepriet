@@ -1734,12 +1734,18 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                         || col.contains("movil")) {
                                     String v = rsPhone.getString(ci);
                                     if (v != null) {
-                                        String digits = v.replaceAll("\\D", "");
-                                        if (digits.length() == 9) {
-                                            phoneDigits = digits;
-                                            break;
-                                        }
-                                    }
+                                                String digits = v.replaceAll("\\D", "");
+                                                // If number contains country code or other prefixes, keep
+                                                // the last 9 digits which correspond to local Peruvian
+                                                // mobile numbers.
+                                                if (digits.length() > 9) {
+                                                    digits = digits.substring(digits.length() - 9);
+                                                }
+                                                if (digits.length() == 9) {
+                                                    phoneDigits = digits;
+                                                    break;
+                                                }
+                                            }
                                 }
                             }
                         }
