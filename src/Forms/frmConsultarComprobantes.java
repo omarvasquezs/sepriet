@@ -386,6 +386,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
                             + "</div>");
                     // show deuda under estado when applicable
                     sb.append("<div style=\"font-size:12px;\">DEUDA: S/. " + formatNumber(deuda) + "</div>");
+                    // show total abonado after deuda
+                    sb.append("<div style=\"font-size:12px;\">TOTAL ABONADO: S/. " + formatNumber(montoAbonado)
+                            + "</div>");
                     sb.append("<div style=\"text-align:center;margin-top:8px;font-weight:700;\">DETALLES</div>");
 
                     // Details
@@ -429,27 +432,28 @@ public class frmConsultarComprobantes extends JInternalFrame {
                             double igv = totalAfterDiscount * 0.18;
                             double subtotal = totalAfterDiscount - igv;
                             sb.append("<table class=\"totals\">\n<tbody>\n");
-                sb.append("<tr><td class=\"label\">SUBTOTAL</td><td class=\"val\">S/. "
-                    + formatNumber(subtotal) + "</td></tr>");
-                // Show IGV first (above the total lines)
-                sb.append("<tr><td class=\"label\">IGV 18%</td><td class=\"val\">S/. " + formatNumber(igv)
-                    + "</td></tr>");
+                            sb.append("<tr><td class=\"label\">SUBTOTAL</td><td class=\"val\">S/. "
+                                    + formatNumber(subtotal) + "</td></tr>");
+                            // Show IGV first (above the total lines)
+                            sb.append("<tr><td class=\"label\">IGV 18%</td><td class=\"val\">S/. " + formatNumber(igv)
+                                    + "</td></tr>");
 
-                // If there is a discount, show pre-discount total, the discount row and the
-                // total after discount. Otherwise show a single TOTAL row.
-                if (discountAmount > 0.0) {
-                    sb.append("<tr><td class=\"label\">TOTAL SIN DESCUENTO</td><td class=\"val\">S/. "
-                        + formatNumber(calcTotal) + "</td></tr>");
-                    sb.append("<tr><td class=\"label\">DESCUENTO (" + formatNumber(descuentoPercent)
-                        + "%)</td><td class=\"val\">S/. " + formatNumber(discountAmount)
-                        + "</td></tr>");
-                    sb.append(
-                        "<tr><td class=\"label\" style=\"font-weight:700;\">TOTAL CON DESCUENTO</td><td class=\"val\" style=\"font-weight:700;\">S/. "
-                            + formatNumber(totalAfterDiscount) + "</td></tr>");
-                } else {
-                    sb.append("<tr><td class=\"label\" style=\"font-weight:700;\">TOTAL</td><td class=\"val\" style=\"font-weight:700;\">S/. "
-                        + formatNumber(totalAfterDiscount) + "</td></tr>");
-                }
+                            // If there is a discount, show pre-discount total, the discount row and the
+                            // total after discount. Otherwise show a single TOTAL row.
+                            if (discountAmount > 0.0) {
+                                sb.append("<tr><td class=\"label\">TOTAL SIN DESCUENTO</td><td class=\"val\">S/. "
+                                        + formatNumber(calcTotal) + "</td></tr>");
+                                sb.append("<tr><td class=\"label\">DESCUENTO (" + formatNumber(descuentoPercent)
+                                        + "%)</td><td class=\"val\">S/. " + formatNumber(discountAmount)
+                                        + "</td></tr>");
+                                sb.append(
+                                        "<tr><td class=\"label\" style=\"font-weight:700;\">TOTAL CON DESCUENTO</td><td class=\"val\" style=\"font-weight:700;\">S/. "
+                                                + formatNumber(totalAfterDiscount) + "</td></tr>");
+                            } else {
+                                sb.append(
+                                        "<tr><td class=\"label\" style=\"font-weight:700;\">TOTAL</td><td class=\"val\" style=\"font-weight:700;\">S/. "
+                                                + formatNumber(totalAfterDiscount) + "</td></tr>");
+                            }
                             sb.append("</tbody></table>\n");
 
                             sb.append("<div class=\"footer\">¡Gracias por su preferencia!</div>");
