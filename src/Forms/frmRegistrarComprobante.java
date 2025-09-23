@@ -485,6 +485,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated
+    // <editor-fold defaultstate="collapsed" desc="Generated
     // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -524,6 +525,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel15 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        jLabel16 = new javax.swing.JLabel();
+        txtPorcentajeDescuento = new javax.swing.JTextField();
+        jLabel17 = new javax.swing.JLabel();
 
         setClosable(true);
         setIconifiable(true);
@@ -531,19 +535,19 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         setResizable(true);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel2.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel2.setText("CLIENTE:");
+        jLabel2.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        btnAgregarNuevoCliente.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         btnAgregarNuevoCliente.setText("AÑADIR NUEVO CLIENTE");
+        btnAgregarNuevoCliente.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel3.setText("ESTADO:");
+        jLabel3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         cbxEstadoComprobante.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
-        jLabel1.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel1.setText("CONDICIÓN DE PAGO:");
+        jLabel1.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         cbxMetodoPago.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
@@ -559,14 +563,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         radioBoleta.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         radioBoleta.setText("BOLETA");
 
-        lblTitulo.setFont(new java.awt.Font("sansserif", 1, 24)); // NOI18N
         lblTitulo.setText("REGISTRO DE COMPROBANTE");
+        lblTitulo.setFont(new java.awt.Font("sansserif", 1, 24)); // NOI18N
 
-        jLabel4.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel4.setText("RUC:");
+        jLabel4.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel5.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel5.setText("RAZON SOCIAL:");
+        jLabel5.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         txtRUC.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRUC.setEnabled(false);
@@ -574,38 +578,38 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         txtRazonSocial.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRazonSocial.setEnabled(false);
 
-        jLabel6.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel6.setText("CREACIÓN:");
+        jLabel6.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         dateTimePicker1.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
         cbxCliente.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
-        jLabel7.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel7.setText("OP. GRAVADAS:");
+        jLabel7.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel8.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel8.setText("IGV 18%:");
+        jLabel8.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel9.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel9.setText("TOTAL A PAGAR:");
+        jLabel9.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel10.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel10.setText("MONTO ABONADO:");
+        jLabel10.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         txtMontoAbonado.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtMontoAbonado.setEnabled(false);
 
-        jLabel11.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel11.setText("OBSERVACIONES:");
+        jLabel11.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         txtObservaciones.setColumns(20);
-        txtObservaciones.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtObservaciones.setRows(5);
+        txtObservaciones.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         jScrollPane1.setViewportView(txtObservaciones);
 
-        btnGenerarComprobante.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnGenerarComprobante.setText("GENERAR");
+        btnGenerarComprobante.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
 
         jLabel12.setText("S/. 0.00");
         jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -618,16 +622,16 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
         cbxServicio.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
-        btnAgregarServicioComprobante.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         btnAgregarServicioComprobante.setText("AÑADIR AL COMPROBANTE");
+        btnAgregarServicioComprobante.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         btnAgregarServicioComprobante.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnAgregarServicioComprobanteActionPerformed(evt);
             }
         });
 
-        jLabel15.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel15.setText("SELECCIONAR SERVICIO:");
+        jLabel15.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
                 new Object[][] {
@@ -662,6 +666,15 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             jTable1.getColumnModel().getColumn(4).setMaxWidth(80);
         }
 
+        jLabel16.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel16.setText("DSCT. (1 A 100):");
+
+        txtPorcentajeDescuento.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
+        txtPorcentajeDescuento.setEnabled(false);
+
+        jLabel17.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabel17.setText("%");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -671,9 +684,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                         .addComponent(lblTitulo)
                                         .addGroup(jPanel1Layout.createSequentialGroup()
-                                                .addGap(704, 704, 704)
+                                                .addGap(698, 698, 698)
                                                 .addComponent(jLabel6)
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                                 .addComponent(dateTimePicker1, javax.swing.GroupLayout.PREFERRED_SIZE,
                                                         256, javax.swing.GroupLayout.PREFERRED_SIZE))
                                         .addGroup(jPanel1Layout.createSequentialGroup()
@@ -771,13 +784,29 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                                         javax.swing.GroupLayout.Alignment.LEADING)
                                                                         .addComponent(jLabel11)
                                                                         .addGroup(jPanel1Layout.createSequentialGroup()
-                                                                                .addComponent(jLabel10)
+                                                                                .addGroup(jPanel1Layout
+                                                                                        .createParallelGroup(
+                                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                        .addComponent(jLabel10)
+                                                                                        .addComponent(jLabel16))
                                                                                 .addPreferredGap(
                                                                                         javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                                                                .addComponent(txtMontoAbonado,
-                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                        202,
-                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                                                                .addGroup(jPanel1Layout
+                                                                                        .createParallelGroup(
+                                                                                                javax.swing.GroupLayout.Alignment.LEADING,
+                                                                                                false)
+                                                                                        .addComponent(txtMontoAbonado,
+                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                202,
+                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                        .addGroup(jPanel1Layout
+                                                                                                .createSequentialGroup()
+                                                                                                .addComponent(
+                                                                                                        txtPorcentajeDescuento)
+                                                                                                .addPreferredGap(
+                                                                                                        javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                                                                .addComponent(jLabel17)
+                                                                                                .addGap(2, 2, 2)))))
                                                         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
                                                                 jPanel1Layout.createSequentialGroup()
                                                                         .addGroup(jPanel1Layout.createParallelGroup(
@@ -872,21 +901,30 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                         .addComponent(txtRazonSocial,
                                                                 javax.swing.GroupLayout.PREFERRED_SIZE, 30,
                                                                 javax.swing.GroupLayout.PREFERRED_SIZE))))
-                                .addGap(28, 28, 28)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                        .addComponent(jLabel15)
-                                        .addComponent(jLabel11))
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGap(28, 28, 28)
+                                                .addComponent(jLabel15))
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                        .addComponent(txtPorcentajeDescuento,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                        .addComponent(jLabel16)
+                                                        .addComponent(jLabel17))))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addGroup(jPanel1Layout
-                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
-                                                jPanel1Layout.createSequentialGroup()
-                                                        .addComponent(jScrollPane1)
-                                                        .addPreferredGap(
-                                                                javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                                        .addComponent(btnGenerarComprobante,
-                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 44,
-                                                                javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addComponent(jLabel11)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 153,
+                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addGap(18, 18, 18)
+                                                .addComponent(btnGenerarComprobante,
+                                                        javax.swing.GroupLayout.PREFERRED_SIZE, 44,
+                                                        javax.swing.GroupLayout.PREFERRED_SIZE))
                                         .addGroup(jPanel1Layout.createSequentialGroup()
                                                 .addGroup(jPanel1Layout
                                                         .createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
@@ -897,9 +935,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                                 javax.swing.GroupLayout.PREFERRED_SIZE, 30,
                                                                 javax.swing.GroupLayout.PREFERRED_SIZE))
                                                 .addGap(18, 18, 18)
-                                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 138,
+                                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 200,
                                                         javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addContainerGap(194, Short.MAX_VALUE)));
+                                .addContainerGap(132, Short.MAX_VALUE)));
 
         getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 0, 1070, 680));
 
@@ -1462,6 +1500,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
+    private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel17;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -1480,6 +1520,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     private javax.swing.JRadioButton radioNotaVenta;
     private javax.swing.JTextField txtMontoAbonado;
     private javax.swing.JTextArea txtObservaciones;
+    private javax.swing.JTextField txtPorcentajeDescuento;
     private javax.swing.JTextField txtRUC;
     private javax.swing.JTextField txtRazonSocial;
     // End of variables declaration//GEN-END:variables
@@ -1734,18 +1775,18 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                         || col.contains("movil")) {
                                     String v = rsPhone.getString(ci);
                                     if (v != null) {
-                                                String digits = v.replaceAll("\\D", "");
-                                                // If number contains country code or other prefixes, keep
-                                                // the last 9 digits which correspond to local Peruvian
-                                                // mobile numbers.
-                                                if (digits.length() > 9) {
-                                                    digits = digits.substring(digits.length() - 9);
-                                                }
-                                                if (digits.length() == 9) {
-                                                    phoneDigits = digits;
-                                                    break;
-                                                }
-                                            }
+                                        String digits = v.replaceAll("\\D", "");
+                                        // If number contains country code or other prefixes, keep
+                                        // the last 9 digits which correspond to local Peruvian
+                                        // mobile numbers.
+                                        if (digits.length() > 9) {
+                                            digits = digits.substring(digits.length() - 9);
+                                        }
+                                        if (digits.length() == 9) {
+                                            phoneDigits = digits;
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1753,9 +1794,10 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
 
                 // Prompt user for number (prefilled with stored number if any)
-        String prefill = phoneDigits != null ? phoneDigits : "";
-        // Debug: record what we retrieved from DB and what we'll prefill
-        DebugLogger.log("frmRegistrarComprobante", "dbCandidatePhoneRaw='" + (phoneDigits == null ? "" : phoneDigits) + "' prefill='" + prefill + "'");
+                String prefill = phoneDigits != null ? phoneDigits : "";
+                // Debug: record what we retrieved from DB and what we'll prefill
+                DebugLogger.log("frmRegistrarComprobante", "dbCandidatePhoneRaw='"
+                        + (phoneDigits == null ? "" : phoneDigits) + "' prefill='" + prefill + "'");
                 String input = (String) JOptionPane.showInputDialog(this, "Número de celular (9 dígitos):",
                         "Enviar WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, prefill);
                 if (input == null) {
