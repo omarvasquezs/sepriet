@@ -76,8 +76,8 @@ public class DlgPrintPreview extends JDialog {
             }
             if (digits.length() == 9)
                 this.getRootPane().putClientProperty("telefonoCliente", digits);
-                // Debug log: record the value placed into rootPane property
-                Forms.DebugLogger.log("DlgPrintPreview", "setRoot telefonoCliente='" + digits + "'");
+            // Debug log: record the value placed into rootPane property
+            Forms.DebugLogger.log("DlgPrintPreview", "setRoot telefonoCliente='" + digits + "'");
         }
         // Try to resolve the receipt id or code from the HTML and, if the
         // comprobante is in ABONO or DEBE, append the remaining debt to the preview
@@ -95,17 +95,20 @@ public class DlgPrintPreview extends JDialog {
                         // avoid inserting twice
                         if (!html.toUpperCase().contains("DEUDA:")) {
                             String newHtml;
+                            // Always show the total amount paid so far under the DEUDA line
+                            String montoStr = String.format(java.util.Locale.US, "%.2f", info.montoAbonado);
+                            String abonHtml = "<span style=\"display:block;margin-top:2px\">TOTAL ABONADO: S/. " + montoStr + "</span>";
                             try {
                                 // try to inject right after the first occurrence of 'ESTADO:'
                                 // (case-insensitive)
                                 if (html.toUpperCase().contains("ESTADO:")) {
-                                    newHtml = html.replaceFirst("(?i)ESTADO\\s*:", "ESTADO:" + debtHtml);
+                                    newHtml = html.replaceFirst("(?i)ESTADO\\s*:", "ESTADO:" + debtHtml + abonHtml);
                                 } else {
                                     // fallback: append near top of receipt (after first header) if possible
-                                    newHtml = html + "<hr/>" + debtHtml;
+                                    newHtml = html + "<hr/>" + debtHtml + abonHtml;
                                 }
                             } catch (Exception ex) {
-                                newHtml = html + "<hr/>" + debtHtml;
+                                newHtml = html + "<hr/>" + debtHtml + abonHtml;
                             }
                             editor.setText(newHtml);
                             editor.setCaretPosition(0);
@@ -139,10 +142,12 @@ public class DlgPrintPreview extends JDialog {
     private static class DebtInfo {
         final String estadoLabel;
         final float deuda;
+        final float montoAbonado;
 
-        DebtInfo(int id, String estadoLabel, float deuda) {
+        DebtInfo(int id, String estadoLabel, float deuda, float montoAbonado) {
             this.estadoLabel = estadoLabel;
             this.deuda = deuda;
+            this.montoAbonado = montoAbonado;
         }
     }
 
@@ -193,8 +198,8 @@ public class DlgPrintPreview extends JDialog {
             if (conn == null)
                 return null;
             // try by numeric id
-            try (java.sql.PreparedStatement ps = conn.prepareStatement(
-                    "SELECT c.id, c.costo_total, IFNULL(c.monto_abonado,0) monto_abonado, ec.nom_estado FROM comprobantes c LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id = ec.id WHERE c.id = ?")) {
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                    "SELECT c.id, c.costo_total, IFNULL(c.monto_abonado,0) monto_abonado, ec.nom_estado, c.cod_comprobante FROM comprobantes c LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id = ec.id WHERE c.id = ?")) {
                 ps.setInt(1, Integer.parseInt(receiptId));
                 try (java.sql.ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
@@ -202,7 +207,26 @@ public class DlgPrintPreview extends JDialog {
                         float costo = rs.getFloat(2);
                         float abon = rs.getFloat(3);
                         String estado = rs.getString(4);
-                        return new DebtInfo(id, estado, Math.max(0f, costo - abon));
+                        String cod = null;
+                        try { cod = rs.getString(5); } catch (Exception _e) { cod = null; }
+                        // If comprobante.monto_abonado is zero, try summing reporte_ingresos for cod_comprobante
+                        if ((abon == 0.0f || abon < 0.0001f) && cod != null && !cod.isBlank()) {
+                            try (java.sql.PreparedStatement psSum = conn.prepareStatement(
+                                    "SELECT IFNULL(SUM(r.monto_abonado),0) FROM reporte_ingresos r WHERE r.cod_comprobante = ?")) {
+                                psSum.setString(1, cod);
+                                try (java.sql.ResultSet rsSum = psSum.executeQuery()) {
+                                    if (rsSum.next()) {
+                                        float s = rsSum.getFloat(1);
+                                        if (s > 0.0f) {
+                                            abon = s;
+                                        }
+                                    }
+                                }
+                            } catch (Exception __) {
+                                // ignore
+                            }
+                        }
+                        return new DebtInfo(id, estado, Math.max(0f, costo - abon), abon);
                     }
                 }
             } catch (NumberFormatException ignore) {
@@ -210,7 +234,7 @@ public class DlgPrintPreview extends JDialog {
             }
             // fallback: try by cod_comprobante
             try (java.sql.PreparedStatement ps2 = conn.prepareStatement(
-                    "SELECT c.id, c.costo_total, IFNULL(c.monto_abonado,0) monto_abonado, ec.nom_estado FROM comprobantes c LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id = ec.id WHERE c.cod_comprobante = ? LIMIT 1")) {
+                    "SELECT c.id, c.costo_total, IFNULL(c.monto_abonado,0) monto_abonado, ec.nom_estado, c.cod_comprobante FROM comprobantes c LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id = ec.id WHERE c.cod_comprobante = ? LIMIT 1")) {
                 ps2.setString(1, receiptId);
                 try (java.sql.ResultSet rs = ps2.executeQuery()) {
                     if (rs.next()) {
@@ -218,7 +242,25 @@ public class DlgPrintPreview extends JDialog {
                         float costo = rs.getFloat(2);
                         float abon = rs.getFloat(3);
                         String estado = rs.getString(4);
-                        return new DebtInfo(id, estado, Math.max(0f, costo - abon));
+                        String cod = null;
+                        try { cod = rs.getString(5); } catch (Exception _e) { cod = null; }
+                        if ((abon == 0.0f || abon < 0.0001f) && cod != null && !cod.isBlank()) {
+                            try (java.sql.PreparedStatement psSum = conn.prepareStatement(
+                                    "SELECT IFNULL(SUM(r.monto_abonado),0) FROM reporte_ingresos r WHERE r.cod_comprobante = ?")) {
+                                psSum.setString(1, cod);
+                                try (java.sql.ResultSet rsSum = psSum.executeQuery()) {
+                                    if (rsSum.next()) {
+                                        float s = rsSum.getFloat(1);
+                                        if (s > 0.0f) {
+                                            abon = s;
+                                        }
+                                    }
+                                }
+                            } catch (Exception __) {
+                                // ignore
+                            }
+                        }
+                        return new DebtInfo(id, estado, Math.max(0f, costo - abon), abon);
                     }
                 }
             }
@@ -243,9 +285,9 @@ public class DlgPrintPreview extends JDialog {
 
     private void onSend(ActionEvent e) {
         // retrieve telefono (may be null)
-    String tel = (String) this.getRootPane().getClientProperty("telefonoCliente");
-    // Debug log: record what the preview send path is using as prefill
-    Forms.DebugLogger.log("DlgPrintPreview", "prefillRoot telefonoCliente='" + (tel == null ? "" : tel) + "'");
+        String tel = (String) this.getRootPane().getClientProperty("telefonoCliente");
+        // Debug log: record what the preview send path is using as prefill
+        Forms.DebugLogger.log("DlgPrintPreview", "prefillRoot telefonoCliente='" + (tel == null ? "" : tel) + "'");
         String input = tel != null ? tel : "";
         String phone = (String) JOptionPane.showInputDialog(this, "Número de celular (9 dígitos):",
                 "Enviar por WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, input);
@@ -383,8 +425,9 @@ public class DlgPrintPreview extends JDialog {
         // balance.
         try {
             String resolved = (String) this.getRootPane().getClientProperty("receiptId");
-            if (resolved == null || resolved.isBlank())
+            if (resolved == null || resolved.isBlank()) {
                 resolved = resolveReceiptIdFromHtml(html);
+            }
             if (resolved != null && !resolved.isBlank()) {
                 DebtInfo di = fetchDebtInfo(resolved);
                 if (di != null) {
@@ -392,6 +435,9 @@ public class DlgPrintPreview extends JDialog {
                     if ("ABONO".equals(est) || "DEBE".equals(est) || "DEUDA".equals(est)) {
                         String deudaStr = String.format(java.util.Locale.US, "%.2f", di.deuda);
                         message += "\nDEUDA: S/. " + deudaStr;
+                        // Always append the total already paid (may be 0.00)
+                        String montoStr = String.format(java.util.Locale.US, "%.2f", di.montoAbonado);
+                        message += "\nTOTAL ABONADO: S/. " + montoStr;
                         // Append footer immediately after DEUDA line with double asterisks for WhatsApp
                         // bold
                         message += "\n\n**El tiempo máximo para recoger su prenda es de 15 días.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
@@ -666,24 +712,112 @@ public class DlgPrintPreview extends JDialog {
                 details.append("Error al ejecutar la consulta de detalles.\n");
             }
 
-            // Query to fetch totals
-            query = "SELECT c.costo_total AS total FROM comprobantes c WHERE c.id = ?";
+            // Query to fetch totals and descuento
+            query = "SELECT c.costo_total AS total, IFNULL(c.descuento,0) AS descuento FROM comprobantes c WHERE c.id = ?";
             try (java.sql.PreparedStatement stmt = conn.prepareStatement(query)) {
                 stmt.setString(1, receiptId);
                 try (java.sql.ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         double total = rs.getDouble("total");
-                        details.append(String.format("\nTOTAL: %.2f\n", total));
+                        double descuentoPerc = 0.0;
+                        try {
+                            descuentoPerc = rs.getDouble("descuento");
+                            if (rs.wasNull())
+                                descuentoPerc = 0.0;
+                        } catch (Exception ex) {
+                            descuentoPerc = 0.0;
+                        }
+                        // total in DB is stored as the final total (after discount)
+                        // compute total before discount (if descuento present)
+                        double totalConDescuento = total;
+                        double totalSinDescuento = total;
+                        if (descuentoPerc > 0.0) {
+                            // derive pre-discount total
+                            totalSinDescuento = totalConDescuento / (1.0 - (descuentoPerc / 100.0));
+                        }
+                        // IGV should appear above total lines; compute igv from the post-discount
+                        // amount (maintaining current business logic where IGV is applied on
+                        // the total after discount)
+                        double igv = totalConDescuento * 0.18;
+                        details.append(String.format("\nIGV 18%%: S/. %.2f\n", igv));
+
+                        if (descuentoPerc > 0.0) {
+                            details.append(String.format("TOTAL SIN DESCUENTO: %.2f\n", totalSinDescuento));
+                            double descuentoAmount = totalSinDescuento - totalConDescuento;
+                            details.append(String.format("DESCUENTO: %s%% (S/. %.2f)\n", formatNumber(descuentoPerc),
+                                    descuentoAmount));
+                            details.append(String.format("TOTAL CON DESCUENTO: %.2f\n", totalConDescuento));
+                        } else {
+                            // no discount -> show single total (which equals totalConDescuento)
+                            details.append(String.format("TOTAL: %.2f\n", totalConDescuento));
+                        }
                     }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 details.append("Error al ejecutar la consulta de totales.\n");
             }
+            // Append payment history (abonos) from reporte_ingresos (if any)
+            try {
+                // resolve cod_comprobante for this receipt id
+                String cod = null;
+                try (java.sql.PreparedStatement psCod = conn.prepareStatement("SELECT cod_comprobante FROM comprobantes WHERE id = ?")) {
+                    psCod.setString(1, receiptId);
+                    try (java.sql.ResultSet rsCod = psCod.executeQuery()) {
+                        if (rsCod.next())
+                            cod = rsCod.getString("cod_comprobante");
+                    }
+                }
+                if (cod != null && !cod.isBlank()) {
+                    try (java.sql.PreparedStatement psPay = conn.prepareStatement(
+                            "SELECT r.fecha, r.monto_abonado, COALESCE(m.nom_metodo_pago,'') AS metodo "
+                                    + "FROM reporte_ingresos r LEFT JOIN metodo_pago m ON r.metodo_pago_id = m.id "
+                                    + "WHERE r.cod_comprobante = ? ORDER BY r.fecha ASC")) {
+                        psPay.setString(1, cod);
+                        try (java.sql.ResultSet rsPay = psPay.executeQuery()) {
+                            boolean any = false;
+                            StringBuilder sb = new StringBuilder();
+                            while (rsPay.next()) {
+                                any = true;
+                                java.sql.Timestamp ts = rsPay.getTimestamp("fecha");
+                                String when = ts == null ? "" : new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(ts);
+                                double monto = rsPay.getDouble("monto_abonado");
+                                String metodo = rsPay.getString("metodo");
+                                sb.append(String.format("- %s: S/. %.2f %s\n", when, monto, (metodo == null || metodo.isBlank()) ? "" : "(" + metodo + ")"));
+                            }
+                            if (any) {
+                                details.append("\nABONOS:\n");
+                                details.append(sb.toString());
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                // Do not fail if payments can't be fetched
+            }
         } catch (Exception e) {
             e.printStackTrace();
             details.append("Error general al obtener detalles del comprobante.\n");
         }
         return details.toString();
+    }
+
+    // Format a number with up to two decimal places, dropping trailing .00 when
+    // possible
+    private String formatNumber(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return Double.toString(value);
+        }
+        java.text.DecimalFormatSymbols symbols = java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US);
+        java.text.DecimalFormat df;
+        // If value is effectively an integer, show no decimals; otherwise show up to
+        // two decimals
+        if (Math.abs(value - Math.round(value)) < 0.0001) {
+            df = new java.text.DecimalFormat("#", symbols);
+        } else {
+            df = new java.text.DecimalFormat("#.##", symbols);
+        }
+        return df.format(value);
     }
 }

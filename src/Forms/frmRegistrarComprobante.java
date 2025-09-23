@@ -2155,7 +2155,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 } catch (Exception ignore) {
                                 }
 
-                                // Compute total from details and apply discount percent (if any)
+                                    // Compute total from details and apply discount percent (if any)
                                 try {
                                     double sumDetails = 0.0;
                                     try (PreparedStatement psSum = conn.prepareStatement(
@@ -2177,12 +2177,51 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                     }
                                     double descAmt = 0.0;
                                     double finalTotal = sumDetails;
+                                    double totalSinDescuento = sumDetails;
                                     if (descPct > 0) {
                                         descAmt = sumDetails * (descPct / 100.0);
                                         finalTotal = sumDetails - descAmt;
-                                        sbMsg.append(String.format("\nDSCT (%.2f%%): -%.2f\n", descPct, descAmt));
                                     }
-                                    sbMsg.append("\nTOTAL: ").append(String.format("%.2f", finalTotal)).append("\n");
+                                    // Show IGV above totals (IGV calculated from final total as per
+                                    // existing logic in the app)
+                                    double igv = finalTotal * 0.18;
+                                    sbMsg.append(String.format("\nIGV 18%%: S/. %.2f\n", igv));
+
+                                    if (descPct > 0) {
+                                        sbMsg.append(String.format("\nTOTAL SIN DESCUENTO: %.2f\n", totalSinDescuento));
+                                        sbMsg.append(String.format("DSCT (%.2f%%): -%.2f\n", descPct, descAmt));
+                                        sbMsg.append("TOTAL CON DESCUENTO: ").append(String.format("%.2f", finalTotal)).append("\n");
+                                    } else {
+                                        sbMsg.append(String.format("\nTOTAL: %.2f\n", finalTotal));
+                                    }
+                                    // Append payment history (abonos) if any
+                                    try {
+                                        String cod = codComprobante;
+                                        if (cod != null && !cod.isBlank()) {
+                                            try (PreparedStatement psPay = conn.prepareStatement(
+                                                    "SELECT r.fecha, r.monto_abonado, COALESCE(m.nom_metodo_pago,'') AS metodo FROM reporte_ingresos r LEFT JOIN metodo_pago m ON r.metodo_pago_id = m.id WHERE r.cod_comprobante = ? ORDER BY r.fecha ASC")) {
+                                                psPay.setString(1, cod);
+                                                try (ResultSet rsPay = psPay.executeQuery()) {
+                                                    boolean any = false;
+                                                    StringBuilder sbP = new StringBuilder();
+                                                    while (rsPay.next()) {
+                                                        any = true;
+                                                        java.sql.Timestamp ts = rsPay.getTimestamp("fecha");
+                                                        String when = ts == null ? "" : new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(ts);
+                                                        double monto = rsPay.getDouble("monto_abonado");
+                                                        String metodo = rsPay.getString("metodo");
+                                                        sbP.append(String.format("- %s: S/. %.2f %s\n", when, monto, (metodo == null || metodo.isBlank()) ? "" : "(" + metodo + ")"));
+                                                    }
+                                                    if (any) {
+                                                        sbMsg.append("\nABONOS:\n");
+                                                        sbMsg.append(sbP.toString());
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } catch (Exception __) {
+                                        // ignore payment fetch errors for message
+                                    }
                                 } catch (Exception ignore) {
                                 }
 

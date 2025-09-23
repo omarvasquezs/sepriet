@@ -313,6 +313,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         try (Connection conn = DatabaseConfig.getConnection()) {
             // Header
             String hdrSql = "SELECT c.tipo_comprobante,c.cod_comprobante,c.fecha,c.num_ruc,c.razon_social,c.costo_total, IFNULL(c.monto_abonado,0) AS monto_abonado, "
+                    + "IFNULL(c.descuento,0) AS descuento, "
                     + "cl.nombres,cl.dni,cl.direccion,cl.telefono,ec.nom_estado as estado_comprobante "
                     + "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id WHERE c.id=?";
             try (PreparedStatement ph = conn.prepareStatement(hdrSql)) {
@@ -335,6 +336,14 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     String estado = rh.getString("estado_comprobante");
                     double costoTotal = rh.getDouble("costo_total");
                     double montoAbonado = rh.getDouble("monto_abonado");
+                    double descuentoPercent = 0.0;
+                    try {
+                        descuentoPercent = rh.getDouble("descuento");
+                        if (rh.wasNull())
+                            descuentoPercent = 0.0;
+                    } catch (Exception ex) {
+                        descuentoPercent = 0.0;
+                    }
                     double deuda = Math.max(0.0, costoTotal - montoAbonado);
 
                     sb.append("<div class=\"container\"><div class=\"receipt\">");
@@ -405,17 +414,42 @@ public class frmConsultarComprobantes extends JInternalFrame {
                             }
                             sb.append("</tbody></table>");
 
-                            // Totals block similar to PHP template
-                            double igv = calcTotal * 0.18;
-                            double subtotal = calcTotal - igv;
+                            // Totals block similar to PHP template (apply descuento before IGV)
+                            double discountAmount = 0.0;
+                            try {
+                                if (descuentoPercent > 0.0) {
+                                    discountAmount = calcTotal * (descuentoPercent / 100.0);
+                                }
+                            } catch (Exception ignored) {
+                                discountAmount = 0.0;
+                            }
+                            double totalAfterDiscount = calcTotal - discountAmount;
+                            if (totalAfterDiscount < 0)
+                                totalAfterDiscount = 0.0;
+                            double igv = totalAfterDiscount * 0.18;
+                            double subtotal = totalAfterDiscount - igv;
                             sb.append("<table class=\"totals\">\n<tbody>\n");
-                            sb.append("<tr><td class=\"label\">SUBTOTAL</td><td class=\"val\">S/. "
-                                    + formatNumber(subtotal) + "</td></tr>");
-                            sb.append("<tr><td class=\"label\">IGV 18%</td><td class=\"val\">S/. " + formatNumber(igv)
-                                    + "</td></tr>");
-                            sb.append(
-                                    "<tr><td class=\"label\" style=\"font-weight:700;\">TOTAL</td><td class=\"val\" style=\"font-weight:700;\">S/. "
-                                            + formatNumber(calcTotal) + "</td></tr>");
+                sb.append("<tr><td class=\"label\">SUBTOTAL</td><td class=\"val\">S/. "
+                    + formatNumber(subtotal) + "</td></tr>");
+                // Show IGV first (above the total lines)
+                sb.append("<tr><td class=\"label\">IGV 18%</td><td class=\"val\">S/. " + formatNumber(igv)
+                    + "</td></tr>");
+
+                // If there is a discount, show pre-discount total, the discount row and the
+                // total after discount. Otherwise show a single TOTAL row.
+                if (discountAmount > 0.0) {
+                    sb.append("<tr><td class=\"label\">TOTAL SIN DESCUENTO</td><td class=\"val\">S/. "
+                        + formatNumber(calcTotal) + "</td></tr>");
+                    sb.append("<tr><td class=\"label\">DESCUENTO (" + formatNumber(descuentoPercent)
+                        + "%)</td><td class=\"val\">S/. " + formatNumber(discountAmount)
+                        + "</td></tr>");
+                    sb.append(
+                        "<tr><td class=\"label\" style=\"font-weight:700;\">TOTAL CON DESCUENTO</td><td class=\"val\" style=\"font-weight:700;\">S/. "
+                            + formatNumber(totalAfterDiscount) + "</td></tr>");
+                } else {
+                    sb.append("<tr><td class=\"label\" style=\"font-weight:700;\">TOTAL</td><td class=\"val\" style=\"font-weight:700;\">S/. "
+                        + formatNumber(totalAfterDiscount) + "</td></tr>");
+                }
                             sb.append("</tbody></table>\n");
 
                             sb.append("<div class=\"footer\">¡Gracias por su preferencia!</div>");
