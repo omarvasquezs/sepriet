@@ -88,7 +88,8 @@ public class DlgPrintPreview extends JDialog {
                 DebtInfo info = fetchDebtInfo(receiptId);
                 if (info != null) {
                     String estado = info.estadoLabel == null ? "" : info.estadoLabel.toUpperCase();
-                    if ("ABONO".equals(estado) || "DEBE".equals(estado) || "DEUDA".equals(estado)) {
+                    if ("ABONO".equals(estado) || "DEBE".equals(estado) || "DEUDA".equals(estado)
+                            || "CANCELADO".equals(estado)) {
                         String deudaStr = String.format(java.util.Locale.US, "%.2f", info.deuda);
                         String debtHtml = "<span style=\"font-weight:bold;display:block;margin-top:4px\">DEUDA: S/. "
                                 + deudaStr + "</span>";
@@ -97,7 +98,8 @@ public class DlgPrintPreview extends JDialog {
                             String newHtml;
                             // Always show the total amount paid so far under the DEUDA line
                             String montoStr = String.format(java.util.Locale.US, "%.2f", info.montoAbonado);
-                            String abonHtml = "<span style=\"display:block;margin-top:2px\">TOTAL ABONADO: S/. " + montoStr + "</span>";
+                            String abonHtml = "<span style=\"display:block;margin-top:2px\">TOTAL ABONADO: S/. "
+                                    + montoStr + "</span>";
                             try {
                                 // try to inject right after the first occurrence of 'ESTADO:'
                                 // (case-insensitive)
@@ -198,7 +200,7 @@ public class DlgPrintPreview extends JDialog {
             if (conn == null)
                 return null;
             // try by numeric id
-                try (java.sql.PreparedStatement ps = conn.prepareStatement(
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(
                     "SELECT c.id, c.costo_total, IFNULL(c.monto_abonado,0) monto_abonado, ec.nom_estado, c.cod_comprobante FROM comprobantes c LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id = ec.id WHERE c.id = ?")) {
                 ps.setInt(1, Integer.parseInt(receiptId));
                 try (java.sql.ResultSet rs = ps.executeQuery()) {
@@ -208,8 +210,13 @@ public class DlgPrintPreview extends JDialog {
                         float abon = rs.getFloat(3);
                         String estado = rs.getString(4);
                         String cod = null;
-                        try { cod = rs.getString(5); } catch (Exception _e) { cod = null; }
-                        // If comprobante.monto_abonado is zero, try summing reporte_ingresos for cod_comprobante
+                        try {
+                            cod = rs.getString(5);
+                        } catch (Exception _e) {
+                            cod = null;
+                        }
+                        // If comprobante.monto_abonado is zero, try summing reporte_ingresos for
+                        // cod_comprobante
                         if ((abon == 0.0f || abon < 0.0001f) && cod != null && !cod.isBlank()) {
                             try (java.sql.PreparedStatement psSum = conn.prepareStatement(
                                     "SELECT IFNULL(SUM(r.monto_abonado),0) FROM reporte_ingresos r WHERE r.cod_comprobante = ?")) {
@@ -243,7 +250,11 @@ public class DlgPrintPreview extends JDialog {
                         float abon = rs.getFloat(3);
                         String estado = rs.getString(4);
                         String cod = null;
-                        try { cod = rs.getString(5); } catch (Exception _e) { cod = null; }
+                        try {
+                            cod = rs.getString(5);
+                        } catch (Exception _e) {
+                            cod = null;
+                        }
                         if ((abon == 0.0f || abon < 0.0001f) && cod != null && !cod.isBlank()) {
                             try (java.sql.PreparedStatement psSum = conn.prepareStatement(
                                     "SELECT IFNULL(SUM(r.monto_abonado),0) FROM reporte_ingresos r WHERE r.cod_comprobante = ?")) {
@@ -432,7 +443,7 @@ public class DlgPrintPreview extends JDialog {
                 DebtInfo di = fetchDebtInfo(resolved);
                 if (di != null) {
                     String est = di.estadoLabel == null ? "" : di.estadoLabel.toUpperCase();
-                    if ("ABONO".equals(est) || "DEBE".equals(est) || "DEUDA".equals(est)) {
+                    if ("ABONO".equals(est) || "DEBE".equals(est) || "DEUDA".equals(est) || "CANCELADO".equals(est)) {
                         String deudaStr = String.format(java.util.Locale.US, "%.2f", di.deuda);
                         message += "\nDEUDA: S/. " + deudaStr;
                         // Always append the total already paid (may be 0.00)
@@ -761,7 +772,8 @@ public class DlgPrintPreview extends JDialog {
             try {
                 // resolve cod_comprobante for this receipt id
                 String cod = null;
-                try (java.sql.PreparedStatement psCod = conn.prepareStatement("SELECT cod_comprobante FROM comprobantes WHERE id = ?")) {
+                try (java.sql.PreparedStatement psCod = conn
+                        .prepareStatement("SELECT cod_comprobante FROM comprobantes WHERE id = ?")) {
                     psCod.setString(1, receiptId);
                     try (java.sql.ResultSet rsCod = psCod.executeQuery()) {
                         if (rsCod.next())
@@ -780,10 +792,12 @@ public class DlgPrintPreview extends JDialog {
                             while (rsPay.next()) {
                                 any = true;
                                 java.sql.Timestamp ts = rsPay.getTimestamp("fecha");
-                                String when = ts == null ? "" : new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(ts);
+                                String when = ts == null ? ""
+                                        : new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(ts);
                                 double monto = rsPay.getDouble("monto_abonado");
                                 String metodo = rsPay.getString("metodo");
-                                sb.append(String.format("- %s: S/. %.2f %s\n", when, monto, (metodo == null || metodo.isBlank()) ? "" : "(" + metodo + ")"));
+                                sb.append(String.format("- %s: S/. %.2f %s\n", when, monto,
+                                        (metodo == null || metodo.isBlank()) ? "" : "(" + metodo + ")"));
                             }
                             if (any) {
                                 details.append("\nABONOS:\n");
