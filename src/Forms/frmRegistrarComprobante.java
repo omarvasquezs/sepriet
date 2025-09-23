@@ -141,6 +141,71 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 }
             }
         });
+        // Restrict DESCUENTO (porcentaje) field to numeric (integer or decimal) and
+        // allow empty
+        try {
+            if (txtPorcentajeDescuento != null) {
+                AbstractDocument descDoc = (AbstractDocument) txtPorcentajeDescuento.getDocument();
+                descDoc.setDocumentFilter(new NumericDocumentFilter());
+                // no default text; empty means 0
+                // Update totals live while the user types in the discount field
+                // and ensure the percentage never exceeds 100 or goes below 0.
+                final javax.swing.event.DocumentListener[] descListenerHolder = new javax.swing.event.DocumentListener[1];
+                descListenerHolder[0] = new javax.swing.event.DocumentListener() {
+                    private boolean updating = false;
+
+                    private void changed() {
+                        if (updating)
+                            return;
+                        try {
+                            String txt = txtPorcentajeDescuento.getText().trim();
+                            if (!txt.isEmpty()) {
+                                try {
+                                    double v = Double.parseDouble(txt);
+                                    if (Double.isFinite(v)) {
+                                        if (v < 0) {
+                                            updating = true;
+                                            txtPorcentajeDescuento.setText("0");
+                                        } else if (v > 100) {
+                                            // clamp to 100
+                                            updating = true;
+                                            txtPorcentajeDescuento.setText("100");
+                                        }
+                                    }
+                                } catch (NumberFormatException nfe) {
+                                    // leave as-is; numeric filter prevents most cases
+                                }
+                            }
+                            javax.swing.SwingUtilities.invokeLater(() -> {
+                                try {
+                                    updateTotals();
+                                } catch (Exception ignored) {
+                                }
+                            });
+                        } finally {
+                            updating = false;
+                        }
+                    }
+
+                    @Override
+                    public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                        changed();
+                    }
+
+                    @Override
+                    public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                        changed();
+                    }
+
+                    @Override
+                    public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                        changed();
+                    }
+                };
+                descDoc.addDocumentListener(descListenerHolder[0]);
+            }
+        } catch (Exception ignored) {
+        }
         btnGenerarComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnAgregarNuevoCliente.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnAgregarServicioComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -180,6 +245,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Rebuild editors so cell editability rules take effect immediately
         try {
             setupTableCellEditors();
+        } catch (Exception ignored) {
+        }
+        // Enable discount field only for administrators (role id 1 == ADMIN)
+        try {
+            boolean isAdmin = this.currentUserRole == 1;
+            if (txtPorcentajeDescuento != null) {
+                txtPorcentajeDescuento.setEnabled(isAdmin);
+            }
         } catch (Exception ignored) {
         }
     }
@@ -486,6 +559,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated
     // <editor-fold defaultstate="collapsed" desc="Generated
+    // <editor-fold defaultstate="collapsed" desc="Generated
     // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -528,6 +602,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         jLabel16 = new javax.swing.JLabel();
         txtPorcentajeDescuento = new javax.swing.JTextField();
         jLabel17 = new javax.swing.JLabel();
+        jLabel18 = new javax.swing.JLabel();
+        jLabel19 = new javax.swing.JLabel();
 
         setClosable(true);
         setIconifiable(true);
@@ -535,19 +611,19 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         setResizable(true);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel2.setText("CLIENTE:");
         jLabel2.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel2.setText("CLIENTE:");
 
-        btnAgregarNuevoCliente.setText("AÑADIR NUEVO CLIENTE");
         btnAgregarNuevoCliente.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        btnAgregarNuevoCliente.setText("AÑADIR NUEVO CLIENTE");
 
-        jLabel3.setText("ESTADO:");
         jLabel3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel3.setText("ESTADO:");
 
         cbxEstadoComprobante.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
-        jLabel1.setText("CONDICIÓN DE PAGO:");
         jLabel1.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel1.setText("CONDICIÓN DE PAGO:");
 
         cbxMetodoPago.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
@@ -563,14 +639,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         radioBoleta.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         radioBoleta.setText("BOLETA");
 
-        lblTitulo.setText("REGISTRO DE COMPROBANTE");
         lblTitulo.setFont(new java.awt.Font("sansserif", 1, 24)); // NOI18N
+        lblTitulo.setText("REGISTRO DE COMPROBANTE");
 
-        jLabel4.setText("RUC:");
         jLabel4.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel4.setText("RUC:");
 
-        jLabel5.setText("RAZON SOCIAL:");
         jLabel5.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel5.setText("RAZON SOCIAL:");
 
         txtRUC.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRUC.setEnabled(false);
@@ -578,60 +654,60 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         txtRazonSocial.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRazonSocial.setEnabled(false);
 
-        jLabel6.setText("CREACIÓN:");
         jLabel6.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel6.setText("CREACIÓN:");
 
         dateTimePicker1.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
         cbxCliente.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
-        jLabel7.setText("OP. GRAVADAS:");
         jLabel7.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel7.setText("OP. GRAVADAS:");
 
-        jLabel8.setText("IGV 18%:");
         jLabel8.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel8.setText("IGV 18%:");
 
-        jLabel9.setText("TOTAL A PAGAR:");
         jLabel9.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel9.setText("TOTAL A PAGAR:");
 
-        jLabel10.setText("MONTO ABONADO:");
         jLabel10.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel10.setText("MONTO ABONADO:");
 
         txtMontoAbonado.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtMontoAbonado.setEnabled(false);
 
-        jLabel11.setText("OBSERVACIONES:");
         jLabel11.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel11.setText("OBSERVACIONES:");
 
         txtObservaciones.setColumns(20);
-        txtObservaciones.setRows(5);
         txtObservaciones.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
+        txtObservaciones.setRows(5);
         jScrollPane1.setViewportView(txtObservaciones);
 
-        btnGenerarComprobante.setText("GENERAR");
         btnGenerarComprobante.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnGenerarComprobante.setText("GENERAR");
 
-        jLabel12.setText("S/. 0.00");
         jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel12.setText("S/. 0.00");
 
-        jLabel13.setText("S/. 0.00");
         jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel13.setText("S/. 0.00");
 
-        jLabel14.setText("S/. 0.00");
         jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel14.setText("S/. 0.00");
 
         cbxServicio.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
-        btnAgregarServicioComprobante.setText("AÑADIR AL COMPROBANTE");
         btnAgregarServicioComprobante.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        btnAgregarServicioComprobante.setText("AÑADIR AL COMPROBANTE");
         btnAgregarServicioComprobante.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnAgregarServicioComprobanteActionPerformed(evt);
             }
         });
 
-        jLabel15.setText("SELECCIONAR SERVICIO:");
         jLabel15.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        jLabel15.setText("SELECCIONAR SERVICIO:");
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
                 new Object[][] {
@@ -674,6 +750,12 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
         jLabel17.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel17.setText("%");
+
+        jLabel18.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabel18.setText("MONTO DEL DESCUENTO:");
+
+        jLabel19.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel19.setText("S/. 0.00");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -813,19 +895,24 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                                                 javax.swing.GroupLayout.Alignment.LEADING)
                                                                                 .addComponent(jLabel7)
                                                                                 .addComponent(jLabel8)
-                                                                                .addComponent(jLabel9))
+                                                                                .addComponent(jLabel9)
+                                                                                .addComponent(jLabel18))
                                                                         .addPreferredGap(
                                                                                 javax.swing.LayoutStyle.ComponentPlacement.RELATED,
                                                                                 javax.swing.GroupLayout.DEFAULT_SIZE,
                                                                                 Short.MAX_VALUE)
                                                                         .addGroup(jPanel1Layout.createParallelGroup(
                                                                                 javax.swing.GroupLayout.Alignment.LEADING)
-                                                                                .addComponent(jLabel14,
-                                                                                        javax.swing.GroupLayout.Alignment.TRAILING)
-                                                                                .addComponent(jLabel13,
-                                                                                        javax.swing.GroupLayout.Alignment.TRAILING)
-                                                                                .addComponent(jLabel12,
-                                                                                        javax.swing.GroupLayout.Alignment.TRAILING))))))
+                                                                                .addComponent(jLabel19)
+                                                                                .addGroup(jPanel1Layout
+                                                                                        .createParallelGroup(
+                                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                        .addComponent(jLabel14,
+                                                                                                javax.swing.GroupLayout.Alignment.TRAILING)
+                                                                                        .addComponent(jLabel13,
+                                                                                                javax.swing.GroupLayout.Alignment.TRAILING)
+                                                                                        .addComponent(jLabel12,
+                                                                                                javax.swing.GroupLayout.Alignment.TRAILING)))))))
                                 .addGap(15, 15, 15)));
         jPanel1Layout.setVerticalGroup(
                 jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -858,15 +945,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                                 .addGroup(jPanel1Layout
                                                         .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                                        .addComponent(jLabel9)
-                                                        .addComponent(jLabel14))
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                .addGroup(jPanel1Layout
-                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                                        .addComponent(jLabel10)
-                                                        .addComponent(txtMontoAbonado,
-                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 30,
-                                                                javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                                        .addComponent(jLabel18)
+                                                        .addComponent(jLabel19)))
                                         .addGroup(jPanel1Layout.createSequentialGroup()
                                                 .addGroup(jPanel1Layout
                                                         .createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -900,7 +980,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                                 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                                                         .addComponent(txtRazonSocial,
                                                                 javax.swing.GroupLayout.PREFERRED_SIZE, 30,
-                                                                javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                        .addComponent(jLabel9)
+                                                        .addComponent(jLabel14))))
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                         .addGroup(jPanel1Layout.createSequentialGroup()
                                                 .addGap(28, 28, 28)
@@ -917,9 +999,17 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                                         .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGroup(jPanel1Layout
+                                                        .createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                                        .addComponent(jLabel10)
+                                                        .addComponent(txtMontoAbonado,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE, 30,
+                                                                javax.swing.GroupLayout.PREFERRED_SIZE))
+                                                .addGap(18, 18, 18)
                                                 .addComponent(jLabel11)
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 153,
+                                                .addGap(18, 18, 18)
+                                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                        javax.swing.GroupLayout.DEFAULT_SIZE,
                                                         javax.swing.GroupLayout.PREFERRED_SIZE)
                                                 .addGap(18, 18, 18)
                                                 .addComponent(btnGenerarComprobante,
@@ -1136,6 +1226,33 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Custom editor for PESO column (only integers or decimals while typing)
         javax.swing.JTextField pesoField = new javax.swing.JTextField();
         ((AbstractDocument) pesoField.getDocument()).setDocumentFilter(numericFilter);
+        // While editing PESO, update the row total and overall totals in real time
+        pesoField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            private void changed() {
+                if (jTable1.isEditing()) {
+                    int row = jTable1.getEditingRow();
+                    if (row >= 0) {
+                        updateRowTotal(row);
+                    }
+                    updateTotals();
+                }
+            }
+
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                changed();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                changed();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                changed();
+            }
+        });
         jTable1.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(pesoField) {
             @Override
             public boolean stopCellEditing() {
@@ -1156,6 +1273,33 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Custom editor for PRECIO column (only integers or decimals while typing)
         javax.swing.JTextField precioField = new javax.swing.JTextField();
         ((AbstractDocument) precioField.getDocument()).setDocumentFilter(numericFilter);
+        // While editing PRECIO, update the row total and overall totals in real time
+        precioField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            private void changed() {
+                if (jTable1.isEditing()) {
+                    int row = jTable1.getEditingRow();
+                    if (row >= 0) {
+                        updateRowTotal(row);
+                    }
+                    updateTotals();
+                }
+            }
+
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                changed();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                changed();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                changed();
+            }
+        });
         jTable1.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(precioField) {
             @Override
             public boolean stopCellEditing() {
@@ -1399,6 +1543,27 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // 0.18;
         // subtotal (OP. GRAVADAS) = total - IGV
         double total = subtotal;
+        // Parse discount percent (empty -> 0)
+        double discountPercent = 0.0;
+        try {
+            if (txtPorcentajeDescuento != null) {
+                String ds = txtPorcentajeDescuento.getText().trim();
+                if (!ds.isEmpty()) {
+                    discountPercent = Double.parseDouble(ds);
+                    if (Double.isNaN(discountPercent) || Double.isInfinite(discountPercent))
+                        discountPercent = 0.0;
+                    if (discountPercent < 0.0)
+                        discountPercent = 0.0;
+                }
+            }
+        } catch (Exception ex) {
+            discountPercent = 0.0;
+        }
+        double discountAmount = total * (discountPercent / 100.0);
+        total = total - discountAmount;
+        if (total < 0)
+            total = 0;
+
         double igv = total * 0.18;
         double subtotalVisible = total - igv;
 
@@ -1410,6 +1575,27 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         Object estadoSel = cbxEstadoComprobante.getSelectedItem();
         if (estadoSel != null && "CANCELADO".equalsIgnoreCase(estadoSel.toString().trim())) {
             txtMontoAbonado.setText(String.format("%.2f", total));
+        }
+        // Show discount in jLabel17 if present
+        // Ensure discount percent is clamped to 0..100 before showing values
+        try {
+            if (discountPercent > 100.0) {
+                discountPercent = 100.0;
+            }
+        } catch (Exception ignored) {
+            discountPercent = Math.max(0.0, Math.min(100.0, discountPercent));
+        }
+        // Show discount amount in the dedicated label (jLabel19). jLabel17 is the
+        // percent-suffix label in the UI.
+        try {
+            if (jLabel19 != null) {
+                if (discountPercent > 0) {
+                    jLabel19.setText("S/. " + String.format("%.2f", discountAmount));
+                } else {
+                    jLabel19.setText("S/. 0.00");
+                }
+            }
+        } catch (Exception ignored) {
         }
     }
 
@@ -1502,6 +1688,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
+    private javax.swing.JLabel jLabel18;
+    private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -1685,7 +1873,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
             String codComprobante = generateComprobanteCode(conn, tipoComprobante);
             // Insert comprobante
-            String insertComprobanteSql = "INSERT INTO comprobantes (tipo_comprobante, cliente_id, user_id, fecha, metodo_pago_id, num_ruc, razon_social, estado_comprobante_id, estado_ropa_id, local_id, observaciones, monto_abonado, last_updated_by, cod_comprobante, costo_total) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            String insertComprobanteSql = "INSERT INTO comprobantes (tipo_comprobante, cliente_id, user_id, fecha, metodo_pago_id, num_ruc, razon_social, estado_comprobante_id, estado_ropa_id, local_id, observaciones, monto_abonado, descuento, last_updated_by, cod_comprobante, costo_total) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             try (PreparedStatement ps = conn.prepareStatement(insertComprobanteSql,
                     PreparedStatement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, String.valueOf(tipoComprobante));
@@ -1712,9 +1900,21 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                 else
                     ps.setNull(11, java.sql.Types.CLOB);
                 ps.setDouble(12, montoAbonado);
-                ps.setInt(13, this.currentUserId);
-                ps.setString(14, codComprobante);
-                ps.setDouble(15, total);
+                // descuento percent (empty -> 0)
+                double discountPercent = 0.0;
+                try {
+                    if (txtPorcentajeDescuento != null) {
+                        String ds = txtPorcentajeDescuento.getText().trim();
+                        if (!ds.isEmpty())
+                            discountPercent = Double.parseDouble(ds);
+                    }
+                } catch (Exception e) {
+                    discountPercent = 0.0;
+                }
+                ps.setDouble(13, discountPercent);
+                ps.setInt(14, this.currentUserId);
+                ps.setString(15, codComprobante);
+                ps.setDouble(16, total);
                 ps.executeUpdate();
                 int comprobanteId;
                 try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -1740,7 +1940,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                     psDet.executeBatch();
                 }
                 // Insert ingreso
-                String ingresoSql = "INSERT INTO reporte_ingresos (cod_comprobante, cliente_id, metodo_pago_id, fecha, monto_abonado, costo_total) VALUES (?,?,?,?,?,?)";
+                String ingresoSql = "INSERT INTO reporte_ingresos (cod_comprobante, cliente_id, metodo_pago_id, fecha, monto_abonado, costo_total, descuento) VALUES (?,?,?,?,?,?,?)";
                 try (PreparedStatement psIng = conn.prepareStatement(ingresoSql)) {
                     psIng.setString(1, codComprobante);
                     psIng.setInt(2, clienteId);
@@ -1751,7 +1951,18 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                     psIng.setTimestamp(4, java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()));
                     psIng.setDouble(5, montoAbonado);
                     psIng.setDouble(6, total);
-                    psIng.executeUpdate();
+                    psIng.setDouble(7, discountPercent);
+                    try {
+                        psIng.executeUpdate();
+                    } catch (SQLException exIng) {
+                        // If the reporte_ingresos table doesn't have the 'descuento' column
+                        // the INSERT will fail. Log and continue so the main comprobante
+                        // save is not rolled back. Suggest adding the column to the DB.
+                        DebugLogger.log("frmRegistrarComprobante", "reporte_ingresos insert failed: " + exIng.getMessage());
+                        JOptionPane.showMessageDialog(this,
+                                "Advertencia: no se pudo guardar el registro en 'reporte_ingresos'.\nRevise si la columna 'descuento' existe en la tabla.",
+                                "Advertencia", JOptionPane.WARNING_MESSAGE);
+                    }
                 }
             }
             conn.commit();
@@ -1833,7 +2044,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 // Tipo de comprobante label
                                 String tipoLabel = "COMPROBANTE";
                                 try (PreparedStatement psTipo = conn.prepareStatement(
-                                        "SELECT tipo_comprobante, fecha, num_ruc, razon_social, costo_total FROM comprobantes WHERE cod_comprobante = ?")) {
+                                        "SELECT tipo_comprobante, fecha, num_ruc, razon_social, costo_total, IFNULL(descuento,0) descuento FROM comprobantes WHERE cod_comprobante = ?")) {
                                     psTipo.setString(1, codComprobante);
                                     try (ResultSet rsTipo = psTipo.executeQuery()) {
                                         if (rsTipo.next()) {
@@ -1925,16 +2136,34 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 } catch (Exception ignore) {
                                 }
 
-                                // Total
-                                try (PreparedStatement psTot = conn.prepareStatement(
-                                        "SELECT costo_total FROM comprobantes WHERE cod_comprobante = ?")) {
-                                    psTot.setString(1, codComprobante);
-                                    try (ResultSet rsTot = psTot.executeQuery()) {
-                                        if (rsTot.next()) {
-                                            double grand = rsTot.getDouble("costo_total");
-                                            sbMsg.append("\nTOTAL: ").append(String.format("%.2f", grand)).append("\n");
+                                // Compute total from details and apply discount percent (if any)
+                                try {
+                                    double sumDetails = 0.0;
+                                    try (PreparedStatement psSum = conn.prepareStatement(
+                                            "SELECT SUM(d.peso_kg * d.costo_kilo) as s FROM comprobantes_detalles d JOIN comprobantes c ON d.comprobante_id = c.id WHERE c.cod_comprobante = ?")) {
+                                        psSum.setString(1, codComprobante);
+                                        try (ResultSet rsSum = psSum.executeQuery()) {
+                                            if (rsSum.next())
+                                                sumDetails = rsSum.getDouble("s");
                                         }
                                     }
+                                    double descPct = 0.0;
+                                    try (PreparedStatement psDesc = conn.prepareStatement(
+                                            "SELECT IFNULL(descuento,0) descuento FROM comprobantes WHERE cod_comprobante = ?")) {
+                                        psDesc.setString(1, codComprobante);
+                                        try (ResultSet rsD = psDesc.executeQuery()) {
+                                            if (rsD.next())
+                                                descPct = rsD.getDouble("descuento");
+                                        }
+                                    }
+                                    double descAmt = 0.0;
+                                    double finalTotal = sumDetails;
+                                    if (descPct > 0) {
+                                        descAmt = sumDetails * (descPct / 100.0);
+                                        finalTotal = sumDetails - descAmt;
+                                        sbMsg.append(String.format("\nDSCT (%.2f%%): -%.2f\n", descPct, descAmt));
+                                    }
+                                    sbMsg.append("\nTOTAL: ").append(String.format("%.2f", finalTotal)).append("\n");
                                 } catch (Exception ignore) {
                                 }
 
@@ -2109,6 +2338,13 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         txtRazonSocial.setText("");
         txtMontoAbonado.setText("");
         txtObservaciones.setText("");
+        if (txtPorcentajeDescuento != null) {
+            txtPorcentajeDescuento.setText("");
+            try {
+                txtPorcentajeDescuento.setEnabled(this.currentUserRole == 1);
+            } catch (Exception ignored) {
+            }
+        }
         dateTimePicker1.setDateTimePermissive(LocalDateTime.now());
         // Clear table
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
