@@ -1865,6 +1865,24 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
             int estadoComprobanteId = fetchId(conn, "SELECT id FROM estado_comprobantes WHERE nom_estado = ?",
                     estadoNombre);
+            // If the user selected ABONO but the provided montoAbonado equals the total,
+            // treat the comprobante as CANCELADO (fully paid) when saving.
+            try {
+                if (estadoComprobanteId != -1 && "ABONO".equalsIgnoreCase(estadoUpper)) {
+                    double eps = 0.01; // allow small rounding differences
+                    if (Math.abs(montoAbonado - total) <= eps) {
+                        int cancelId = fetchId(conn, "SELECT id FROM estado_comprobantes WHERE nom_estado = ?",
+                                "CANCELADO");
+                        if (cancelId != -1) {
+                            estadoComprobanteId = cancelId;
+                            // update local variables so downstream logic (if any) reflects CANCELADO
+                            estadoUpper = "CANCELADO";
+                            estadoNombre = "CANCELADO";
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
             if (clienteId == -1 || estadoComprobanteId == -1) {
                 conn.rollback();
                 JOptionPane.showMessageDialog(this, "No se pudo resolver IDs requeridos.", "Error",
@@ -1958,7 +1976,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                         // If the reporte_ingresos table doesn't have the 'descuento' column
                         // the INSERT will fail. Log and continue so the main comprobante
                         // save is not rolled back. Suggest adding the column to the DB.
-                        DebugLogger.log("frmRegistrarComprobante", "reporte_ingresos insert failed: " + exIng.getMessage());
+                        DebugLogger.log("frmRegistrarComprobante",
+                                "reporte_ingresos insert failed: " + exIng.getMessage());
                         JOptionPane.showMessageDialog(this,
                                 "Advertencia: no se pudo guardar el registro en 'reporte_ingresos'.\nRevise si la columna 'descuento' existe en la tabla.",
                                 "Advertencia", JOptionPane.WARNING_MESSAGE);
