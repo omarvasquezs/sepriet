@@ -18,6 +18,8 @@ public class DlgEditarComprobante extends JDialog {
     private final JLabel lblMetodoPago = new JLabel("Método de pago:");
     private final JTextField txtMontoAbonar = new JTextField();
     private final JLabel lblInfo = new JLabel(" ");
+    private final JTextArea txtAbonos = new JTextArea(5, 30);
+    private final JLabel lblTotalAbonado = new JLabel(" ");
     private float costoTotal = 0f;
     private float montoAbonadoPrevio = 0f;
     // original estado at dialog open (used to prevent backward transitions)
@@ -37,7 +39,7 @@ public class DlgEditarComprobante extends JDialog {
         super(owner, "Editar Comprobante", ModalityType.APPLICATION_MODAL);
         this.comprobanteId = id;
         this.onSaved = onSaved;
-        setSize(420, 300);
+        setSize(520, 450);
         setResizable(false);
         buildUI();
         loadData();
@@ -54,10 +56,33 @@ public class DlgEditarComprobante extends JDialog {
         addRow(form, c, r++, new JLabel("ESTADO COMPROBANTE :"), cboEstado);
         addRow(form, c, r++, lblMetodoPago, cboMetodoPago);
         addRow(form, c, r++, new JLabel("Monto a abonar (incremental):"), txtMontoAbonar);
+
+        // Add info row
         c.gridy = r++;
         c.gridx = 0;
         c.gridwidth = 2;
         form.add(lblInfo, c);
+
+        // Add TOTAL ABONADO row
+        c.gridy = r++;
+        c.gridx = 0;
+        c.gridwidth = 2;
+        form.add(lblTotalAbonado, c);
+
+        // Add ABONOS section
+        c.gridy = r++;
+        c.gridx = 0;
+        c.gridwidth = 2;
+        c.fill = GridBagConstraints.BOTH;
+        c.weighty = 1.0;
+        txtAbonos.setEditable(false);
+        txtAbonos.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        txtAbonos.setBorder(BorderFactory.createTitledBorder("ABONOS (Historial de Pagos)"));
+        form.add(new JScrollPane(txtAbonos), c);
+
+        // Reset constraints for buttons
+        c.weighty = 0;
+        c.fill = GridBagConstraints.HORIZONTAL;
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton btnGuardar = new JButton("Guardar");
         JButton btnCancelar = new JButton("Cancelar");
@@ -246,8 +271,59 @@ public class DlgEditarComprobante extends JDialog {
     }
 
     private void updateInfo() {
-        lblInfo.setText(String.format("Abonado previo: %.2f  |  Total: %.2f  |  Deuda: %.2f", montoAbonadoPrevio,
-                costoTotal, (costoTotal - montoAbonadoPrevio)));
+        float deuda = costoTotal - montoAbonadoPrevio;
+        lblInfo.setText(String.format("Total: %.2f  |  DEUDA: S/. %.2f", costoTotal, deuda));
+        lblTotalAbonado.setText(String.format("TOTAL ABONADO: S/. %.2f", montoAbonadoPrevio));
+        loadAbonos();
+    }
+
+    private void loadAbonos() {
+        StringBuilder abonos = new StringBuilder();
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            // Get cod_comprobante first
+            String codComprobante = null;
+            try (PreparedStatement ps = conn
+                    .prepareStatement("SELECT cod_comprobante FROM comprobantes WHERE id = ?")) {
+                ps.setInt(1, comprobanteId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        codComprobante = rs.getString("cod_comprobante");
+                    }
+                }
+            }
+
+            if (codComprobante != null && !codComprobante.isBlank()) {
+                // Load payment history from reporte_ingresos
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT r.fecha, r.monto_abonado, COALESCE(m.nom_metodo_pago,'') AS metodo " +
+                                "FROM reporte_ingresos r LEFT JOIN metodo_pago m ON r.metodo_pago_id = m.id " +
+                                "WHERE r.cod_comprobante = ? ORDER BY r.fecha ASC")) {
+                    ps.setString(1, codComprobante);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        boolean hasAbonos = false;
+                        while (rs.next()) {
+                            hasAbonos = true;
+                            Timestamp ts = rs.getTimestamp("fecha");
+                            String when = ts == null ? ""
+                                    : new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(ts);
+                            double monto = rs.getDouble("monto_abonado");
+                            String metodo = rs.getString("metodo");
+                            abonos.append(String.format("- %s: S/. %.2f %s\n", when, monto,
+                                    (metodo == null || metodo.isBlank()) ? "" : "(" + metodo + ")"));
+                        }
+                        if (!hasAbonos) {
+                            abonos.append("No hay abonos registrados.");
+                        }
+                    }
+                }
+            } else {
+                abonos.append("No se pudo obtener el código del comprobante.");
+            }
+        } catch (Exception e) {
+            abonos.append("Error cargando abonos: ").append(e.getMessage());
+        }
+        txtAbonos.setText(abonos.toString());
+        txtAbonos.setCaretPosition(0);
     }
 
     private void applyEstadoRules(java.awt.event.ActionEvent ev) {
@@ -473,7 +549,8 @@ public class DlgEditarComprobante extends JDialog {
                             norm = "";
                         prefill = norm;
                         // Debug log: record raw DB phone and normalized prefill
-                        DebugLogger.log("DlgEditarComprobante", "rawPhone='" + raw + "' normalized='" + norm + "' prefill='" + prefill + "'");
+                        DebugLogger.log("DlgEditarComprobante",
+                                "rawPhone='" + raw + "' normalized='" + norm + "' prefill='" + prefill + "'");
                     }
                     String input = prefill;
                     String phone = (String) JOptionPane.showInputDialog(this,
@@ -524,17 +601,62 @@ public class DlgEditarComprobante extends JDialog {
                             // TOTAL (use costoTotal loaded earlier)
                             msgSb.append(String.format(java.util.Locale.US, "TOTAL: %.2f\n\n", (double) costoTotal));
 
+                            // ABONOS: show payment history from reporte_ingresos
+                            try {
+                                // resolve cod_comprobante for this receipt id
+                                String codComp = null;
+                                try (PreparedStatement psCod = conn
+                                        .prepareStatement("SELECT cod_comprobante FROM comprobantes WHERE id = ?")) {
+                                    psCod.setInt(1, comprobanteId);
+                                    try (ResultSet rsCod = psCod.executeQuery()) {
+                                        if (rsCod.next())
+                                            codComp = rsCod.getString("cod_comprobante");
+                                    }
+                                }
+                                if (codComp != null && !codComp.isBlank()) {
+                                    try (PreparedStatement psPay = conn.prepareStatement(
+                                            "SELECT r.fecha, r.monto_abonado, COALESCE(m.nom_metodo_pago,'') AS metodo "
+                                                    + "FROM reporte_ingresos r LEFT JOIN metodo_pago m ON r.metodo_pago_id = m.id "
+                                                    + "WHERE r.cod_comprobante = ? ORDER BY r.fecha ASC")) {
+                                        psPay.setString(1, codComp);
+                                        try (ResultSet rsPay = psPay.executeQuery()) {
+                                            boolean anyPayment = false;
+                                            StringBuilder abonosSb = new StringBuilder();
+                                            while (rsPay.next()) {
+                                                anyPayment = true;
+                                                java.sql.Timestamp ts = rsPay.getTimestamp("fecha");
+                                                String when = ts == null ? ""
+                                                        : new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(ts);
+                                                double monto = rsPay.getDouble("monto_abonado");
+                                                String metodo = rsPay.getString("metodo");
+                                                abonosSb.append(String.format("- %s: S/. %.2f %s\n", when, monto,
+                                                        (metodo == null || metodo.isBlank()) ? ""
+                                                                : "(" + metodo + ")"));
+                                            }
+                                            if (anyPayment) {
+                                                msgSb.append("ABONOS:\n");
+                                                msgSb.append(abonosSb.toString()).append("\n");
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (Exception ignore) {
+                            }
+
                             // DEUDA: compute based on updated abonadoActualizado
                             try {
                                 double deuda = Math.max(0d, (double) (costoTotal - abonadoActualizado));
                                 if (deuda > 0.001d) {
-                                    msgSb.append(String.format(java.util.Locale.US, "DEUDA: S/. %.2f\n\n", deuda));
+                                    msgSb.append(String.format(java.util.Locale.US, "DEUDA: S/. %.2f\n", deuda));
                                 } else {
-                                    msgSb.append(
-                                            "Este comprobante no registra ninguna deuda pendiente. Por lo tanto, solo queda proceder con la entrega de sus prendas.\n\n");
+                                    msgSb.append("DEUDA: S/. 0.00\n");
                                 }
                             } catch (Exception ignore) {
                             }
+
+                            // TOTAL ABONADO: show total amount paid so far
+                            msgSb.append(String.format(java.util.Locale.US, "TOTAL ABONADO: S/. %.2f\n\n",
+                                    (double) abonadoActualizado));
 
                             // Footer (WhatsApp bold with single asterisks as requested)
                             msgSb.append("*El tiempo máximo para recoger su prenda es de 15 días.*\n");
