@@ -2155,7 +2155,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 } catch (Exception ignore) {
                                 }
 
-                                    // Compute total from details and apply discount percent (if any)
+                                // Compute total from details and apply discount percent (if any)
                                 try {
                                     double sumDetails = 0.0;
                                     try (PreparedStatement psSum = conn.prepareStatement(
@@ -2189,8 +2189,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
                                     if (descPct > 0) {
                                         sbMsg.append(String.format("\nTOTAL SIN DESCUENTO: %.2f\n", totalSinDescuento));
-                                        sbMsg.append(String.format("DSCT (%.2f%%): -%.2f\n", descPct, descAmt));
-                                        sbMsg.append("TOTAL CON DESCUENTO: ").append(String.format("%.2f", finalTotal)).append("\n");
+                                        sbMsg.append(String.format("DESCUENTO: %.1f%% (S/. %.2f)\n", descPct, descAmt));
+                                        sbMsg.append("TOTAL CON DESCUENTO: ").append(String.format("%.2f", finalTotal))
+                                                .append("\n");
                                     } else {
                                         sbMsg.append(String.format("\nTOTAL: %.2f\n", finalTotal));
                                     }
@@ -2198,6 +2199,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                     try {
                                         String cod = codComprobante;
                                         if (cod != null && !cod.isBlank()) {
+                                            double totalAbonado = 0.0;
                                             try (PreparedStatement psPay = conn.prepareStatement(
                                                     "SELECT r.fecha, r.monto_abonado, COALESCE(m.nom_metodo_pago,'') AS metodo FROM reporte_ingresos r LEFT JOIN metodo_pago m ON r.metodo_pago_id = m.id WHERE r.cod_comprobante = ? ORDER BY r.fecha ASC")) {
                                                 psPay.setString(1, cod);
@@ -2207,10 +2209,15 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                     while (rsPay.next()) {
                                                         any = true;
                                                         java.sql.Timestamp ts = rsPay.getTimestamp("fecha");
-                                                        String when = ts == null ? "" : new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(ts);
+                                                        String when = ts == null ? ""
+                                                                : new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm")
+                                                                        .format(ts);
                                                         double monto = rsPay.getDouble("monto_abonado");
+                                                        totalAbonado += monto;
                                                         String metodo = rsPay.getString("metodo");
-                                                        sbP.append(String.format("- %s: S/. %.2f %s\n", when, monto, (metodo == null || metodo.isBlank()) ? "" : "(" + metodo + ")"));
+                                                        sbP.append(String.format("- %s: S/. %.2f %s\n", when, monto,
+                                                                (metodo == null || metodo.isBlank()) ? ""
+                                                                        : "(" + metodo + ")"));
                                                     }
                                                     if (any) {
                                                         sbMsg.append("\nABONOS:\n");
@@ -2218,6 +2225,11 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                     }
                                                 }
                                             }
+                                            
+                                            // Add DEUDA and TOTAL ABONADO
+                                            double deuda = Math.max(0.0, finalTotal - totalAbonado);
+                                            sbMsg.append(String.format("\nDEUDA: S/. %.2f\n", deuda));
+                                            sbMsg.append(String.format("TOTAL ABONADO: S/. %.2f\n", totalAbonado));
                                         }
                                     } catch (Exception __) {
                                         // ignore payment fetch errors for message
