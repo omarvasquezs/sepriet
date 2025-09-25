@@ -434,9 +434,12 @@ public class frmConsultarComprobantes extends JInternalFrame {
                             sb.append("<table class=\"totals\">\n<tbody>\n");
                             sb.append("<tr><td class=\"label\">SUBTOTAL</td><td class=\"val\">S/. "
                                     + formatNumber(subtotal) + "</td></tr>");
-                            // Show IGV first (above the total lines)
-                            sb.append("<tr><td class=\"label\">IGV 18%</td><td class=\"val\">S/. " + formatNumber(igv)
-                                    + "</td></tr>");
+                            // Show IGV only for FACTURA (tipo = "F")
+                            if ("F".equals(tipo)) {
+                                sb.append(
+                                        "<tr><td class=\"label\">IGV 18%</td><td class=\"val\">S/. " + formatNumber(igv)
+                                                + "</td></tr>");
+                            }
 
                             // If there is a discount, show pre-discount total, the discount row and the
                             // total after discount. Otherwise show a single TOTAL row.

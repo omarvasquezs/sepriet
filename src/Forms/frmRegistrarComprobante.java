@@ -73,9 +73,18 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         // Set the DateTimePicker to the current date and time
         dateTimePicker1.setDateTimePermissive(LocalDateTime.now());
         // Add listeners to radio buttons to toggle RUC and Razon Social fields
-        radioFactura.addActionListener(_ -> toggleRucFields());
-        radioNotaVenta.addActionListener(_ -> toggleRucFields());
-        radioBoleta.addActionListener(_ -> toggleRucFields());
+        radioFactura.addActionListener(_ -> {
+            toggleRucFields();
+            updateTotals(); // Update totals when radio button changes
+        });
+        radioNotaVenta.addActionListener(_ -> {
+            toggleRucFields();
+            updateTotals(); // Update totals when radio button changes
+        });
+        radioBoleta.addActionListener(_ -> {
+            toggleRucFields();
+            updateTotals(); // Update totals when radio button changes
+        });
         // Add listener for estado combo box
         cbxEstadoComprobante.addActionListener(_ -> toggleMontoAbonado());
         // Load and set the internal‐frame icon
@@ -1567,9 +1576,15 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         double igv = total * 0.18;
         double subtotalVisible = total - igv;
 
-        // Update the labels
-        jLabel12.setText("S/. " + String.format("%.2f", subtotalVisible));
-        jLabel13.setText("S/. " + String.format("%.2f", igv));
+        // Update the labels - only show IGV for FACTURA
+        if (radioFactura.isSelected()) {
+            jLabel12.setText("S/. " + String.format("%.2f", subtotalVisible));
+            jLabel13.setText("S/. " + String.format("%.2f", igv));
+        } else {
+            // For NOTA DE VENTA and BOLETA, hide IGV
+            jLabel12.setText("S/. " + String.format("%.2f", total));
+            jLabel13.setText("S/. 0.00"); // Hide IGV
+        }
         jLabel14.setText("S/. " + String.format("%.2f", total));
         // If estado is CANCELADO keep monto abonado synced with total
         Object estadoSel = cbxEstadoComprobante.getSelectedItem();
@@ -2062,12 +2077,13 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
                                 // Tipo de comprobante label
                                 String tipoLabel = "COMPROBANTE";
+                                String tipo = null; // Store tipo for later use
                                 try (PreparedStatement psTipo = conn.prepareStatement(
                                         "SELECT tipo_comprobante, fecha, num_ruc, razon_social, costo_total, IFNULL(descuento,0) descuento FROM comprobantes WHERE cod_comprobante = ?")) {
                                     psTipo.setString(1, codComprobante);
                                     try (ResultSet rsTipo = psTipo.executeQuery()) {
                                         if (rsTipo.next()) {
-                                            String tipo = rsTipo.getString("tipo_comprobante");
+                                            tipo = rsTipo.getString("tipo_comprobante");
                                             if ("N".equalsIgnoreCase(tipo))
                                                 tipoLabel = "NOTA DE VENTA ELECTRÓNICA";
                                             else if ("B".equalsIgnoreCase(tipo))
@@ -2183,9 +2199,11 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                         finalTotal = sumDetails - descAmt;
                                     }
                                     // Show IGV above totals (IGV calculated from final total as per
-                                    // existing logic in the app)
-                                    double igv = finalTotal * 0.18;
-                                    sbMsg.append(String.format("\nIGV 18%%: S/. %.2f\n", igv));
+                                    // existing logic in the app) - but only for FACTURA
+                                    if ("F".equalsIgnoreCase(tipo)) {
+                                        double igv = finalTotal * 0.18;
+                                        sbMsg.append(String.format("\nIGV 18%%: S/. %.2f\n", igv));
+                                    }
 
                                     if (descPct > 0) {
                                         sbMsg.append(String.format("\nTOTAL SIN DESCUENTO: %.2f\n", totalSinDescuento));
@@ -2225,7 +2243,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                     }
                                                 }
                                             }
-                                            
+
                                             // Add DEUDA and TOTAL ABONADO
                                             double deuda = Math.max(0.0, finalTotal - totalAbonado);
                                             sbMsg.append(String.format("\nDEUDA: S/. %.2f\n", deuda));

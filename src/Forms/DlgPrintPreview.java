@@ -724,13 +724,14 @@ public class DlgPrintPreview extends JDialog {
             }
 
             // Query to fetch totals and descuento
-            query = "SELECT c.costo_total AS total, IFNULL(c.descuento,0) AS descuento FROM comprobantes c WHERE c.id = ?";
+            query = "SELECT c.costo_total AS total, IFNULL(c.descuento,0) AS descuento, c.tipo_comprobante FROM comprobantes c WHERE c.id = ?";
             try (java.sql.PreparedStatement stmt = conn.prepareStatement(query)) {
                 stmt.setString(1, receiptId);
                 try (java.sql.ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         double total = rs.getDouble("total");
                         double descuentoPerc = 0.0;
+                        String tipoComprobante = rs.getString("tipo_comprobante");
                         try {
                             descuentoPerc = rs.getDouble("descuento");
                             if (rs.wasNull())
@@ -748,9 +749,11 @@ public class DlgPrintPreview extends JDialog {
                         }
                         // IGV should appear above total lines; compute igv from the post-discount
                         // amount (maintaining current business logic where IGV is applied on
-                        // the total after discount)
-                        double igv = totalConDescuento * 0.18;
-                        details.append(String.format("\nIGV 18%%: S/. %.2f\n", igv));
+                        // the total after discount) - but only show for FACTURA
+                        if ("F".equals(tipoComprobante)) {
+                            double igv = totalConDescuento * 0.18;
+                            details.append(String.format("\nIGV 18%%: S/. %.2f\n", igv));
+                        }
 
                         if (descuentoPerc > 0.0) {
                             details.append(String.format("TOTAL SIN DESCUENTO: %.2f\n", totalSinDescuento));
