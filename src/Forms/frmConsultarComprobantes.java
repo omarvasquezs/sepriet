@@ -432,8 +432,11 @@ public class frmConsultarComprobantes extends JInternalFrame {
                             double igv = totalAfterDiscount * 0.18;
                             double subtotal = totalAfterDiscount - igv;
                             sb.append("<table class=\"totals\">\n<tbody>\n");
-                            sb.append("<tr><td class=\"label\">SUBTOTAL</td><td class=\"val\">S/. "
-                                    + formatNumber(subtotal) + "</td></tr>");
+                            // Show SUBTOTAL only for FACTURA (tipo = "F")
+                            if ("F".equals(tipo)) {
+                                sb.append("<tr><td class=\"label\">SUBTOTAL</td><td class=\"val\">S/. "
+                                        + formatNumber(subtotal) + "</td></tr>");
+                            }
                             // Show IGV only for FACTURA (tipo = "F")
                             if ("F".equals(tipo)) {
                                 sb.append(
