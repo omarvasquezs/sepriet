@@ -30,6 +30,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private boolean hasEstadoRopa = false;
     private boolean hasEstadoComprobante = false;
     private final JDateChooser filterFecha = new JDateChooser();
+    private final JCheckBox chkFechaHoy = new JCheckBox("FECHA HOY DÍA");
     private final JButton btnBuscar = new JButton("Buscar");
     private final JButton btnReset = new JButton("Resetear");
     private final List<Integer> estadoIds = new ArrayList<>();
@@ -42,6 +43,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private final JLabel lblPagina = new JLabel("Página 1 de 1");
     private final JTable table = new JTable();
     private final ComprobantesTableModel model = new ComprobantesTableModel();
+    // Labels para mostrar estadísticas por fecha
+    private final JLabel lblCantidadComprobantes = new JLabel("");
+    private final JLabel lblTotalAbonos = new JLabel("");
     private int currentPage = 1;
     private int totalPages = 1;
     // page size is configurable by the user; default to 50
@@ -102,6 +106,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         // line
         filtersRow.add(new JLabel("Fecha:"));
         filtersRow.add(filterFecha);
+        filtersRow.add(chkFechaHoy);
         filtersRow.add(btnBuscar);
         filtersRow.add(btnReset);
         filtersRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -113,6 +118,19 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
         top.add(filtersRow);
         top.add(estadoPanel);
+
+        // Panel para estadísticas por fecha
+        JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        lblCantidadComprobantes.setFont(lblCantidadComprobantes.getFont().deriveFont(Font.BOLD));
+        lblTotalAbonos.setFont(lblTotalAbonos.getFont().deriveFont(Font.BOLD));
+        lblCantidadComprobantes.setForeground(new Color(0, 100, 0)); // Verde oscuro
+        lblTotalAbonos.setForeground(new Color(0, 0, 150)); // Azul oscuro
+        statsPanel.add(lblCantidadComprobantes);
+        statsPanel.add(Box.createHorizontalStrut(20)); // Espaciado
+        statsPanel.add(lblTotalAbonos);
+        statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        top.add(statsPanel);
+
         btnBuscar.addActionListener(this::onBuscar);
         btnReset.addActionListener(new java.awt.event.ActionListener() {
             @Override
@@ -122,10 +140,29 @@ public class frmConsultarComprobantes extends JInternalFrame {
             }
         });
 
+        // Listener para checkbox "FECHA HOY DÍA"
+        chkFechaHoy.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                if (chkFechaHoy.isSelected()) {
+                    // Establecer fecha de hoy
+                    filterFecha.setDate(new java.util.Date());
+                    // Simular clic en buscar
+                    btnBuscar.doClick();
+                } else {
+                    // Si se desmarca, limpiar la fecha
+                    filterFecha.setDate(null);
+                    // Simular clic en buscar para actualizar resultados
+                    btnBuscar.doClick();
+                }
+            }
+        });
+
         // show pointer cursor for buttons
         Cursor hand = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
         btnBuscar.setCursor(hand);
         btnReset.setCursor(hand);
+        chkFechaHoy.setCursor(hand); // Cursor de mano para el checkbox también
 
         // CRUD toolbar
         JPanel crudBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
@@ -276,6 +313,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
     private void onBuscar(ActionEvent e) {
         loadPage(1);
+        updateDateStats();
     }
 
     private void openPrintPreview() {
@@ -768,11 +806,57 @@ public class frmConsultarComprobantes extends JInternalFrame {
         for (JCheckBox it : estadoComprobanteItems)
             it.setSelected(true);
         filterFecha.setDate(null);
+        chkFechaHoy.setSelected(false); // Desmarcar checkbox fecha hoy
         updateEstadoButtonLabel();
+        updateDateStats(); // Limpiar estadísticas cuando se resetea
     }
 
     private void onEdited() {
         loadPage(currentPage);
+    }
+
+    private void updateDateStats() {
+        Date selectedDate = filterFecha.getDate();
+        if (selectedDate == null) {
+            lblCantidadComprobantes.setText("");
+            lblTotalAbonos.setText("");
+            return;
+        }
+
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            if (conn == null)
+                return;
+
+            // Convertir Date a formato SQL
+            java.sql.Date sqlDate = new java.sql.Date(selectedDate.getTime());
+
+            // Consulta para contar comprobantes y sumar abonos por fecha
+            String sql = "SELECT COUNT(*) as cantidad, " +
+                    "COALESCE(SUM(COALESCE(monto_abonado, 0)), 0) as total_abonos " +
+                    "FROM comprobantes " +
+                    "WHERE DATE(fecha) = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setDate(1, sqlDate);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        int cantidad = rs.getInt("cantidad");
+                        double totalAbonos = rs.getDouble("total_abonos");
+
+                        // Formatear fecha para mostrar
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
+                        String fechaStr = sdf.format(selectedDate);
+
+                        lblCantidadComprobantes.setText(String.format("Comprobantes del %s: %d", fechaStr, cantidad));
+                        lblTotalAbonos.setText(String.format("Total abonado: S/. %.2f", totalAbonos));
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Error calculando estadísticas por fecha: " + ex.getMessage());
+            lblCantidadComprobantes.setText("");
+            lblTotalAbonos.setText("");
+        }
     }
 
     private void deleteSelected() {
