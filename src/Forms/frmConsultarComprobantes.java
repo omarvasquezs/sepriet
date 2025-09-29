@@ -813,6 +813,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
     private void onEdited() {
         loadPage(currentPage);
+        updateDateStats(); // Actualizar estadísticas después de editar
     }
 
     private void updateDateStats() {
