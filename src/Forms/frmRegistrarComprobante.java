@@ -1547,10 +1547,6 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
         }
 
-        // Following the web behaviour: total = sum of service totals; IGV = total *
-        // 0.18;
-        // subtotal (OP. GRAVADAS) = total - IGV
-        double total = subtotal;
         // Parse discount percent (empty -> 0)
         double discountPercent = 0.0;
         try {
@@ -1567,25 +1563,25 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         } catch (Exception ex) {
             discountPercent = 0.0;
         }
-        double discountAmount = total * (discountPercent / 100.0);
-        total = total - discountAmount;
-        if (total < 0)
-            total = 0;
 
+        // Apply discount to the subtotal first
+        double discountAmount = subtotal * (discountPercent / 100.0);
+        double subtotalAfterDiscount = subtotal - discountAmount;
+        if (subtotalAfterDiscount < 0)
+            subtotalAfterDiscount = 0;
+
+        // Calculate following the correct logic:
+        // TOTAL A PAGAR = subtotal after discount (this is the final amount)
+        // IGV = TOTAL A PAGAR * 0.18
+        // OP. GRAVADAS = TOTAL A PAGAR - IGV
+        double total = subtotalAfterDiscount;
         double igv = total * 0.18;
         double subtotalVisible = total - igv;
 
-        // Update the labels - only show IGV and SUBTOTAL values for FACTURA
-        if (radioFactura.isSelected()) {
-            // Show SUBTOTAL and IGV values for FACTURA
-            jLabel12.setText("S/. " + String.format("%.2f", subtotalVisible));
-            jLabel13.setText("S/. " + String.format("%.2f", igv));
-        } else {
-            // For NOTA DE VENTA and BOLETA, show 0.00 but keep labels visible
-            jLabel12.setText("S/. 0.00"); // Show 0.00 for subtotal
-            jLabel13.setText("S/. 0.00"); // Show 0.00 for IGV
-        }
-        jLabel14.setText("S/. " + String.format("%.2f", total));
+        // Update the labels - always show calculated values
+        jLabel12.setText("S/. " + String.format("%.2f", subtotalVisible)); // OP. GRAVADAS
+        jLabel13.setText("S/. " + String.format("%.2f", igv)); // IGV 18%
+        jLabel14.setText("S/. " + String.format("%.2f", total)); // TOTAL A PAGAR
         // If estado is CANCELADO keep monto abonado synced with total
         Object estadoSel = cbxEstadoComprobante.getSelectedItem();
         if (estadoSel != null && "CANCELADO".equalsIgnoreCase(estadoSel.toString().trim())) {
