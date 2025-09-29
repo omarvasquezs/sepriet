@@ -569,6 +569,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated
     // <editor-fold defaultstate="collapsed" desc="Generated
     // <editor-fold defaultstate="collapsed" desc="Generated
+    // <editor-fold defaultstate="collapsed" desc="Generated
     // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -620,19 +621,19 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         setResizable(true);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel2.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel2.setText("CLIENTE:");
+        jLabel2.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        btnAgregarNuevoCliente.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         btnAgregarNuevoCliente.setText("AÑADIR NUEVO CLIENTE");
+        btnAgregarNuevoCliente.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel3.setText("ESTADO:");
+        jLabel3.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         cbxEstadoComprobante.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
-        jLabel1.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel1.setText("CONDICIÓN DE PAGO:");
+        jLabel1.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         cbxMetodoPago.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
 
@@ -648,14 +649,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         radioBoleta.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         radioBoleta.setText("BOLETA");
 
-        lblTitulo.setFont(new java.awt.Font("sansserif", 1, 24)); // NOI18N
         lblTitulo.setText("REGISTRO DE COMPROBANTE");
+        lblTitulo.setFont(new java.awt.Font("sansserif", 1, 24)); // NOI18N
 
-        jLabel4.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel4.setText("RUC:");
+        jLabel4.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel5.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel5.setText("RAZON SOCIAL:");
+        jLabel5.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         txtRUC.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRUC.setEnabled(false);
@@ -663,60 +664,60 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         txtRazonSocial.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtRazonSocial.setEnabled(false);
 
-        jLabel6.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel6.setText("CREACIÓN:");
+        jLabel6.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         dateTimePicker1.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
         cbxCliente.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
-        jLabel7.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel7.setText("OP. GRAVADAS:");
+        jLabel7.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel8.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel8.setText("IGV 18%:");
+        jLabel8.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel9.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel9.setText("TOTAL A PAGAR:");
+        jLabel9.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
-        jLabel10.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel10.setText("MONTO ABONADO:");
+        jLabel10.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         txtMontoAbonado.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtMontoAbonado.setEnabled(false);
 
-        jLabel11.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel11.setText("OBSERVACIONES:");
+        jLabel11.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         txtObservaciones.setColumns(20);
         txtObservaciones.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtObservaciones.setRows(5);
         jScrollPane1.setViewportView(txtObservaciones);
 
-        btnGenerarComprobante.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnGenerarComprobante.setText("GENERAR");
+        btnGenerarComprobante.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
 
-        jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel12.setText("S/. 0.00");
+        jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
-        jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel13.setText("S/. 0.00");
+        jLabel13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
-        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel14.setText("S/. 0.00");
+        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
         cbxServicio.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
 
-        btnAgregarServicioComprobante.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         btnAgregarServicioComprobante.setText("AÑADIR AL COMPROBANTE");
+        btnAgregarServicioComprobante.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         btnAgregarServicioComprobante.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnAgregarServicioComprobanteActionPerformed(evt);
             }
         });
 
-        jLabel15.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel15.setText("SELECCIONAR SERVICIO:");
+        jLabel15.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
                 new Object[][] {
@@ -751,20 +752,20 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             jTable1.getColumnModel().getColumn(4).setMaxWidth(80);
         }
 
-        jLabel16.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         jLabel16.setText("DSCT. (1 A 100):");
+        jLabel16.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
 
         txtPorcentajeDescuento.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtPorcentajeDescuento.setEnabled(false);
 
-        jLabel17.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel17.setText("%");
+        jLabel17.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
 
-        jLabel18.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel18.setText("MONTO DEL DESCUENTO:");
+        jLabel18.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
 
-        jLabel19.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel19.setText("S/. 0.00");
+        jLabel19.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -912,16 +913,14 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                                                                 Short.MAX_VALUE)
                                                                         .addGroup(jPanel1Layout.createParallelGroup(
                                                                                 javax.swing.GroupLayout.Alignment.LEADING)
-                                                                                .addComponent(jLabel19)
-                                                                                .addGroup(jPanel1Layout
-                                                                                        .createParallelGroup(
-                                                                                                javax.swing.GroupLayout.Alignment.LEADING)
-                                                                                        .addComponent(jLabel14,
-                                                                                                javax.swing.GroupLayout.Alignment.TRAILING)
-                                                                                        .addComponent(jLabel13,
-                                                                                                javax.swing.GroupLayout.Alignment.TRAILING)
-                                                                                        .addComponent(jLabel12,
-                                                                                                javax.swing.GroupLayout.Alignment.TRAILING)))))))
+                                                                                .addComponent(jLabel14,
+                                                                                        javax.swing.GroupLayout.Alignment.TRAILING)
+                                                                                .addComponent(jLabel13,
+                                                                                        javax.swing.GroupLayout.Alignment.TRAILING)
+                                                                                .addComponent(jLabel12,
+                                                                                        javax.swing.GroupLayout.Alignment.TRAILING)
+                                                                                .addComponent(jLabel19,
+                                                                                        javax.swing.GroupLayout.Alignment.TRAILING))))))
                                 .addGap(15, 15, 15)));
         jPanel1Layout.setVerticalGroup(
                 jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
