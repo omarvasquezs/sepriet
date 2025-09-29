@@ -1576,19 +1576,15 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         double igv = total * 0.18;
         double subtotalVisible = total - igv;
 
-        // Update the labels - only show IGV and SUBTOTAL for FACTURA
+        // Update the labels - only show IGV and SUBTOTAL values for FACTURA
         if (radioFactura.isSelected()) {
-            // Show SUBTOTAL and IGV for FACTURA
-            jLabel7.setVisible(true); // OP. GRAVADAS label
-            jLabel8.setVisible(true); // IGV 18% label
+            // Show SUBTOTAL and IGV values for FACTURA
             jLabel12.setText("S/. " + String.format("%.2f", subtotalVisible));
             jLabel13.setText("S/. " + String.format("%.2f", igv));
         } else {
-            // For NOTA DE VENTA and BOLETA, hide SUBTOTAL and IGV
-            jLabel7.setVisible(false); // Hide OP. GRAVADAS label
-            jLabel8.setVisible(false); // Hide IGV 18% label
-            jLabel12.setText("S/. 0.00"); // Hide subtotal value
-            jLabel13.setText("S/. 0.00"); // Hide IGV value
+            // For NOTA DE VENTA and BOLETA, show 0.00 but keep labels visible
+            jLabel12.setText("S/. 0.00"); // Show 0.00 for subtotal
+            jLabel13.setText("S/. 0.00"); // Show 0.00 for IGV
         }
         jLabel14.setText("S/. " + String.format("%.2f", total));
         // If estado is CANCELADO keep monto abonado synced with total
