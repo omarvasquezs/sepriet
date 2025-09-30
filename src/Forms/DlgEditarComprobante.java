@@ -542,38 +542,45 @@ public class DlgEditarComprobante extends JDialog {
                     // lookup cod_comprobante and client phone (may be null)
                     String cod = null;
                     String telefonoCliente = null;
+                    String codigoPaisCliente = null;
                     try (PreparedStatement ps3 = conn.prepareStatement(
-                            "SELECT cod_comprobante, (SELECT telefono FROM clientes WHERE id = cliente_id) AS telefono FROM comprobantes WHERE id = ?")) {
+                            "SELECT cod_comprobante, "
+                                    + "(SELECT telefono FROM clientes WHERE id = cliente_id) AS telefono, "
+                                    + "(SELECT codigo_pais FROM clientes WHERE id = cliente_id) AS codigo_pais "
+                                    + "FROM comprobantes WHERE id = ?")) {
                         ps3.setInt(1, comprobanteId);
                         try (ResultSet rs3 = ps3.executeQuery()) {
                             if (rs3.next()) {
                                 cod = rs3.getString(1);
                                 telefonoCliente = rs3.getString(2);
+                                codigoPaisCliente = rs3.getString(3);
                             }
                         }
                     } catch (Exception ex) {
                     }
 
+                    // Normalize phone (allow 7 to 15 digits for international numbers)
                     String prefill = "";
                     if (telefonoCliente != null) {
                         String raw = telefonoCliente;
                         String norm = telefonoCliente.replaceAll("\\D", "");
-                        if (norm.length() > 9)
-                            norm = norm.substring(norm.length() - 9);
-                        if (norm.length() != 9)
-                            norm = "";
-                        prefill = norm;
-                        // Debug log: record raw DB phone and normalized prefill
+                        if (norm.length() >= 7 && norm.length() <= 15) {
+                            prefill = norm;
+                        }
                         DebugLogger.log("DlgEditarComprobante",
                                 "rawPhone='" + raw + "' normalized='" + norm + "' prefill='" + prefill + "'");
                     }
-                    String input = prefill;
-                    String phone = (String) JOptionPane.showInputDialog(this,
-                            "Número de celular (9 dígitos):\n(indique sin prefijo, por ejemplo 987654321)",
-                            "Confirmar número WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, input);
-                    if (phone != null) {
-                        phone = phone.trim().replaceAll("\\D", "");
-                        if (phone.length() == 9) {
+                    String initialCountry = (codigoPaisCliente != null && !codigoPaisCliente.trim().isEmpty())
+                            ? codigoPaisCliente.trim()
+                            : "+51";
+
+                    // Use unified WhatsApp dialog (same UI as preview)
+                    WhatsAppDialog wdlg = new WhatsAppDialog(this, prefill, initialCountry);
+                    wdlg.setVisible(true);
+                    if (wdlg != null && wdlg.isConfirmed()) {
+                        String phone = wdlg.getPhone();
+                        String selectedCountryCode = wdlg.getCountryCode();
+                        if (phone.length() >= 7 && phone.length() <= 15) {
                             String msgCode = cod == null ? "" : cod;
                             // Build a multi-line message with details, totals and debt
                             StringBuilder msgSb = new StringBuilder();
@@ -712,7 +719,7 @@ public class DlgEditarComprobante extends JDialog {
                             msgSb.append("*Una vez retirada la prenda, no se aceptarán reclamos.*");
 
                             String message = msgSb.toString();
-                            boolean ok = sendWhatsAppViaTextmebot(phone, message);
+                            boolean ok = sendWhatsAppViaTextmebot(selectedCountryCode, phone, message);
                             if (ok) {
                                 JOptionPane.showMessageDialog(this, "Notificación enviada por WhatsApp.", "Enviado",
                                         JOptionPane.INFORMATION_MESSAGE);
@@ -721,7 +728,7 @@ public class DlgEditarComprobante extends JDialog {
                                         "Error enviando notificación. ¿Reintentar?", "Error", JOptionPane.YES_NO_OPTION,
                                         JOptionPane.ERROR_MESSAGE);
                                 if (opt == JOptionPane.YES_OPTION) {
-                                    boolean retryOk = sendWhatsAppViaTextmebot(phone, message);
+                                    boolean retryOk = sendWhatsAppViaTextmebot(selectedCountryCode, phone, message);
                                     if (retryOk)
                                         JOptionPane.showMessageDialog(this, "Notificación enviada.", "Enviado",
                                                 JOptionPane.INFORMATION_MESSAGE);
@@ -731,8 +738,9 @@ public class DlgEditarComprobante extends JDialog {
                                 }
                             }
                         } else {
-                            JOptionPane.showMessageDialog(this, "Número ingresado inválido. Omisión del envío.",
-                                    "Aviso", JOptionPane.INFORMATION_MESSAGE);
+                            JOptionPane.showMessageDialog(this,
+                                    "El número debe tener entre 7 y 15 dígitos (sin prefijo de país).",
+                                    "Validación", JOptionPane.WARNING_MESSAGE);
                         }
                     }
                 }
@@ -751,7 +759,7 @@ public class DlgEditarComprobante extends JDialog {
     /**
      * Send a WhatsApp message using textmebot API. Returns true on success.
      */
-    private boolean sendWhatsAppViaTextmebot(String phone9, String message) {
+    private boolean sendWhatsAppViaTextmebot(String countryCode, String phoneDigits, String message) {
         try {
             java.nio.file.Path apiPath = java.nio.file.Paths.get("textmebot_api.json");
             if (!java.nio.file.Files.exists(apiPath)) {
@@ -767,7 +775,10 @@ public class DlgEditarComprobante extends JDialog {
                 apikey = m.group(1);
             if (apikey == null || apikey.isBlank())
                 return false;
-            String recipient = "+51" + phone9;
+            if (countryCode == null || countryCode.isBlank()) {
+                countryCode = "+51";
+            }
+            String recipient = countryCode + phoneDigits;
             String req = "https://api.textmebot.com/send.php?recipient="
                     + java.net.URLEncoder.encode(recipient, "UTF-8")
                     + "&apikey=" + java.net.URLEncoder.encode(apikey, "UTF-8")

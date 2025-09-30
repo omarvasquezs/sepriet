@@ -962,8 +962,9 @@ class WhatsAppDialog extends JDialog {
 
         btnOK.addActionListener(_ -> {
             String phone = txtPhone.getText().trim().replaceAll("\\D", "");
-            if (phone.length() != 9) {
-                JOptionPane.showMessageDialog(this, "El número debe tener exactamente 9 dígitos (sin prefijo).",
+            if (phone.length() < 7 || phone.length() > 15) {
+                JOptionPane.showMessageDialog(this,
+                        "El número debe tener entre 7 y 15 dígitos (sin prefijo de país).",
                         "Validación", JOptionPane.WARNING_MESSAGE);
                 txtPhone.requestFocus();
                 return;
