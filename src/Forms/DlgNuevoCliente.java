@@ -60,7 +60,7 @@ public class DlgNuevoCliente extends JDialog {
         TextCaseUtils.applyUppercase(txtNombres);
         addRow(form, c, row++, lblNombre, txtNombres);
 
-    JLabel lblDni = new JLabel("DNI:");
+        JLabel lblDni = new JLabel("DNI:");
         lblDni.setFont(labelFont);
         txtDni.setFont(fieldFont);
         txtDni.setPreferredSize(new Dimension(240, 34));
@@ -90,6 +90,19 @@ public class DlgNuevoCliente extends JDialog {
         } catch (Exception ignore) {
         }
         addRow(form, c, row++, lblDni, txtDni);
+
+        // Código de país
+        JLabel lblCodigoPais = new JLabel("Código de País:");
+        lblCodigoPais.setFont(labelFont);
+        JComboBox<String> cbxCodigoPais = new JComboBox<>(new String[] {
+                "+51 (Perú)", "+593 (Ecuador)", "+57 (Colombia)", "+591 (Bolivia)",
+                "+56 (Chile)", "+54 (Argentina)", "+58 (Venezuela)", "+55 (Brasil)",
+                "+1 (Estados Unidos)", "+34 (España)", "Otro..."
+        });
+        cbxCodigoPais.setFont(fieldFont);
+        cbxCodigoPais.setPreferredSize(new Dimension(240, 34));
+        cbxCodigoPais.setSelectedIndex(0); // Default to Peru
+        addRow(form, c, row++, lblCodigoPais, cbxCodigoPais);
 
         JLabel lblTelefono = new JLabel("Teléfono *:");
         lblTelefono.setFont(labelFont);
@@ -195,22 +208,56 @@ public class DlgNuevoCliente extends JDialog {
         String email = txtEmail.getText().trim();
         String direccion = txtDireccion.getText().trim();
 
-    // DNI is optional now; required: nombres and telefono
-    if (nombres.isEmpty() || telefono.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Complete los campos obligatorios (Nombre, Teléfono).",
-            "Validación", JOptionPane.WARNING_MESSAGE);
+        // Extract country code from combobox
+        JComboBox<String> cbxCodigoPais = null;
+        // Find the country code combobox from the form
+        Container parentContainer = txtTelefono.getParent();
+        for (Component comp : parentContainer.getComponents()) {
+            if (comp instanceof JComboBox) {
+                @SuppressWarnings("unchecked")
+                JComboBox<String> combo = (JComboBox<String>) comp;
+                if (combo.getItemAt(0).contains("(Perú)")) {
+                    cbxCodigoPais = combo;
+                    break;
+                }
+            }
+        }
+
+        String codigoPais = "+51"; // default
+        if (cbxCodigoPais != null) {
+            String selected = (String) cbxCodigoPais.getSelectedItem();
+            if (selected != null) {
+                if (selected.equals("Otro...")) {
+                    String custom = JOptionPane.showInputDialog(this, "Ingrese el código de país (ej: +593):", "+");
+                    if (custom != null && !custom.trim().isEmpty()) {
+                        codigoPais = custom.trim();
+                        if (!codigoPais.startsWith("+")) {
+                            codigoPais = "+" + codigoPais;
+                        }
+                    }
+                } else {
+                    // Extract code from format "+51 (Perú)"
+                    codigoPais = selected.substring(0, selected.indexOf(" "));
+                }
+            }
+        }
+
+        // DNI is optional now; required: nombres and telefono
+        if (nombres.isEmpty() || telefono.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Complete los campos obligatorios (Nombre, Teléfono).",
+                    "Validación", JOptionPane.WARNING_MESSAGE);
             return;
         }
-    if (!dni.isEmpty() && !dni.matches("\\d+")) {
-        JOptionPane.showMessageDialog(this, "El DNI debe contener solo dígitos.", "Validación",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    if (!email.isEmpty() && !TextCaseUtils.isValidEmail(email)) {
-        JOptionPane.showMessageDialog(this, "Ingrese un correo electrónico válido.", "Validación",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+        if (!dni.isEmpty() && !dni.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this, "El DNI debe contener solo dígitos.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (!email.isEmpty() && !TextCaseUtils.isValidEmail(email)) {
+            JOptionPane.showMessageDialog(this, "Ingrese un correo electrónico válido.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         // Insert into DB ensuring unique DNI
         try (Connection conn = DatabaseConfig.getConnection()) {
             // Check uniqueness only if DNI provided
@@ -226,22 +273,23 @@ public class DlgNuevoCliente extends JDialog {
                     }
                 }
             }
-            String sql = "INSERT INTO clientes (nombres, dni, telefono, email, direccion) VALUES (?,?,?,?,?)";
+            String sql = "INSERT INTO clientes (nombres, dni, codigo_pais, telefono, email, direccion) VALUES (?,?,?,?,?,?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, nombres);
                 if (!dni.isEmpty())
                     ps.setString(2, dni);
                 else
                     ps.setNull(2, java.sql.Types.VARCHAR);
-                ps.setString(3, telefono);
+                ps.setString(3, codigoPais);
+                ps.setString(4, telefono);
                 if (!email.isEmpty())
-                    ps.setString(4, email);
+                    ps.setString(5, email);
                 else
-                    ps.setNull(4, java.sql.Types.VARCHAR);
+                    ps.setNull(5, java.sql.Types.VARCHAR);
                 if (!direccion.isEmpty())
-                    ps.setString(5, direccion);
+                    ps.setString(6, direccion);
                 else
-                    ps.setNull(5, java.sql.Types.CLOB);
+                    ps.setNull(6, java.sql.Types.CLOB);
                 ps.executeUpdate();
             }
             JOptionPane.showMessageDialog(this, "Cliente guardado.", "Éxito", JOptionPane.INFORMATION_MESSAGE);

@@ -348,11 +348,12 @@ public class frmConsultarComprobantes extends JInternalFrame {
         sb.append("</style></head><body>");
 
         String telefonoCliente = null;
+        String codigoPaisCliente = null;
         try (Connection conn = DatabaseConfig.getConnection()) {
             // Header
             String hdrSql = "SELECT c.tipo_comprobante,c.cod_comprobante,c.fecha,c.num_ruc,c.razon_social,c.costo_total, IFNULL(c.monto_abonado,0) AS monto_abonado, "
                     + "IFNULL(c.descuento,0) AS descuento, "
-                    + "cl.nombres,cl.dni,cl.direccion,cl.telefono,ec.nom_estado as estado_comprobante "
+                    + "cl.nombres,cl.dni,cl.direccion,cl.telefono,cl.codigo_pais,ec.nom_estado as estado_comprobante "
                     + "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id WHERE c.id=?";
             try (PreparedStatement ph = conn.prepareStatement(hdrSql)) {
                 ph.setInt(1, id);
@@ -371,6 +372,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     String dni = rh.getString("dni");
                     String direccion = rh.getString("direccion");
                     telefonoCliente = rh.getString("telefono");
+                    codigoPaisCliente = rh.getString("codigo_pais");
                     String estado = rh.getString("estado_comprobante");
                     double costoTotal = rh.getDouble("costo_total");
                     double montoAbonado = rh.getDouble("monto_abonado");
@@ -521,9 +523,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
         // pass the selected comprobante id so the preview dialog can use it when
         // sending
         dlg.getRootPane().putClientProperty("receiptId", id.toString());
-        // pass telefonoCliente (may be null) so the preview dialog can prefill send
-        // dialog
-        dlg.showForHtml(sb.toString(), telefonoCliente);
+        // pass telefonoCliente and codigoPaisCliente so the preview dialog can prefill
+        // send
+        // dialog with international support
+        dlg.showForHtml(sb.toString(), telefonoCliente, codigoPaisCliente);
 
         // Debugging: Print the selected ID
         System.out.println("Selected Comprobante ID: " + id);

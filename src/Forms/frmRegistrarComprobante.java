@@ -2004,49 +2004,51 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             // send WhatsApp.
             try {
                 String phoneDigits = null;
-                // Try to read client's phone from clientes row by inspecting likely columns
-                try (PreparedStatement psPhone = conn.prepareStatement("SELECT * FROM clientes WHERE id = ?")) {
+                String codigoPais = "+51"; // default
+                // Try to read client's phone and country code from clientes row
+                try (PreparedStatement psPhone = conn
+                        .prepareStatement("SELECT telefono, codigo_pais FROM clientes WHERE id = ?")) {
                     psPhone.setInt(1, clienteId);
                     try (ResultSet rsPhone = psPhone.executeQuery()) {
                         if (rsPhone.next()) {
-                            java.sql.ResultSetMetaData md = rsPhone.getMetaData();
-                            for (int ci = 1; ci <= md.getColumnCount(); ci++) {
-                                String col = md.getColumnName(ci).toLowerCase();
-                                if (col.contains("cel") || col.contains("tel") || col.contains("phone")
-                                        || col.contains("movil")) {
-                                    String v = rsPhone.getString(ci);
-                                    if (v != null) {
-                                        String digits = v.replaceAll("\\D", "");
-                                        // If number contains country code or other prefixes, keep
-                                        // the last 9 digits which correspond to local Peruvian
-                                        // mobile numbers.
-                                        if (digits.length() > 9) {
-                                            digits = digits.substring(digits.length() - 9);
-                                        }
-                                        if (digits.length() == 9) {
-                                            phoneDigits = digits;
-                                            break;
-                                        }
-                                    }
+                            String telefono = rsPhone.getString("telefono");
+                            String codigo = rsPhone.getString("codigo_pais");
+
+                            if (telefono != null) {
+                                String digits = telefono.replaceAll("\\D", "");
+                                // Accept numbers between 7 and 15 digits for international compatibility
+                                if (digits.length() >= 7 && digits.length() <= 15) {
+                                    phoneDigits = digits;
                                 }
+                            }
+
+                            if (codigo != null && !codigo.trim().isEmpty()) {
+                                codigoPais = codigo.trim();
                             }
                         }
                     }
                 }
 
-                // Prompt user for number (prefilled with stored number if any)
+                // Prompt user for number using custom dialog (prefilled with stored number if
+                // any)
                 String prefill = phoneDigits != null ? phoneDigits : "";
                 // Debug: record what we retrieved from DB and what we'll prefill
                 DebugLogger.log("frmRegistrarComprobante", "dbCandidatePhoneRaw='"
-                        + (phoneDigits == null ? "" : phoneDigits) + "' prefill='" + prefill + "'");
-                String input = (String) JOptionPane.showInputDialog(this, "Número de celular (9 dígitos):",
-                        "Enviar WhatsApp", JOptionPane.PLAIN_MESSAGE, null, null, prefill);
-                if (input == null) {
-                    // user cancelled - do nothing
-                } else {
-                    String phone = input.trim().replaceAll("\\D", "");
-                    if (phone.length() != 9) {
-                        JOptionPane.showMessageDialog(this, "El número debe tener exactamente 9 dígitos (sin prefijo).",
+                        + (phoneDigits == null ? "" : phoneDigits) + "' codigoPais='" + codigoPais + "' prefill='"
+                        + prefill + "'");
+
+                // Use the same WhatsApp dialog as print preview (prefilled with stored values)
+                java.awt.Window parentWin = javax.swing.SwingUtilities.getWindowAncestor(this);
+                WhatsAppDialog whatsAppDialog = new WhatsAppDialog(parentWin, prefill, codigoPais);
+                whatsAppDialog.setVisible(true);
+
+                if (whatsAppDialog != null && whatsAppDialog.isConfirmed()) {
+                    String phone = whatsAppDialog.getPhone();
+                    String selectedCountryCode = whatsAppDialog.getCountryCode();
+
+                    if (phone.length() < 7 || phone.length() > 15) {
+                        JOptionPane.showMessageDialog(this,
+                                "El número debe tener entre 7 y 15 dígitos (sin prefijo de país).",
                                 "Validación", JOptionPane.WARNING_MESSAGE);
                     } else {
                         // Read API key
@@ -2064,7 +2066,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                             if (apikey == null || apikey.isBlank()) {
                                 // no apikey - skip
                             } else {
-                                String recipient = "+51" + phone;
+                                String recipient = selectedCountryCode + phone;
                                 // Build detailed receipt-like plain-text message similar to
                                 // DlgPrintPreview.htmlToPlainText
                                 StringBuilder sbMsg = new StringBuilder();
