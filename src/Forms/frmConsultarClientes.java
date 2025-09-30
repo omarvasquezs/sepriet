@@ -218,7 +218,7 @@ public class frmConsultarClientes extends JInternalFrame {
             }
             currentPage = Math.min(Math.max(1, page), totalPages);
             int offset = (currentPage - 1) * pageSize;
-            String sql = "SELECT id,nombres,dni,telefono,email FROM clientes " + where
+            String sql = "SELECT id,nombres,dni,codigo_pais,telefono,email FROM clientes " + where
                     + " ORDER BY id DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 int idx = 1;
@@ -232,8 +232,9 @@ public class frmConsultarClientes extends JInternalFrame {
                         r.id = rs.getInt(1);
                         r.nombres = rs.getString(2);
                         r.dni = rs.getString(3);
-                        r.telefono = rs.getString(4);
-                        r.email = rs.getString(5);
+                        r.codigoPais = rs.getString(4);
+                        r.telefono = rs.getString(5);
+                        r.email = rs.getString(6);
                         rows.add(r);
                     }
                 }
@@ -256,12 +257,13 @@ public class frmConsultarClientes extends JInternalFrame {
         int id;
         String nombres;
         String dni;
+        String codigoPais;
         String telefono;
         String email;
     }
 
     private static class ClientesTableModel extends AbstractTableModel {
-        private final String[] cols = { "ID", "NOMBRES", "DNI", "TELÉFONO", "EMAIL" };
+        private final String[] cols = { "ID", "NOMBRES", "DNI", "CÓD. PAÍS", "TELÉFONO", "EMAIL" };
         private List<ClienteRow> rows = new ArrayList<>();
 
         public void setRows(List<ClienteRow> data) {
@@ -291,8 +293,9 @@ public class frmConsultarClientes extends JInternalFrame {
                 case 0 -> row.id;
                 case 1 -> row.nombres;
                 case 2 -> row.dni;
-                case 3 -> row.telefono;
-                case 4 -> row.email;
+                case 3 -> row.codigoPais;
+                case 4 -> row.telefono;
+                case 5 -> row.email;
                 default -> null;
             };
         }
