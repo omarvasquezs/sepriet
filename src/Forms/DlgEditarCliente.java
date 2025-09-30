@@ -14,6 +14,7 @@ import javax.swing.text.DocumentFilter;
 public class DlgEditarCliente extends JDialog {
     private final JTextField txtNombres = new JTextField();
     private final JTextField txtDni = new JTextField();
+    private final JComboBox<String> cbxCodigoPais = new JComboBox<>();
     private final JTextField txtTelefono = new JTextField();
     private final JTextField txtEmail = new JTextField();
     private final JTextArea txtDireccion = new JTextArea(5, 30);
@@ -66,7 +67,38 @@ public class DlgEditarCliente extends JDialog {
             });
         } catch (Exception ignore) {
         }
-        addRow(form, c, 2, new JLabel("Teléfono:"), txtTelefono);
+        // Código de país (select estilo DlgNuevoCliente)
+        try {
+            cbxCodigoPais.setEditable(false);
+            cbxCodigoPais.setModel(new DefaultComboBoxModel<>(new String[] {
+                    "+51 (Perú)", "+593 (Ecuador)", "+57 (Colombia)", "+591 (Bolivia)",
+                    "+56 (Chile)", "+54 (Argentina)", "+58 (Venezuela)", "+55 (Brasil)",
+                    "+1 (Estados Unidos)", "+34 (España)", "Otro..."
+            }));
+            cbxCodigoPais.setSelectedItem("+51 (Perú)");
+            cbxCodigoPais.addActionListener(evt -> {
+                Object sel = cbxCodigoPais.getSelectedItem();
+                if (sel != null && "Otro...".equals(sel.toString())) {
+                    String custom = JOptionPane.showInputDialog(this, "Ingrese el código de país (ej: +593):", "+");
+                    if (custom != null && !custom.trim().isEmpty()) {
+                        String code = custom.trim();
+                        if (!code.startsWith("+"))
+                            code = "+" + code;
+                        DefaultComboBoxModel<String> m = (DefaultComboBoxModel<String>) cbxCodigoPais.getModel();
+                        // Insert custom code at top and select it
+                        m.insertElementAt(code, 0);
+                        cbxCodigoPais.setSelectedIndex(0);
+                    } else {
+                        // revert selection to Peru by default if user cancels
+                        cbxCodigoPais.setSelectedItem("+51 (Perú)");
+                    }
+                }
+            });
+        } catch (Exception ignore) {
+        }
+        addRow(form, c, 2, new JLabel("Código de País:"), cbxCodigoPais);
+
+        addRow(form, c, 3, new JLabel("Teléfono:"), txtTelefono);
         // Telefono digit-only
         try {
             ((AbstractDocument) txtTelefono.getDocument()).setDocumentFilter(new DocumentFilter() {
@@ -92,10 +124,10 @@ public class DlgEditarCliente extends JDialog {
             });
         } catch (Exception ignore) {
         }
-        addRow(form, c, 3, new JLabel("E-mail:"), txtEmail);
+        addRow(form, c, 4, new JLabel("E-mail:"), txtEmail);
         TextCaseUtils.applyUppercase(txtEmail);
 
-        c.gridy = 4;
+        c.gridy = 5;
         c.gridx = 0;
         c.weightx = 0;
         c.fill = GridBagConstraints.NONE;
@@ -142,7 +174,8 @@ public class DlgEditarCliente extends JDialog {
     private void loadCliente() {
         try (Connection conn = DatabaseConfig.getConnection();
                 PreparedStatement ps = conn
-                        .prepareStatement("SELECT nombres,dni,telefono,email,direccion FROM clientes WHERE id=?")) {
+                        .prepareStatement(
+                                "SELECT nombres,dni,telefono,email,direccion,codigo_pais FROM clientes WHERE id=?")) {
             ps.setInt(1, clienteId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -151,6 +184,26 @@ public class DlgEditarCliente extends JDialog {
                     txtTelefono.setText(rs.getString(3));
                     txtEmail.setText(rs.getString(4));
                     txtDireccion.setText(rs.getString(5));
+                    String cp = rs.getString(6);
+                    if (cp == null || cp.isBlank())
+                        cp = "+51";
+                    cp = cp.trim();
+                    // Try to select the matching item with country name; otherwise insert custom
+                    boolean matched = false;
+                    ComboBoxModel<String> model = cbxCodigoPais.getModel();
+                    for (int i = 0; i < model.getSize(); i++) {
+                        String it = model.getElementAt(i);
+                        if (it.startsWith(cp + " ")) { // matches e.g., "+51 (Perú)"
+                            cbxCodigoPais.setSelectedIndex(i);
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched) {
+                        DefaultComboBoxModel<String> m = (DefaultComboBoxModel<String>) cbxCodigoPais.getModel();
+                        m.insertElementAt(cp, 0);
+                        cbxCodigoPais.setSelectedIndex(0);
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -162,28 +215,33 @@ public class DlgEditarCliente extends JDialog {
         String nombres = txtNombres.getText().trim();
         String dni = txtDni.getText().trim();
         String telefono = txtTelefono.getText().trim();
+        String codigoPais = String.valueOf(cbxCodigoPais.getSelectedItem()).trim();
+        // If selected item contains country name, keep only the numeric code prefix
+        int sp = codigoPais.indexOf(' ');
+        if (sp > 0)
+            codigoPais = codigoPais.substring(0, sp);
         String email = txtEmail.getText().trim();
         String direccion = txtDireccion.getText().trim();
-    // DNI is optional now; required: nombres and telefono
-    if (nombres.isEmpty() || telefono.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Complete los campos obligatorios.", "Validación",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    if (!dni.isEmpty() && !dni.matches("\\d+")) {
-        JOptionPane.showMessageDialog(this, "El DNI debe contener solo dígitos.", "Validación",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+        // DNI is optional now; required: nombres and telefono
+        if (nombres.isEmpty() || telefono.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Complete los campos obligatorios.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (!dni.isEmpty() && !dni.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this, "El DNI debe contener solo dígitos.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    if (!email.isEmpty() && !TextCaseUtils.isValidEmail(email)) {
-        JOptionPane.showMessageDialog(this, "Ingrese un correo electrónico válido.", "Validación",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+        if (!email.isEmpty() && !TextCaseUtils.isValidEmail(email)) {
+            JOptionPane.showMessageDialog(this, "Ingrese un correo electrónico válido.", "Validación",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         try (Connection conn = DatabaseConfig.getConnection()) {
             try (PreparedStatement ps = conn.prepareStatement(
-                    "UPDATE clientes SET nombres=?,dni=?,telefono=?,email=?,direccion=? WHERE id=?")) {
+                    "UPDATE clientes SET nombres=?,dni=?,telefono=?,email=?,direccion=?,codigo_pais=? WHERE id=?")) {
                 ps.setString(1, nombres);
                 if (!dni.isEmpty())
                     ps.setString(2, dni);
@@ -198,7 +256,11 @@ public class DlgEditarCliente extends JDialog {
                     ps.setString(5, direccion);
                 else
                     ps.setNull(5, java.sql.Types.CLOB);
-                ps.setInt(6, clienteId);
+                if (!codigoPais.isEmpty())
+                    ps.setString(6, codigoPais);
+                else
+                    ps.setNull(6, java.sql.Types.VARCHAR);
+                ps.setInt(7, clienteId);
                 ps.executeUpdate();
             }
             if (onSaved != null)
