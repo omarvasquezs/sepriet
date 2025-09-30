@@ -76,7 +76,7 @@ public class DlgEditarCliente extends JDialog {
                     "+1 (Estados Unidos)", "+34 (España)", "Otro..."
             }));
             cbxCodigoPais.setSelectedItem("+51 (Perú)");
-            cbxCodigoPais.addActionListener(evt -> {
+            cbxCodigoPais.addActionListener(_ -> {
                 Object sel = cbxCodigoPais.getSelectedItem();
                 if (sel != null && "Otro...".equals(sel.toString())) {
                     String custom = JOptionPane.showInputDialog(this, "Ingrese el código de país (ej: +593):", "+");
