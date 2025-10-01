@@ -46,6 +46,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
     // Labels para mostrar estadísticas por fecha
     private final JLabel lblCantidadComprobantes = new JLabel("");
     private final JLabel lblTotalAbonos = new JLabel("");
+    // Nuevo label para mostrar ingresos del día (reporte_ingresos)
+    private final JLabel lblIngresosHoy = new JLabel("");
     private int currentPage = 1;
     private int totalPages = 1;
     // page size is configurable by the user; default to 50
@@ -123,11 +125,17 @@ public class frmConsultarComprobantes extends JInternalFrame {
         JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         lblCantidadComprobantes.setFont(lblCantidadComprobantes.getFont().deriveFont(Font.BOLD));
         lblTotalAbonos.setFont(lblTotalAbonos.getFont().deriveFont(Font.BOLD));
+        lblIngresosHoy.setFont(lblIngresosHoy.getFont().deriveFont(Font.BOLD));
         lblCantidadComprobantes.setForeground(new Color(0, 100, 0)); // Verde oscuro
         lblTotalAbonos.setForeground(new Color(0, 0, 150)); // Azul oscuro
+        lblIngresosHoy.setForeground(new Color(150, 0, 0)); // Rojo oscuro para Ingresos
+        // Hide ingresos label by default; only show when "FECHA HOY DÍA" is active
+        lblIngresosHoy.setVisible(false);
         statsPanel.add(lblCantidadComprobantes);
         statsPanel.add(Box.createHorizontalStrut(20)); // Espaciado
         statsPanel.add(lblTotalAbonos);
+        statsPanel.add(Box.createHorizontalStrut(20)); // Espaciado
+        statsPanel.add(lblIngresosHoy);
         statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         top.add(statsPanel);
 
@@ -824,6 +832,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
         if (selectedDate == null) {
             lblCantidadComprobantes.setText("");
             lblTotalAbonos.setText("");
+            lblIngresosHoy.setText("");
+            lblIngresosHoy.setVisible(false);
             return;
         }
 
@@ -851,8 +861,35 @@ public class frmConsultarComprobantes extends JInternalFrame {
                         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
                         String fechaStr = sdf.format(selectedDate);
 
-                        lblCantidadComprobantes.setText(String.format("Comprobantes del %s: %d", fechaStr, cantidad));
-                        lblTotalAbonos.setText(String.format("Total abonado: S/. %.2f", totalAbonos));
+                        lblCantidadComprobantes
+                                .setText(String.format("Comprobantes generados el día %s: %d", fechaStr, cantidad));
+                        lblTotalAbonos.setText(
+                                String.format("Total abonado en las boletas de hoy dia: S/. %.2f", totalAbonos));
+
+                        // Mostrar 'Ingresos de hoy' (suma de reporte_ingresos.monto_abonado)
+                        if (chkFechaHoy.isSelected()) {
+                            String sqlIngresos = "SELECT COALESCE(SUM(COALESCE(monto_abonado,0)),0) as total_ingresos FROM reporte_ingresos WHERE DATE(fecha) = ?";
+                            try (PreparedStatement ps2 = conn.prepareStatement(sqlIngresos)) {
+                                ps2.setDate(1, sqlDate);
+                                try (ResultSet rs2 = ps2.executeQuery()) {
+                                    if (rs2.next()) {
+                                        double ingresos = rs2.getDouble("total_ingresos");
+                                        lblIngresosHoy
+                                                .setText(String.format("Ingresos totales de hoy: S/. %.2f", ingresos));
+                                        lblIngresosHoy.setVisible(true);
+                                    } else {
+                                        lblIngresosHoy.setText("");
+                                        lblIngresosHoy.setVisible(false);
+                                    }
+                                }
+                            } catch (Exception ex2) {
+                                lblIngresosHoy.setText("");
+                                lblIngresosHoy.setVisible(false);
+                            }
+                        } else {
+                            lblIngresosHoy.setText("");
+                            lblIngresosHoy.setVisible(false);
+                        }
                     }
                 }
             }
@@ -860,6 +897,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
             System.err.println("Error calculando estadísticas por fecha: " + ex.getMessage());
             lblCantidadComprobantes.setText("");
             lblTotalAbonos.setText("");
+            lblIngresosHoy.setText("");
+            lblIngresosHoy.setVisible(false);
         }
     }
 
