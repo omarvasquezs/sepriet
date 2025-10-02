@@ -1043,9 +1043,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
             }
             currentPage = Math.min(page, totalPages);
             int offset = (currentPage - 1) * pageSize;
-            String sql = "SELECT c.id,c.cod_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,ec.nom_estado estado_comprobante,c.costo_total, c.descuento, (c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha "
-                    +
-                    "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id"
+            String sql = "SELECT c.id,c.cod_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,ec.nom_estado estado_comprobante,"
+                    + "(SELECT GROUP_CONCAT(s.nom_servicio SEPARATOR ', ') FROM comprobantes_detalles cd LEFT JOIN servicios s ON cd.servicio_id=s.id WHERE cd.comprobante_id=c.id) AS servicios,"
+                    + "c.costo_total, c.descuento, (c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha "
+                    + "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id"
                     + where +
                     " ORDER BY c.fecha DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -1067,6 +1068,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
                         r.cliente = rs.getString("cliente");
                         r.estadoRopa = rs.getString("estado_ropa");
                         r.estadoComprobante = rs.getString("estado_comprobante");
+                        r.servicios = rs.getString("servicios");
+                        if (r.servicios == null)
+                            r.servicios = "";
                         r.costoTotal = rs.getFloat("costo_total");
                         try {
                             r.descuento = rs.getFloat("descuento");
@@ -1099,6 +1103,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         String cliente;
         String estadoRopa;
         String estadoComprobante;
+        String servicios;
         float costoTotal;
         float descuento;
         float deuda;
@@ -1107,7 +1112,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
     private static class ComprobantesTableModel extends AbstractTableModel {
         private final String[] cols = { "COD COMPROBANTE", "CLIENTE", "ESTADO ROPA", "ESTADO COMPROBANTE",
-                "COSTO TOTAL (S/.)", "DESCUENTO (%)", "DEUDA (S/.)", "FECHA DE REGISTRO" };
+                "SERVICIOS", "COSTO TOTAL (S/.)", "DESCUENTO (%)", "DEUDA (S/.)", "FECHA DE REGISTRO" };
         private List<ComprobanteRow> rows = new ArrayList<>();
 
         public void setRows(List<ComprobanteRow> data) {
@@ -1138,10 +1143,11 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 case 1 -> row.cliente;
                 case 2 -> row.estadoRopa;
                 case 3 -> row.estadoComprobante;
-                case 4 -> row.costoTotal;
-                case 5 -> row.descuento;
-                case 6 -> row.deuda;
-                case 7 -> row.fecha;
+                case 4 -> row.servicios;
+                case 5 -> row.costoTotal;
+                case 6 -> row.descuento;
+                case 7 -> row.deuda;
+                case 8 -> row.fecha;
                 default -> null;
             };
         }
@@ -1149,7 +1155,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         @Override
         public Class<?> getColumnClass(int c) {
             return switch (c) {
-                case 4, 5, 6 -> Float.class;
+                case 5, 6, 7 -> Float.class;
                 default -> String.class;
             };
         }
