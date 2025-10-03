@@ -48,6 +48,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private final JLabel lblTotalAbonos = new JLabel("");
     // Nuevo label para mostrar ingresos del día (reporte_ingresos)
     private final JLabel lblIngresosHoy = new JLabel("");
+    // Nuevo label para mostrar suma del costo total de comprobantes
+    private final JLabel lblSumaCostoTotal = new JLabel("");
     private int currentPage = 1;
     private int totalPages = 1;
     // page size is configurable by the user; default to 50
@@ -126,16 +128,21 @@ public class frmConsultarComprobantes extends JInternalFrame {
         lblCantidadComprobantes.setFont(lblCantidadComprobantes.getFont().deriveFont(Font.BOLD));
         lblTotalAbonos.setFont(lblTotalAbonos.getFont().deriveFont(Font.BOLD));
         lblIngresosHoy.setFont(lblIngresosHoy.getFont().deriveFont(Font.BOLD));
+        lblSumaCostoTotal.setFont(lblSumaCostoTotal.getFont().deriveFont(Font.BOLD));
         lblCantidadComprobantes.setForeground(new Color(0, 100, 0)); // Verde oscuro
         lblTotalAbonos.setForeground(new Color(0, 0, 150)); // Azul oscuro
         lblIngresosHoy.setForeground(new Color(150, 0, 0)); // Rojo oscuro para Ingresos
+        lblSumaCostoTotal.setForeground(new Color(100, 50, 0)); // Marrón para costo total
         // Hide ingresos label by default; only show when "FECHA HOY DÍA" is active
         lblIngresosHoy.setVisible(false);
+        lblSumaCostoTotal.setVisible(false);
         statsPanel.add(lblCantidadComprobantes);
         statsPanel.add(Box.createHorizontalStrut(20)); // Espaciado
         statsPanel.add(lblTotalAbonos);
         statsPanel.add(Box.createHorizontalStrut(20)); // Espaciado
         statsPanel.add(lblIngresosHoy);
+        statsPanel.add(Box.createHorizontalStrut(20)); // Espaciado
+        statsPanel.add(lblSumaCostoTotal);
         statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         top.add(statsPanel);
 
@@ -834,6 +841,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
             lblTotalAbonos.setText("");
             lblIngresosHoy.setText("");
             lblIngresosHoy.setVisible(false);
+            lblSumaCostoTotal.setText("");
+            lblSumaCostoTotal.setVisible(false);
             return;
         }
 
@@ -844,9 +853,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
             // Convertir Date a formato SQL
             java.sql.Date sqlDate = new java.sql.Date(selectedDate.getTime());
 
-            // Consulta para contar comprobantes y sumar abonos por fecha
+            // Consulta para contar comprobantes, sumar abonos y costo total por fecha
             String sql = "SELECT COUNT(*) as cantidad, " +
-                    "COALESCE(SUM(COALESCE(monto_abonado, 0)), 0) as total_abonos " +
+                    "COALESCE(SUM(COALESCE(monto_abonado, 0)), 0) as total_abonos, " +
+                    "COALESCE(SUM(COALESCE(costo_total, 0)), 0) as suma_costo_total " +
                     "FROM comprobantes " +
                     "WHERE DATE(fecha) = ?";
 
@@ -856,6 +866,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     if (rs.next()) {
                         int cantidad = rs.getInt("cantidad");
                         double totalAbonos = rs.getDouble("total_abonos");
+                        double sumaCostoTotal = rs.getDouble("suma_costo_total");
 
                         // Formatear fecha para mostrar
                         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
@@ -866,8 +877,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
                         lblTotalAbonos.setText(
                                 String.format("Total abonado en las boletas de hoy dia: S/. %.2f", totalAbonos));
 
-                        // Mostrar 'Ingresos de hoy' (suma de reporte_ingresos.monto_abonado)
+                        // Mostrar 'Total abonado de hoy' y 'Suma costo total' solo cuando checkbox está
+                        // activo
                         if (chkFechaHoy.isSelected()) {
+                            // Total abonado de hoy (desde reporte_ingresos)
                             String sqlIngresos = "SELECT COALESCE(SUM(COALESCE(monto_abonado,0)),0) as total_ingresos FROM reporte_ingresos WHERE DATE(fecha) = ?";
                             try (PreparedStatement ps2 = conn.prepareStatement(sqlIngresos)) {
                                 ps2.setDate(1, sqlDate);
@@ -875,7 +888,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                                     if (rs2.next()) {
                                         double ingresos = rs2.getDouble("total_ingresos");
                                         lblIngresosHoy
-                                                .setText(String.format("Ingresos totales de hoy: S/. %.2f", ingresos));
+                                                .setText(String.format("Total abonado de hoy: S/. %.2f", ingresos));
                                         lblIngresosHoy.setVisible(true);
                                     } else {
                                         lblIngresosHoy.setText("");
@@ -886,9 +899,17 @@ public class frmConsultarComprobantes extends JInternalFrame {
                                 lblIngresosHoy.setText("");
                                 lblIngresosHoy.setVisible(false);
                             }
+
+                            // Suma del costo total de comprobantes de hoy
+                            lblSumaCostoTotal.setText(
+                                    String.format("Suma del costo total de los comprobantes de hoy: S/. %.2f",
+                                            sumaCostoTotal));
+                            lblSumaCostoTotal.setVisible(true);
                         } else {
                             lblIngresosHoy.setText("");
                             lblIngresosHoy.setVisible(false);
+                            lblSumaCostoTotal.setText("");
+                            lblSumaCostoTotal.setVisible(false);
                         }
                     }
                 }
