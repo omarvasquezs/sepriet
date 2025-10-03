@@ -50,6 +50,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private final JLabel lblIngresosHoy = new JLabel("");
     // Nuevo label para mostrar suma del costo total de comprobantes
     private final JLabel lblSumaCostoTotal = new JLabel("");
+    // Labels para mostrar montos por método de pago
+    private final JLabel lblTotalEfectivo = new JLabel("");
+    private final JLabel lblTotalYapePlin = new JLabel("");
     private int currentPage = 1;
     private int totalPages = 1;
     // page size is configurable by the user; default to 50
@@ -123,26 +126,54 @@ public class frmConsultarComprobantes extends JInternalFrame {
         top.add(filtersRow);
         top.add(estadoPanel);
 
-        // Panel para estadísticas por fecha
-        JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // Panel para estadísticas por fecha - ahora con layout vertical
+        JPanel statsPanel = new JPanel();
+        statsPanel.setLayout(new BoxLayout(statsPanel, BoxLayout.Y_AXIS));
+        statsPanel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 8));
+
+        // Configurar fuentes y colores para todos los labels
         lblCantidadComprobantes.setFont(lblCantidadComprobantes.getFont().deriveFont(Font.BOLD));
         lblTotalAbonos.setFont(lblTotalAbonos.getFont().deriveFont(Font.BOLD));
         lblIngresosHoy.setFont(lblIngresosHoy.getFont().deriveFont(Font.BOLD));
         lblSumaCostoTotal.setFont(lblSumaCostoTotal.getFont().deriveFont(Font.BOLD));
+        lblTotalEfectivo.setFont(lblTotalEfectivo.getFont().deriveFont(Font.BOLD));
+        lblTotalYapePlin.setFont(lblTotalYapePlin.getFont().deriveFont(Font.BOLD));
+
         lblCantidadComprobantes.setForeground(new Color(0, 100, 0)); // Verde oscuro
         lblTotalAbonos.setForeground(new Color(0, 0, 150)); // Azul oscuro
-        lblIngresosHoy.setForeground(new Color(150, 0, 0)); // Rojo oscuro para Ingresos
-        lblSumaCostoTotal.setForeground(new Color(100, 50, 0)); // Marrón para costo total
-        // Hide ingresos label by default; only show when "FECHA HOY DÍA" is active
+        lblIngresosHoy.setForeground(new Color(150, 0, 0)); // Rojo oscuro
+        lblSumaCostoTotal.setForeground(new Color(100, 50, 0)); // Marrón
+        lblTotalEfectivo.setForeground(new Color(0, 128, 0)); // Verde medio
+        lblTotalYapePlin.setForeground(new Color(128, 0, 128)); // Púrpura
+
+        // Alineación a la izquierda para todos los labels
+        lblCantidadComprobantes.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblTotalAbonos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblIngresosHoy.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblSumaCostoTotal.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblTotalEfectivo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblTotalYapePlin.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Hide labels condicionales by default; only show when "FECHA HOY DÍA" is
+        // active
         lblIngresosHoy.setVisible(false);
         lblSumaCostoTotal.setVisible(false);
+        lblTotalEfectivo.setVisible(false);
+        lblTotalYapePlin.setVisible(false);
+
+        // Agregar labels al panel vertical
         statsPanel.add(lblCantidadComprobantes);
-        statsPanel.add(Box.createHorizontalStrut(20)); // Espaciado
+        statsPanel.add(Box.createVerticalStrut(4));
         statsPanel.add(lblTotalAbonos);
-        statsPanel.add(Box.createHorizontalStrut(20)); // Espaciado
+        statsPanel.add(Box.createVerticalStrut(4));
         statsPanel.add(lblIngresosHoy);
-        statsPanel.add(Box.createHorizontalStrut(20)); // Espaciado
+        statsPanel.add(Box.createVerticalStrut(4));
         statsPanel.add(lblSumaCostoTotal);
+        statsPanel.add(Box.createVerticalStrut(4));
+        statsPanel.add(lblTotalEfectivo);
+        statsPanel.add(Box.createVerticalStrut(4));
+        statsPanel.add(lblTotalYapePlin);
+
         statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         top.add(statsPanel);
 
@@ -843,6 +874,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
             lblIngresosHoy.setVisible(false);
             lblSumaCostoTotal.setText("");
             lblSumaCostoTotal.setVisible(false);
+            lblTotalEfectivo.setText("");
+            lblTotalEfectivo.setVisible(false);
+            lblTotalYapePlin.setText("");
+            lblTotalYapePlin.setVisible(false);
             return;
         }
 
@@ -905,11 +940,50 @@ public class frmConsultarComprobantes extends JInternalFrame {
                                     String.format("Suma del costo total de los comprobantes de hoy: S/. %.2f",
                                             sumaCostoTotal));
                             lblSumaCostoTotal.setVisible(true);
+
+                            // Consultar totales por método de pago (EFECTIVO id=4, YAPE/PLIN id=1)
+                            String sqlMetodosPago = "SELECT " +
+                                    "COALESCE(SUM(CASE WHEN ri.metodo_pago_id = 4 THEN ri.monto_abonado ELSE 0 END), 0) as total_efectivo, "
+                                    +
+                                    "COALESCE(SUM(CASE WHEN ri.metodo_pago_id = 1 THEN ri.monto_abonado ELSE 0 END), 0) as total_yape_plin "
+                                    +
+                                    "FROM reporte_ingresos ri WHERE DATE(ri.fecha) = ?";
+                            try (PreparedStatement ps3 = conn.prepareStatement(sqlMetodosPago)) {
+                                ps3.setDate(1, sqlDate);
+                                try (ResultSet rs3 = ps3.executeQuery()) {
+                                    if (rs3.next()) {
+                                        double totalEfectivo = rs3.getDouble("total_efectivo");
+                                        double totalYapePlin = rs3.getDouble("total_yape_plin");
+                                        lblTotalEfectivo.setText(
+                                                String.format("Total abonado en efectivo de hoy: S/. %.2f",
+                                                        totalEfectivo));
+                                        lblTotalEfectivo.setVisible(true);
+                                        lblTotalYapePlin.setText(
+                                                String.format("Total abonado en YAPE/PLIN de hoy: S/. %.2f",
+                                                        totalYapePlin));
+                                        lblTotalYapePlin.setVisible(true);
+                                    } else {
+                                        lblTotalEfectivo.setText("");
+                                        lblTotalEfectivo.setVisible(false);
+                                        lblTotalYapePlin.setText("");
+                                        lblTotalYapePlin.setVisible(false);
+                                    }
+                                }
+                            } catch (Exception ex3) {
+                                lblTotalEfectivo.setText("");
+                                lblTotalEfectivo.setVisible(false);
+                                lblTotalYapePlin.setText("");
+                                lblTotalYapePlin.setVisible(false);
+                            }
                         } else {
                             lblIngresosHoy.setText("");
                             lblIngresosHoy.setVisible(false);
                             lblSumaCostoTotal.setText("");
                             lblSumaCostoTotal.setVisible(false);
+                            lblTotalEfectivo.setText("");
+                            lblTotalEfectivo.setVisible(false);
+                            lblTotalYapePlin.setText("");
+                            lblTotalYapePlin.setVisible(false);
                         }
                     }
                 }
@@ -920,6 +994,12 @@ public class frmConsultarComprobantes extends JInternalFrame {
             lblTotalAbonos.setText("");
             lblIngresosHoy.setText("");
             lblIngresosHoy.setVisible(false);
+            lblSumaCostoTotal.setText("");
+            lblSumaCostoTotal.setVisible(false);
+            lblTotalEfectivo.setText("");
+            lblTotalEfectivo.setVisible(false);
+            lblTotalYapePlin.setText("");
+            lblTotalYapePlin.setVisible(false);
         }
     }
 
