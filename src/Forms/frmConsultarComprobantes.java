@@ -1044,7 +1044,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
             currentPage = Math.min(page, totalPages);
             int offset = (currentPage - 1) * pageSize;
             String sql = "SELECT c.id,c.cod_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,ec.nom_estado estado_comprobante,"
-                    + "(SELECT GROUP_CONCAT(s.nom_servicio SEPARATOR ', ') FROM comprobantes_detalles cd LEFT JOIN servicios s ON cd.servicio_id=s.id WHERE cd.comprobante_id=c.id) AS servicios,"
+                    + "(SELECT GROUP_CONCAT(CONCAT(s.nom_servicio, ' (', cd.peso_kg, ' kg)') SEPARATOR ', ') FROM comprobantes_detalles cd LEFT JOIN servicios s ON cd.servicio_id=s.id WHERE cd.comprobante_id=c.id) AS servicios,"
                     + "c.costo_total, c.descuento, (c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha "
                     + "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id"
                     + where +
