@@ -297,6 +297,19 @@ public class frmConsultarComprobantes extends JInternalFrame {
         table.setRowSelectionAllowed(true);
         table.setColumnSelectionAllowed(false);
 
+        // Configurar anchos preferidos de columnas
+        // Índices: 0=COD_COMPROBANTE, 1=CLIENTE, 2=ESTADO_ROPA, 3=ESTADO_COMPROBANTE,
+        // 4=SERVICIOS, 5=COSTO_TOTAL, 6=DESCUENTO, 7=DEUDA, 8=FECHA
+        table.getColumnModel().getColumn(0).setPreferredWidth(120); // COD COMPROBANTE
+        table.getColumnModel().getColumn(1).setPreferredWidth(150); // CLIENTE
+        table.getColumnModel().getColumn(2).setPreferredWidth(130); // ESTADO ROPA
+        table.getColumnModel().getColumn(3).setPreferredWidth(150); // ESTADO COMPROBANTE
+        table.getColumnModel().getColumn(4).setPreferredWidth(350); // SERVICIOS (más ancha)
+        table.getColumnModel().getColumn(5).setPreferredWidth(110); // COSTO TOTAL
+        table.getColumnModel().getColumn(6).setPreferredWidth(100); // DESCUENTO
+        table.getColumnModel().getColumn(7).setPreferredWidth(100); // DEUDA
+        table.getColumnModel().getColumn(8).setPreferredWidth(150); // FECHA DE REGISTRO
+
         // Populate cliente names and estados for filters
         SwingUtilities.invokeLater(() -> {
             populateClienteNames();
