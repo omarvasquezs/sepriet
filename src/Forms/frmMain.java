@@ -46,6 +46,7 @@ public class frmMain extends javax.swing.JFrame {
         menuReportesCargaTrabajo.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuReportesExportarComprobantes.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuReportesHistorico.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        menuReportesRecogidosCancelados.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
         // Custom action for menu Salir
         menuSalir.addMouseListener(new MouseListener() {
@@ -122,6 +123,12 @@ public class frmMain extends javax.swing.JFrame {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 // 'Historico comprobantes' should open the unfiltered Todos listing
                 openComprobantesFrame(frmConsultarComprobantes.Mode.TODOS);
+            }
+        });
+        menuReportesRecogidosCancelados.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                // Abrir reporte filtrado: RECOGIDO + CANCELADO
+                openComprobantesRecogidosCancelados();
             }
         });
         menuReportesFinancieros.addActionListener(new java.awt.event.ActionListener() {
@@ -312,6 +319,7 @@ public class frmMain extends javax.swing.JFrame {
         menuReportesCargaTrabajo = new javax.swing.JMenuItem();
         menuReportesExportarComprobantes = new javax.swing.JMenuItem();
         menuReportesHistorico = new javax.swing.JMenuItem();
+        menuReportesRecogidosCancelados = new javax.swing.JMenuItem();
         menuSalir = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -410,6 +418,10 @@ public class frmMain extends javax.swing.JFrame {
         menuReportesHistorico.setMargin(new java.awt.Insets(3, 6, 4, 6));
         menuReportes.add(menuReportesHistorico);
 
+        menuReportesRecogidosCancelados.setText("Recogidos y Cancelados");
+        menuReportesRecogidosCancelados.setMargin(new java.awt.Insets(3, 6, 4, 6));
+        menuReportes.add(menuReportesRecogidosCancelados);
+
         jMenuBar1.add(menuReportes);
 
         menuSalir.setText("Salir");
@@ -486,6 +498,24 @@ public class frmMain extends javax.swing.JFrame {
     }
 
     /**
+     * Abre el reporte de comprobantes RECOGIDOS y CANCELADOS
+     */
+    private void openComprobantesRecogidosCancelados() {
+        // Cerrar cualquier instancia existente de frmConsultarComprobantes
+        for (javax.swing.JInternalFrame f : desktopPane.getAllFrames()) {
+            if (f instanceof frmConsultarComprobantes) {
+                try {
+                    f.setClosed(true);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        frmConsultarComprobantesRecogidosCancelados frm = new frmConsultarComprobantesRecogidosCancelados();
+        desktopPane.add(frm);
+        frm.setVisible(true);
+    }
+
+    /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
@@ -535,6 +565,7 @@ public class frmMain extends javax.swing.JFrame {
     private javax.swing.JMenuItem menuReportesExportarComprobantes;
     private javax.swing.JMenuItem menuReportesFinancieros;
     private javax.swing.JMenuItem menuReportesHistorico;
+    private javax.swing.JMenuItem menuReportesRecogidosCancelados;
     private javax.swing.JMenu menuSalir;
     private javax.swing.JMenu menuCaja;
     private javax.swing.JMenuItem menuCajaCerrar;

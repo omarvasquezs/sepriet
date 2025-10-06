@@ -890,7 +890,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         // counter removed - no UI update needed
     }
 
-    private void resetFilters() {
+    protected void resetFilters() {
         filterCod.setText("");
         filterCliente.setSelectedItem("");
         for (JCheckBox it : estadoRopaItems)
@@ -1194,7 +1194,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         }
     }
 
-    private void loadPage(int page) {
+    protected void loadPage(int page) {
         try (Connection conn = DatabaseConfig.getConnection()) {
             StringBuilder where = new StringBuilder(" WHERE 1=1 ");
             switch (mode) {
