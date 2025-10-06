@@ -64,7 +64,7 @@ public class DlgAperturaCajaSimple extends JDialog {
         btnCancelar = new JButton("Cancelar");
         btnAceptar = new JButton("Aperturar Caja");
 
-        btnCancelar.addActionListener(e -> {
+        btnCancelar.addActionListener(_ -> {
             int confirm = JOptionPane.showConfirmDialog(
                     this,
                     "Si no apertura la caja, no podrá registrar comprobantes.\n¿Desea salir del sistema?",
@@ -76,7 +76,7 @@ public class DlgAperturaCajaSimple extends JDialog {
             }
         });
 
-        btnAceptar.addActionListener(e -> aperturarCaja());
+        btnAceptar.addActionListener(_ -> aperturarCaja());
 
         buttonPanel.add(btnCancelar);
         buttonPanel.add(btnAceptar);

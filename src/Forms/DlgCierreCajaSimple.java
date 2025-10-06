@@ -69,8 +69,8 @@ public class DlgCierreCajaSimple extends JDialog {
         btnCancelar = new JButton("Cancelar");
         btnAceptar = new JButton("Cerrar Caja");
 
-        btnCancelar.addActionListener(e -> dispose());
-        btnAceptar.addActionListener(e -> cerrarCaja());
+        btnCancelar.addActionListener(_ -> dispose());
+        btnAceptar.addActionListener(_ -> cerrarCaja());
 
         buttonPanel.add(btnCancelar);
         buttonPanel.add(btnAceptar);
