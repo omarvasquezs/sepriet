@@ -56,6 +56,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
     // Labels para mostrar montos por método de pago en comprobantes
     private final JLabel lblComprobanteEfectivo = new JLabel("");
     private final JLabel lblComprobanteYapePlin = new JLabel("");
+    // Labels para mostrar información de caja
+    private final JLabel lblCajaApertura = new JLabel("");
+    private final JLabel lblCajaCierre = new JLabel("");
     private int currentPage = 1;
     private int totalPages = 1;
     // page size is configurable by the user; default to 50
@@ -143,6 +146,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
         lblTotalYapePlin.setFont(lblTotalYapePlin.getFont().deriveFont(Font.BOLD));
         lblComprobanteEfectivo.setFont(lblComprobanteEfectivo.getFont().deriveFont(Font.BOLD));
         lblComprobanteYapePlin.setFont(lblComprobanteYapePlin.getFont().deriveFont(Font.BOLD));
+        lblCajaApertura.setFont(lblCajaApertura.getFont().deriveFont(Font.BOLD));
+        lblCajaCierre.setFont(lblCajaCierre.getFont().deriveFont(Font.BOLD));
 
         lblCantidadComprobantes.setForeground(new Color(0, 100, 0)); // Verde oscuro
         lblTotalAbonos.setForeground(new Color(0, 0, 150)); // Azul oscuro
@@ -152,6 +157,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
         lblTotalYapePlin.setForeground(new Color(128, 0, 128)); // Púrpura
         lblComprobanteEfectivo.setForeground(new Color(34, 139, 34)); // Verde bosque
         lblComprobanteYapePlin.setForeground(new Color(148, 0, 211)); // Violeta oscuro
+        lblCajaApertura.setForeground(new Color(0, 102, 204)); // Azul
+        lblCajaCierre.setForeground(new Color(204, 102, 0)); // Naranja
 
         // Alineación a la izquierda para todos los labels
         lblCantidadComprobantes.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -162,6 +169,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
         lblTotalYapePlin.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblComprobanteEfectivo.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblComprobanteYapePlin.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblCajaApertura.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblCajaCierre.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Hide labels condicionales by default; only show when "FECHA HOY DÍA" is
         // active
@@ -171,6 +180,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
         lblTotalYapePlin.setVisible(false);
         lblComprobanteEfectivo.setVisible(false);
         lblComprobanteYapePlin.setVisible(false);
+        lblCajaApertura.setVisible(false);
+        lblCajaCierre.setVisible(false);
 
         // Agregar labels al panel vertical
         statsPanel.add(lblCantidadComprobantes);
@@ -188,6 +199,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
         statsPanel.add(lblComprobanteEfectivo);
         statsPanel.add(Box.createVerticalStrut(4));
         statsPanel.add(lblComprobanteYapePlin);
+        statsPanel.add(Box.createVerticalStrut(4));
+        statsPanel.add(lblCajaApertura);
+        statsPanel.add(Box.createVerticalStrut(4));
+        statsPanel.add(lblCajaCierre);
 
         statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         top.add(statsPanel);
@@ -910,6 +925,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
             lblComprobanteEfectivo.setVisible(false);
             lblComprobanteYapePlin.setText("");
             lblComprobanteYapePlin.setVisible(false);
+            lblCajaApertura.setText("");
+            lblCajaApertura.setVisible(false);
+            lblCajaCierre.setText("");
+            lblCajaCierre.setVisible(false);
             return;
         }
 
@@ -1044,6 +1063,50 @@ public class frmConsultarComprobantes extends JInternalFrame {
                                 lblComprobanteYapePlin.setText("");
                                 lblComprobanteYapePlin.setVisible(false);
                             }
+
+                            // Consultar información de caja del día
+                            String sqlCaja = "SELECT monto_apertura, monto_cierre, " +
+                                    "DATE_FORMAT(datetime_apertura, '%H:%i:%s') as hora_apertura, " +
+                                    "DATE_FORMAT(datetime_cierre, '%H:%i:%s') as hora_cierre " +
+                                    "FROM caja_apertura_cierre " +
+                                    "WHERE DATE(datetime_apertura) = ? " +
+                                    "ORDER BY datetime_apertura DESC LIMIT 1";
+                            try (PreparedStatement ps5 = conn.prepareStatement(sqlCaja)) {
+                                ps5.setDate(1, sqlDate);
+                                try (ResultSet rs5 = ps5.executeQuery()) {
+                                    if (rs5.next()) {
+                                        double montoApertura = rs5.getDouble("monto_apertura");
+                                        double montoCierre = rs5.getDouble("monto_cierre");
+                                        String horaApertura = rs5.getString("hora_apertura");
+                                        String horaCierre = rs5.getString("hora_cierre");
+
+                                        lblCajaApertura.setText(
+                                                String.format("Caja aperturada a las %s con: S/. %.2f",
+                                                        horaApertura != null ? horaApertura : "N/A", montoApertura));
+                                        lblCajaApertura.setVisible(true);
+
+                                        if (horaCierre != null) {
+                                            lblCajaCierre.setText(
+                                                    String.format("Caja cerrada a las %s con: S/. %.2f",
+                                                            horaCierre, montoCierre));
+                                            lblCajaCierre.setVisible(true);
+                                        } else {
+                                            lblCajaCierre.setText("Caja aún no ha sido cerrada");
+                                            lblCajaCierre.setVisible(true);
+                                        }
+                                    } else {
+                                        lblCajaApertura.setText("No se ha aperturado caja este día");
+                                        lblCajaApertura.setVisible(true);
+                                        lblCajaCierre.setText("");
+                                        lblCajaCierre.setVisible(false);
+                                    }
+                                }
+                            } catch (Exception ex5) {
+                                lblCajaApertura.setText("");
+                                lblCajaApertura.setVisible(false);
+                                lblCajaCierre.setText("");
+                                lblCajaCierre.setVisible(false);
+                            }
                         } else {
                             lblIngresosHoy.setText("");
                             lblIngresosHoy.setVisible(false);
@@ -1057,6 +1120,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
                             lblComprobanteEfectivo.setVisible(false);
                             lblComprobanteYapePlin.setText("");
                             lblComprobanteYapePlin.setVisible(false);
+                            lblCajaApertura.setText("");
+                            lblCajaApertura.setVisible(false);
+                            lblCajaCierre.setText("");
+                            lblCajaCierre.setVisible(false);
                         }
                     }
                 }
@@ -1077,6 +1144,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
             lblComprobanteEfectivo.setVisible(false);
             lblComprobanteYapePlin.setText("");
             lblComprobanteYapePlin.setVisible(false);
+            lblCajaApertura.setText("");
+            lblCajaApertura.setVisible(false);
+            lblCajaCierre.setText("");
+            lblCajaCierre.setVisible(false);
         }
     }
 

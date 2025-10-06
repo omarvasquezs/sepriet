@@ -28,6 +28,7 @@ public class frmMain extends javax.swing.JFrame {
         menuRegistrar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuConsultar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuOpcionesAvanzadas.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        menuCaja.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuReportes.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuSalir.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
@@ -40,6 +41,7 @@ public class frmMain extends javax.swing.JFrame {
         menuConsultarClientes.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuAvanzadoServicios.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuAvanzadoUsuarios.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        menuCajaCerrar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuReportesFinancieros.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuReportesCargaTrabajo.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuReportesExportarComprobantes.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -191,6 +193,14 @@ public class frmMain extends javax.swing.JFrame {
                 frm.setVisible(true);
             }
         });
+
+        // Caja - Cerrar Caja
+        menuCajaCerrar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DlgCierreCajaSimple dlg = new DlgCierreCajaSimple(frmMain.this, currentUserId);
+                dlg.setVisible(true);
+            }
+        });
     }
 
     /**
@@ -214,6 +224,25 @@ public class frmMain extends javax.swing.JFrame {
     public frmMain(int roleId, int userId) {
         this(roleId);
         this.currentUserId = userId;
+
+        // Verificar apertura de caja después de que la ventana esté visible
+        javax.swing.SwingUtilities.invokeLater(() -> verificarAperturaCaja());
+    }
+
+    /**
+     * Verifica si hay apertura de caja HOY.
+     * Si no hay, muestra el diálogo de apertura automáticamente.
+     */
+    private void verificarAperturaCaja() {
+        if (!DlgAperturaCajaSimple.hayAperturaHoy()) {
+            DlgAperturaCajaSimple dlg = new DlgAperturaCajaSimple(this, currentUserId);
+            dlg.setVisible(true);
+
+            // Si el usuario canceló la apertura, cerrar el sistema
+            if (!dlg.isAperturaExitosa()) {
+                System.exit(0);
+            }
+        }
     }
 
     // store current user's role for internal frames to query
@@ -276,6 +305,8 @@ public class frmMain extends javax.swing.JFrame {
         menuOpcionesAvanzadas = new javax.swing.JMenu();
         menuAvanzadoServicios = new javax.swing.JMenuItem();
         menuAvanzadoUsuarios = new javax.swing.JMenuItem();
+        menuCaja = new javax.swing.JMenu();
+        menuCajaCerrar = new javax.swing.JMenuItem();
         menuReportes = new javax.swing.JMenu();
         menuReportesFinancieros = new javax.swing.JMenuItem();
         menuReportesCargaTrabajo = new javax.swing.JMenuItem();
@@ -350,6 +381,15 @@ public class frmMain extends javax.swing.JFrame {
         menuOpcionesAvanzadas.add(menuAvanzadoUsuarios);
 
         jMenuBar1.add(menuOpcionesAvanzadas);
+
+        menuCaja.setText("Caja");
+        menuCaja.setMargin(new java.awt.Insets(3, 8, 3, 8));
+
+        menuCajaCerrar.setText("Cerrar Caja");
+        menuCajaCerrar.setMargin(new java.awt.Insets(3, 6, 4, 6));
+        menuCaja.add(menuCajaCerrar);
+
+        jMenuBar1.add(menuCaja);
 
         menuReportes.setText("Reportes");
         menuReportes.setMargin(new java.awt.Insets(3, 8, 3, 8));
@@ -496,5 +536,7 @@ public class frmMain extends javax.swing.JFrame {
     private javax.swing.JMenuItem menuReportesFinancieros;
     private javax.swing.JMenuItem menuReportesHistorico;
     private javax.swing.JMenu menuSalir;
+    private javax.swing.JMenu menuCaja;
+    private javax.swing.JMenuItem menuCajaCerrar;
     // End of variables declaration//GEN-END:variables
 }
