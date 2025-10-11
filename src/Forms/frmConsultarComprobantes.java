@@ -908,7 +908,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         updateDateStats(); // Actualizar estadísticas después de editar
     }
 
-    private void updateDateStats() {
+    protected void updateDateStats() {
         Date selectedDate = filterFecha.getDate();
         if (selectedDate == null) {
             lblCantidadComprobantes.setText("");
