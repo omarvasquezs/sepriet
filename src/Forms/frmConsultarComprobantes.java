@@ -968,7 +968,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     "COALESCE(SUM(COALESCE(monto_abonado, 0)), 0) as total_abonos, " +
                     "COALESCE(SUM(COALESCE(costo_total, 0)), 0) as suma_costo_total " +
                     "FROM comprobantes " +
-                    "WHERE DATE(fecha) = ?";
+                    "WHERE DATE(fecha) = ? AND activado = 1";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setDate(1, sqlDate);
@@ -985,7 +985,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                         lblCantidadComprobantes
                                 .setText(String.format("Comprobantes generados el día %s: %d", fechaStr, cantidad));
                         lblTotalAbonos.setText(
-                                String.format("Total abonado en las boletas de hoy dia: S/. %.2f", totalAbonos));
+                                String.format("Total abonado en los comprobantes de hoy dia: S/. %.2f", totalAbonos));
 
                         // Mostrar 'Total abonado de hoy' y 'Suma costo total' solo cuando checkbox está
                         // activo
@@ -1057,7 +1057,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                                     +
                                     "COALESCE(SUM(CASE WHEN c.metodo_pago_id = 1 THEN c.monto_abonado ELSE 0 END), 0) as comp_yape_plin "
                                     +
-                                    "FROM comprobantes c WHERE DATE(c.fecha) = ?";
+                                    "FROM comprobantes c WHERE DATE(c.fecha) = ? AND c.activado = 1";
                             try (PreparedStatement ps4 = conn.prepareStatement(sqlComprobantesMetodosPago)) {
                                 ps4.setDate(1, sqlDate);
                                 try (ResultSet rs4 = ps4.executeQuery()) {
