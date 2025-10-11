@@ -38,6 +38,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private final JButton btnEdit = new JButton("Editar");
     private final JButton btnDelete = new JButton("Eliminar");
     private final JButton btnHistory = new JButton("Historial");
+    private final JButton btnConvertirBoleta = new JButton("Convertir a Boleta");
     private final JButton btnPrev = new JButton("<");
     private final JButton btnNext = new JButton(">");
     private final JLabel lblPagina = new JLabel("Página 1 de 1");
@@ -246,8 +247,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
         crudBar.add(btnEdit);
         crudBar.add(btnDelete);
         crudBar.add(btnHistory);
+        crudBar.add(btnConvertirBoleta);
         btnEdit.setEnabled(false);
         btnDelete.setEnabled(false);
+        btnConvertirBoleta.setEnabled(false);
         btnAdd.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -279,10 +282,20 @@ public class frmConsultarComprobantes extends JInternalFrame {
             }
         });
 
+        // Convertir a Boleta button
+        btnConvertirBoleta.setCursor(hand);
+        btnConvertirBoleta.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                convertirNotaVentaABoleta();
+            }
+        });
+
         // Hand cursor for CRUD/pagination buttons (reuse hand variable)
         btnAdd.setCursor(hand);
         btnEdit.setCursor(hand);
         btnDelete.setCursor(hand);
+        btnConvertirBoleta.setCursor(hand);
         btnPrev.setCursor(hand);
         btnNext.setCursor(hand);
         btnPrintPreview.addActionListener(new java.awt.event.ActionListener() {
@@ -384,6 +397,17 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 boolean sel = table.getSelectedRow() >= 0;
                 btnEdit.setEnabled(sel);
                 btnDelete.setEnabled(sel);
+
+                // Enable "Convertir a Boleta" only if selected row is a Nota de Venta ('N')
+                boolean isNotaVenta = false;
+                if (sel) {
+                    int modelRow = table.convertRowIndexToModel(table.getSelectedRow());
+                    if (modelRow >= 0 && modelRow < model.rows.size()) {
+                        ComprobanteRow row = model.rows.get(modelRow);
+                        isNotaVenta = "N".equals(row.tipoComprobante);
+                    }
+                }
+                btnConvertirBoleta.setEnabled(isNotaVenta);
             }
         });
         table.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -1196,7 +1220,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
     protected void loadPage(int page) {
         try (Connection conn = DatabaseConfig.getConnection()) {
-            StringBuilder where = new StringBuilder(" WHERE 1=1 ");
+            StringBuilder where = new StringBuilder(" WHERE c.activado = 1 ");
             switch (mode) {
                 case RECIBIDOS -> where.append(" AND c.estado_ropa_id IN (1,3) AND c.estado_comprobante_id IN (1,2) ");
                 case CANCELADOS -> where.append(" AND c.estado_ropa_id IN (1,3) AND c.estado_comprobante_id=4 ");
@@ -1292,7 +1316,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
             }
             currentPage = Math.min(page, totalPages);
             int offset = (currentPage - 1) * pageSize;
-            String sql = "SELECT c.id,c.cod_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,ec.nom_estado estado_comprobante,"
+            String sql = "SELECT c.id,c.cod_comprobante,c.tipo_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,ec.nom_estado estado_comprobante,"
                     + "(SELECT GROUP_CONCAT(CONCAT(s.nom_servicio, ' (', cd.peso_kg, ' kg)') SEPARATOR ', ') FROM comprobantes_detalles cd LEFT JOIN servicios s ON cd.servicio_id=s.id WHERE cd.comprobante_id=c.id) AS servicios,"
                     + "c.costo_total, c.descuento, (c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha "
                     + "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id"
@@ -1314,6 +1338,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                         ComprobanteRow r = new ComprobanteRow();
                         r.id = rs.getInt("id");
                         r.codComprobante = rs.getString("cod_comprobante");
+                        r.tipoComprobante = rs.getString("tipo_comprobante");
                         r.cliente = rs.getString("cliente");
                         r.estadoRopa = rs.getString("estado_ropa");
                         r.estadoComprobante = rs.getString("estado_comprobante");
@@ -1349,6 +1374,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private static class ComprobanteRow {
         int id;
         String codComprobante;
+        String tipoComprobante; // 'F' = Factura, 'N' = Nota de Venta, 'B' = Boleta
         String cliente;
         String estadoRopa;
         String estadoComprobante;
@@ -1435,5 +1461,242 @@ public class frmConsultarComprobantes extends JInternalFrame {
         } catch (Exception ex) {
             return String.format(java.util.Locale.US, "%.2f", v);
         }
+    }
+
+    /**
+     * Converts a Nota de Venta to a Boleta:
+     * 1. Creates a new Boleta with all data from the Nota de Venta
+     * 2. Updates fecha to current timestamp
+     * 3. Generates a new cod_comprobante for the Boleta
+     * 4. Sets activado=0 on the original Nota de Venta
+     */
+    private void convertirNotaVentaABoleta() {
+        Integer id = getSelectedId();
+        if (id == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione una nota de venta.", "Info",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Verify it's a Nota de Venta
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow < 0)
+            return;
+
+        int modelRow = table.convertRowIndexToModel(selectedRow);
+        ComprobanteRow row = model.rows.get(modelRow);
+
+        if (!"N".equals(row.tipoComprobante)) {
+            JOptionPane.showMessageDialog(this,
+                    "Solo se pueden convertir Notas de Venta a Boleta.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Confirm conversion
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "¿Convertir esta Nota de Venta a Boleta?\n\n" +
+                        "- Se creará una nueva Boleta con fecha actual\n" +
+                        "- La Nota de Venta será desactivada\n" +
+                        "- Esta acción no se puede deshacer",
+                "Confirmar Conversión",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+
+        if (confirm != JOptionPane.YES_OPTION)
+            return;
+
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                // 1. Read all data from the original Nota de Venta
+                String selectSql = "SELECT cliente_id, user_id, metodo_pago_id, num_ruc, razon_social, " +
+                        "estado_comprobante_id, estado_ropa_id, local_id, observaciones, " +
+                        "monto_abonado, last_updated_by, descuento, costo_total " +
+                        "FROM comprobantes WHERE id = ?";
+
+                int clienteId, userId, metodoPagoId, estadoComprobanteId, estadoRopaId, localId, lastUpdatedBy;
+                Long numRuc = null;
+                String razonSocial, observaciones;
+                Float montoAbonado, descuento, costoTotal;
+
+                try (PreparedStatement ps = conn.prepareStatement(selectSql)) {
+                    ps.setInt(1, id);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) {
+                            throw new SQLException("Nota de Venta no encontrada");
+                        }
+
+                        clienteId = rs.getInt("cliente_id");
+                        userId = rs.getInt("user_id");
+                        metodoPagoId = rs.getInt("metodo_pago_id");
+                        numRuc = rs.getObject("num_ruc", Long.class);
+                        razonSocial = rs.getString("razon_social");
+                        estadoComprobanteId = rs.getInt("estado_comprobante_id");
+                        estadoRopaId = rs.getInt("estado_ropa_id");
+                        localId = rs.getInt("local_id");
+                        observaciones = rs.getString("observaciones");
+                        montoAbonado = rs.getObject("monto_abonado", Float.class);
+                        lastUpdatedBy = rs.getInt("last_updated_by");
+                        descuento = rs.getObject("descuento", Float.class);
+                        costoTotal = rs.getObject("costo_total", Float.class);
+                    }
+                }
+
+                // 2. Generate new Boleta code
+                String newCodBoleta = generateComprobanteCode(conn, 'B');
+
+                // 3. Prepare observaciones for the new Boleta (include original Nota de Venta
+                // code)
+                String newObservaciones = "Convertida desde: " + row.codComprobante;
+                if (observaciones != null && !observaciones.trim().isEmpty()) {
+                    newObservaciones = newObservaciones + " | " + observaciones;
+                }
+
+                // 4. Insert new Boleta with current timestamp
+                String insertSql = "INSERT INTO comprobantes " +
+                        "(tipo_comprobante, cliente_id, user_id, fecha, metodo_pago_id, num_ruc, " +
+                        "razon_social, estado_comprobante_id, estado_ropa_id, local_id, observaciones, " +
+                        "monto_abonado, last_updated_by, cod_comprobante, descuento, costo_total, activado) " +
+                        "VALUES ('B', ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+
+                int newBoletaId;
+                try (PreparedStatement ps = conn.prepareStatement(insertSql,
+                        java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                    ps.setInt(1, clienteId);
+                    ps.setInt(2, userId);
+                    ps.setInt(3, metodoPagoId);
+                    if (numRuc != null) {
+                        ps.setLong(4, numRuc);
+                    } else {
+                        ps.setNull(4, java.sql.Types.BIGINT);
+                    }
+                    ps.setString(5, razonSocial);
+                    ps.setInt(6, estadoComprobanteId);
+                    ps.setInt(7, estadoRopaId);
+                    ps.setInt(8, localId);
+                    ps.setString(9, newObservaciones); // Use new observaciones with conversion note
+                    if (montoAbonado != null) {
+                        ps.setFloat(10, montoAbonado);
+                    } else {
+                        ps.setNull(10, java.sql.Types.FLOAT);
+                    }
+                    ps.setInt(11, lastUpdatedBy);
+                    ps.setString(12, newCodBoleta);
+                    if (descuento != null) {
+                        ps.setFloat(13, descuento);
+                    } else {
+                        ps.setNull(13, java.sql.Types.DECIMAL);
+                    }
+                    if (costoTotal != null) {
+                        ps.setFloat(14, costoTotal);
+                    } else {
+                        ps.setNull(14, java.sql.Types.FLOAT);
+                    }
+
+                    ps.executeUpdate();
+
+                    try (ResultSet keys = ps.getGeneratedKeys()) {
+                        if (keys.next()) {
+                            newBoletaId = keys.getInt(1);
+                        } else {
+                            throw new SQLException("No se pudo obtener el ID de la nueva Boleta");
+                        }
+                    }
+                }
+
+                // 5. Copy comprobantes_detalles from Nota de Venta to new Boleta
+                String copyDetallesSql = "INSERT INTO comprobantes_detalles (comprobante_id, servicio_id, peso_kg, costo_kilo) "
+                        +
+                        "SELECT ?, servicio_id, peso_kg, costo_kilo " +
+                        "FROM comprobantes_detalles WHERE comprobante_id = ?";
+
+                try (PreparedStatement ps = conn.prepareStatement(copyDetallesSql)) {
+                    ps.setInt(1, newBoletaId);
+                    ps.setInt(2, id);
+                    ps.executeUpdate();
+                }
+
+                // 6. Deactivate the original Nota de Venta
+                String deactivateSql = "UPDATE comprobantes SET activado = 0 WHERE id = ?";
+                try (PreparedStatement ps = conn.prepareStatement(deactivateSql)) {
+                    ps.setInt(1, id);
+                    ps.executeUpdate();
+                }
+
+                conn.commit();
+
+                JOptionPane.showMessageDialog(this,
+                        "Conversión exitosa!\n\n" +
+                                "Nueva Boleta: " + newCodBoleta + "\n" +
+                                "Nota de Venta desactivada: " + row.codComprobante,
+                        "Éxito",
+                        JOptionPane.INFORMATION_MESSAGE);
+
+                // Refresh the table
+                loadPage(currentPage);
+                updateDateStats();
+
+            } catch (Exception ex) {
+                conn.rollback();
+                throw ex;
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al convertir: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Generates a unique comprobante code for the given tipo.
+     * Same logic as in frmRegistrarComprobante.
+     */
+    private String generateComprobanteCode(Connection conn, char tipo) throws SQLException {
+        int newValue = 1;
+        try (PreparedStatement ps = conn
+                .prepareStatement("SELECT last_value FROM comprobante_counter WHERE tipo_comprobante = ? FOR UPDATE")) {
+            ps.setString(1, String.valueOf(tipo));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    newValue = rs.getInt(1) + 1;
+                    try (PreparedStatement upd = conn.prepareStatement(
+                            "UPDATE comprobante_counter SET last_value = ? WHERE tipo_comprobante = ?")) {
+                        upd.setInt(1, newValue);
+                        upd.setString(2, String.valueOf(tipo));
+                        upd.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement ins = conn.prepareStatement(
+                            "INSERT INTO comprobante_counter (tipo_comprobante, last_value) VALUES (?,?)")) {
+                        ins.setString(1, String.valueOf(tipo));
+                        ins.setInt(2, newValue);
+                        ins.executeUpdate();
+                    }
+                }
+            }
+        }
+
+        String prefix;
+        switch (tipo) {
+            case 'N':
+                prefix = "NV001";
+                break;
+            case 'B':
+                prefix = "B001";
+                break;
+            case 'F':
+                prefix = "F001";
+                break;
+            default:
+                prefix = String.valueOf(tipo);
+                break;
+        }
+        return prefix + "-" + newValue;
     }
 }
