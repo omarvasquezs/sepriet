@@ -20,7 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Internal frame for CRUD of servicios (nom_servicio, precio_kilo, habilitado).
+ * Internal frame for CRUD of servicios (nom_servicio, precio_kilo, habilitado, activado).
+ * Filters to show only services with activado = 1.
  */
 public class frmServicios extends JInternalFrame {
     private final JTextField txtSearch = new JTextField();
@@ -372,6 +373,7 @@ public class frmServicios extends JInternalFrame {
         String tipo; // 'k','s','p'
         float precio;
         int habil;
+        int activado; // Nueva columna
     }
 
     private static class ServiciosTableModel extends AbstractTableModel {
@@ -428,7 +430,7 @@ public class frmServicios extends JInternalFrame {
 
     private void loadPage(int page) {
         model.setRows(new ArrayList<>());
-        String where = " WHERE 1=1 ";
+        String where = " WHERE activado = 1 ";
         List<Object> params = new ArrayList<>();
         String q = txtSearch.getText().trim();
         if (!q.isEmpty()) {
@@ -447,7 +449,7 @@ public class frmServicios extends JInternalFrame {
             }
             currentPage = Math.min(page, totalPages);
             int offset = (currentPage - 1) * pageSize;
-            String sql = "SELECT id, nom_servicio, tipo_servicio, precio_kilo, habilitado FROM servicios" + where
+            String sql = "SELECT id, nom_servicio, tipo_servicio, precio_kilo, habilitado, activado FROM servicios" + where
                     + " ORDER BY id DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 int idx = 1;
@@ -464,6 +466,7 @@ public class frmServicios extends JInternalFrame {
                         s.tipo = rs.getString(3);
                         s.precio = rs.getFloat(4);
                         s.habil = rs.getInt(5);
+                        s.activado = rs.getInt(6);
                         list.add(s);
                     }
                     model.setRows(list);

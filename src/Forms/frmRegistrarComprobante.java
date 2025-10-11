@@ -521,7 +521,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      * Load enabled servicios from MariaDB and populate cbxServicio.
      */
     private void loadServicios() {
-        final String sql = "SELECT nom_servicio FROM servicios WHERE habilitado = 1 ORDER BY nom_servicio";
+        final String sql = "SELECT nom_servicio FROM servicios WHERE habilitado = 1 AND activado = 1 ORDER BY nom_servicio";
         try (Connection conn = DatabaseConfig.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql);
                 ResultSet rs = stmt.executeQuery()) {
@@ -1131,7 +1131,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
      */
     private double getPrecioServicio(String serviceName) {
         // Query to get the price from the database
-        final String sql = "SELECT precio_kilo FROM servicios WHERE nom_servicio = ? AND habilitado = 1";
+        final String sql = "SELECT precio_kilo FROM servicios WHERE nom_servicio = ? AND habilitado = 1 AND activado = 1";
         try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, serviceName);
             try (ResultSet rs = stmt.executeQuery()) {
