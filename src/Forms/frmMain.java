@@ -24,13 +24,20 @@ public class frmMain extends javax.swing.JFrame {
         initComponents();
         setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximize the window
         setIconImage(new javax.swing.ImageIcon(getClass().getResource("/Forms/icon.png")).getImage());
-        // Set cursor to pointer for menus
-        menuRegistrar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuConsultar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuOpcionesAvanzadas.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuCaja.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuReportes.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuSalir.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        // Set cursor to pointer for menus (safe checks)
+        java.awt.Cursor hand = new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR);
+        if (menuRegistrar != null)
+            menuRegistrar.setCursor(hand);
+        if (menuConsultar != null)
+            menuConsultar.setCursor(hand);
+        if (menuOpcionesAvanzadas != null)
+            menuOpcionesAvanzadas.setCursor(hand);
+        if (menuCaja != null)
+            menuCaja.setCursor(hand);
+        if (menuReportes != null)
+            menuReportes.setCursor(hand);
+        if (menuSalir != null)
+            menuSalir.setCursor(hand);
 
         // Set cursor to pointer for submenu items
         menuRegistrarComprobante.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -45,8 +52,9 @@ public class frmMain extends javax.swing.JFrame {
         menuReportesFinancieros.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuReportesCargaTrabajo.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         menuReportesExportarComprobantes.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuReportesHistorico.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        menuReportesRecogidosCancelados.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        menuReportesHistorico.setCursor(hand);
+        if (menuReportesRecogidosCancelados != null)
+            menuReportesRecogidosCancelados.setCursor(hand);
 
         // Custom action for menu Salir
         menuSalir.addMouseListener(new MouseListener() {
@@ -131,6 +139,31 @@ public class frmMain extends javax.swing.JFrame {
                 openComprobantesRecogidosCancelados();
             }
         });
+        // Mover 'Historico comprobantes' y 'Recogidos y Cancelados' del menú Reportes
+        // al menú Consultar, colocándolos encima del submenú 'Clientes'
+        try {
+            int idxClientes = -1;
+            for (int i = 0; i < menuConsultar.getItemCount(); i++) {
+                javax.swing.JMenuItem it = menuConsultar.getItem(i);
+                if (it == menuConsultarClientes) {
+                    idxClientes = i;
+                    break;
+                }
+            }
+            if (idxClientes >= 0) {
+                // quitar del menú Reportes para evitar duplicados
+                if (menuReportesHistorico.getParent() == menuReportes)
+                    menuReportes.remove(menuReportesHistorico);
+                if (menuReportesRecogidosCancelados != null
+                        && menuReportesRecogidosCancelados.getParent() == menuReportes)
+                    menuReportes.remove(menuReportesRecogidosCancelados);
+                // insertar en Consultar, justo antes de 'Clientes'
+                menuConsultar.insert(menuReportesHistorico, idxClientes);
+                if (menuReportesRecogidosCancelados != null)
+                    menuConsultar.insert(menuReportesRecogidosCancelados, idxClientes + 1);
+            }
+        } catch (Exception ignored) {
+        }
         menuReportesFinancieros.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 // close existing instances first
@@ -296,6 +329,7 @@ public class frmMain extends javax.swing.JFrame {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated
     // <editor-fold defaultstate="collapsed" desc="Generated
+    // <editor-fold defaultstate="collapsed" desc="Generated
     // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -312,14 +346,11 @@ public class frmMain extends javax.swing.JFrame {
         menuOpcionesAvanzadas = new javax.swing.JMenu();
         menuAvanzadoServicios = new javax.swing.JMenuItem();
         menuAvanzadoUsuarios = new javax.swing.JMenuItem();
-        menuCaja = new javax.swing.JMenu();
-        menuCajaCerrar = new javax.swing.JMenuItem();
         menuReportes = new javax.swing.JMenu();
         menuReportesFinancieros = new javax.swing.JMenuItem();
         menuReportesCargaTrabajo = new javax.swing.JMenuItem();
         menuReportesExportarComprobantes = new javax.swing.JMenuItem();
         menuReportesHistorico = new javax.swing.JMenuItem();
-        menuReportesRecogidosCancelados = new javax.swing.JMenuItem();
         menuSalir = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -359,7 +390,7 @@ public class frmMain extends javax.swing.JFrame {
         menuConsultar.setText("Consultar");
         menuConsultar.setMargin(new java.awt.Insets(3, 8, 3, 8));
 
-        menuConsultarTodosComprobantes.setText("Todos los Comprobantes");
+        menuConsultarTodosComprobantes.setText("Todos los Comprobantes (MENOS LOS RECOGIDOS o ANULADOS)");
         menuConsultarTodosComprobantes.setMargin(new java.awt.Insets(3, 6, 4, 6));
         menuConsultar.add(menuConsultarTodosComprobantes);
 
@@ -390,13 +421,14 @@ public class frmMain extends javax.swing.JFrame {
 
         jMenuBar1.add(menuOpcionesAvanzadas);
 
+        // --- Caja menu (re-added) ---
+        menuCaja = new javax.swing.JMenu();
         menuCaja.setText("Caja");
         menuCaja.setMargin(new java.awt.Insets(3, 8, 3, 8));
-
+        menuCajaCerrar = new javax.swing.JMenuItem();
         menuCajaCerrar.setText("Cerrar Caja");
         menuCajaCerrar.setMargin(new java.awt.Insets(3, 6, 4, 6));
         menuCaja.add(menuCajaCerrar);
-
         jMenuBar1.add(menuCaja);
 
         menuReportes.setText("Reportes");
@@ -414,10 +446,13 @@ public class frmMain extends javax.swing.JFrame {
         menuReportesExportarComprobantes.setMargin(new java.awt.Insets(3, 6, 4, 6));
         menuReportes.add(menuReportesExportarComprobantes);
 
-        menuReportesHistorico.setText("Historico comprobantes");
+        menuReportesHistorico.setText("Historico comprobantes (ABSOLUTAMENTE TODOS)");
         menuReportesHistorico.setMargin(new java.awt.Insets(3, 6, 4, 6));
         menuReportes.add(menuReportesHistorico);
 
+        // Add 'Recogidos y Cancelados' so it exists; later we may relocate it to
+        // Consultar
+        menuReportesRecogidosCancelados = new javax.swing.JMenuItem();
         menuReportesRecogidosCancelados.setText("Recogidos y Cancelados");
         menuReportesRecogidosCancelados.setMargin(new java.awt.Insets(3, 6, 4, 6));
         menuReportes.add(menuReportesRecogidosCancelados);
