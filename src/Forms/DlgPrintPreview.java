@@ -133,7 +133,9 @@ public class DlgPrintPreview extends JDialog {
         // Append fixed footer notice to HTML preview if not already present
         try {
             // Both lines wrapped inside <b>...</b> so the entire notice appears bold
-            String footerHtml = "<div style=\"margin-top:12px;font-size:11px;line-height:1.2;\"><b>El tiempo máximo para recoger su prenda es de 15 días.<br/>Una vez retirada la prenda o reparación, no se aceptarán reclamos.</b></div>";
+            int dias = Forms.ConfigUtils.getMaxDiasRecojo();
+            String footerHtml = "<div style=\"margin-top:12px;font-size:11px;line-height:1.2;\"><b>El tiempo máximo para recoger su prenda es de "
+                    + dias + " días.<br/>Una vez retirada la prenda o reparación, no se aceptarán reclamos.</b></div>";
             String current = editor.getText();
             if (current != null && !current.toUpperCase().contains("TIEMPO MÁXIMO PARA RECOGER")
                     && !current.contains("no se aceptarán reclamos")) {
@@ -473,7 +475,9 @@ public class DlgPrintPreview extends JDialog {
                         message += "\nTOTAL ABONADO: S/. " + montoStr;
                         // Append footer immediately after DEUDA line with double asterisks for WhatsApp
                         // bold
-                        message += "\n\n**El tiempo máximo para recoger su prenda es de 15 días.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
+                        int dias = Forms.ConfigUtils.getMaxDiasRecojo();
+                        message += "\n\n**El tiempo máximo para recoger su prenda es de " + dias
+                                + " días.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
                     }
                 }
             }
@@ -482,7 +486,9 @@ public class DlgPrintPreview extends JDialog {
         // For comprobantes without DEUDA, append footer at the end if not already
         // present
         if (!message.contains("tiempo máximo para recoger")) {
-            message += "\n\n**El tiempo máximo para recoger su prenda es de 15 días.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
+            int dias = Forms.ConfigUtils.getMaxDiasRecojo();
+            message += "\n\n**El tiempo máximo para recoger su prenda es de " + dias
+                    + " días.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
         }
         message = message.trim();
 

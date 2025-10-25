@@ -274,20 +274,21 @@ public class DlgEditarComprobante extends JDialog {
 
     private void updateInfo() {
         float deuda = costoTotal - montoAbonadoPrevio;
-        
+
         // Si hay descuento, mostrar totales sin y con descuento
         if (descuento > 0.0f) {
             // costo_total ya es el total final (con descuento aplicado)
             float totalConDescuento = costoTotal;
             float totalSinDescuento = totalConDescuento / (1.0f - (descuento / 100.0f));
             float descuentoMonto = totalSinDescuento - totalConDescuento;
-            
-            lblInfo.setText(String.format("<html>Total sin descuento: %.2f<br/>Descuento: %.1f%% (S/. %.2f)<br/>Total con descuento: %.2f  |  DEUDA: S/. %.2f</html>", 
-                totalSinDescuento, descuento, descuentoMonto, totalConDescuento, deuda));
+
+            lblInfo.setText(String.format(
+                    "<html>Total sin descuento: %.2f<br/>Descuento: %.1f%% (S/. %.2f)<br/>Total con descuento: %.2f  |  DEUDA: S/. %.2f</html>",
+                    totalSinDescuento, descuento, descuentoMonto, totalConDescuento, deuda));
         } else {
             lblInfo.setText(String.format("Total: %.2f  |  DEUDA: S/. %.2f", costoTotal, deuda));
         }
-        
+
         lblTotalAbonado.setText(String.format("TOTAL ABONADO: S/. %.2f", montoAbonadoPrevio));
         loadAbonos();
     }
@@ -626,12 +627,16 @@ public class DlgEditarComprobante extends JDialog {
                                 double totalConDescuento = (double) costoTotal;
                                 double totalSinDescuento = totalConDescuento / (1.0 - (descuento / 100.0));
                                 double descuentoMonto = totalSinDescuento - totalConDescuento;
-                                
-                                msgSb.append(String.format(java.util.Locale.US, "TOTAL SIN DESCUENTO: %.2f\n", totalSinDescuento));
-                                msgSb.append(String.format(java.util.Locale.US, "DESCUENTO: %.1f%% (S/. %.2f)\n", (double)descuento, descuentoMonto));
-                                msgSb.append(String.format(java.util.Locale.US, "TOTAL CON DESCUENTO: %.2f\n\n", totalConDescuento));
+
+                                msgSb.append(String.format(java.util.Locale.US, "TOTAL SIN DESCUENTO: %.2f\n",
+                                        totalSinDescuento));
+                                msgSb.append(String.format(java.util.Locale.US, "DESCUENTO: %.1f%% (S/. %.2f)\n",
+                                        (double) descuento, descuentoMonto));
+                                msgSb.append(String.format(java.util.Locale.US, "TOTAL CON DESCUENTO: %.2f\n\n",
+                                        totalConDescuento));
                             } else {
-                                msgSb.append(String.format(java.util.Locale.US, "TOTAL: %.2f\n\n", (double) costoTotal));
+                                msgSb.append(
+                                        String.format(java.util.Locale.US, "TOTAL: %.2f\n\n", (double) costoTotal));
                             }
 
                             // ABONOS: show payment history from reporte_ingresos
@@ -688,7 +693,7 @@ public class DlgEditarComprobante extends JDialog {
                                             codComprobanteLocal = rsCodLocal.getString("cod_comprobante");
                                     }
                                 }
-                                
+
                                 // Calculate real total paid so far from reporte_ingresos
                                 double totalRealmenteAbonado = 0.0;
                                 if (codComprobanteLocal != null && !codComprobanteLocal.isBlank()) {
@@ -702,20 +707,23 @@ public class DlgEditarComprobante extends JDialog {
                                         }
                                     }
                                 }
-                                
+
                                 // Add the new payment being made (montoNuevo) to get the updated total
                                 double totalAbonadoConNuevoPago = totalRealmenteAbonado + montoNuevo;
-                                
-                                // Calculate debt based on total cost (already with discount applied) minus total paid
+
+                                // Calculate debt based on total cost (already with discount applied) minus
+                                // total paid
                                 double deuda = Math.max(0d, (double) costoTotal - totalAbonadoConNuevoPago);
-                                
+
                                 msgSb.append(String.format(java.util.Locale.US, "DEUDA: S/. %.2f\n", deuda));
-                                msgSb.append(String.format(java.util.Locale.US, "TOTAL ABONADO: S/. %.2f\n\n", totalAbonadoConNuevoPago));
+                                msgSb.append(String.format(java.util.Locale.US, "TOTAL ABONADO: S/. %.2f\n\n",
+                                        totalAbonadoConNuevoPago));
                             } catch (Exception ignore) {
                             }
 
                             // Footer (WhatsApp bold with single asterisks as requested)
-                            msgSb.append("*El tiempo máximo para recoger su prenda es de 15 días.*\n");
+                            int dias = Forms.ConfigUtils.getMaxDiasRecojo();
+                            msgSb.append("*El tiempo máximo para recoger su prenda es de " + dias + " días.*\n");
                             msgSb.append("*Una vez retirada la prenda, no se aceptarán reclamos.*");
 
                             String message = msgSb.toString();

@@ -2253,12 +2253,12 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                                 } catch (Exception ignore) {
                                 }
 
-                                sbMsg.append("\n");
-                                sbMsg.append("*El tiempo máximo para recoger su prenda es de 15 días.*\n");
-                                sbMsg.append("*Una vez retirada la prenda, no se aceptarán reclamos.*");
-
-                                String text = sbMsg.toString().trim();
-                                if (text.length() > 3000)
+                                                                sbMsg.append("\n");
+                                                                int dias = Forms.ConfigUtils.getMaxDiasRecojo();
+                                                                sbMsg.append("*El tiempo máximo para recoger su prenda es de " + dias + " días.*\n");
+                                                                sbMsg.append("*Una vez retirada la prenda, no se aceptarán reclamos.*");
+                                
+                                                                String text = sbMsg.toString().trim();                                if (text.length() > 3000)
                                     text = text.substring(0, 3000);
                                 String req = "https://api.textmebot.com/send.php?recipient="
                                         + java.net.URLEncoder.encode(recipient, "UTF-8")
