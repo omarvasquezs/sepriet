@@ -124,9 +124,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
         filtersRow.add(btnBuscar);
         filtersRow.add(btnReset);
         filtersRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        // Listener para actualizar estadísticas al cambiar la fecha seleccionada
+        // Listener para actualizar estadísticas SOLO si FECHA HOY DÍA está seleccionada
         filterFecha.getDateEditor().addPropertyChangeListener(evt -> {
-            if ("date".equals(evt.getPropertyName())) {
+            if ("date".equals(evt.getPropertyName()) && chkFechaHoy.isSelected()) {
                 updateDateStats();
             }
         });
@@ -432,7 +432,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
 
     private void onBuscar(ActionEvent e) {
         loadPage(1);
-        updateDateStats();
+        // Solo actualizar estadísticas si NO está seleccionado FECHA HOY DÍA
+        if (!chkFechaHoy.isSelected()) {
+            updateDateStats();
+        }
     }
 
     private void openPrintPreview() {
