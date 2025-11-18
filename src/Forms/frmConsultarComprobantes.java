@@ -60,6 +60,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
     // Labels para mostrar información de caja
     private final JLabel lblCajaApertura = new JLabel("");
     private final JLabel lblCajaCierre = new JLabel("");
+    // Label para mostrar suma total de deuda
+    private final JLabel lblSumaDeuda = new JLabel("");
     private int currentPage = 1;
     private int totalPages = 1;
     // page size is configurable by the user; default to 50
@@ -155,6 +157,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         lblComprobanteYapePlin.setFont(lblComprobanteYapePlin.getFont().deriveFont(Font.BOLD));
         lblCajaApertura.setFont(lblCajaApertura.getFont().deriveFont(Font.BOLD));
         lblCajaCierre.setFont(lblCajaCierre.getFont().deriveFont(Font.BOLD));
+        lblSumaDeuda.setFont(lblSumaDeuda.getFont().deriveFont(Font.BOLD, 14f));
 
         lblCantidadComprobantes.setForeground(new Color(0, 100, 0)); // Verde oscuro
         lblTotalAbonos.setForeground(new Color(0, 0, 150)); // Azul oscuro
@@ -166,6 +169,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         lblComprobanteYapePlin.setForeground(new Color(148, 0, 211)); // Violeta oscuro
         lblCajaApertura.setForeground(new Color(0, 102, 204)); // Azul
         lblCajaCierre.setForeground(new Color(204, 102, 0)); // Naranja
+        lblSumaDeuda.setForeground(new Color(180, 0, 0)); // Rojo más intenso
 
         // Alineación a la izquierda para todos los labels
         lblCantidadComprobantes.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -178,6 +182,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         lblComprobanteYapePlin.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblCajaApertura.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblCajaCierre.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblSumaDeuda.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Hide labels condicionales by default; only show when "FECHA HOY DÍA" is
         // active
@@ -189,6 +194,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         lblComprobanteYapePlin.setVisible(false);
         lblCajaApertura.setVisible(false);
         lblCajaCierre.setVisible(false);
+        lblSumaDeuda.setVisible(false);
 
         // Agregar labels al panel vertical
         statsPanel.add(lblCantidadComprobantes);
@@ -210,6 +216,8 @@ public class frmConsultarComprobantes extends JInternalFrame {
         statsPanel.add(lblCajaApertura);
         statsPanel.add(Box.createVerticalStrut(4));
         statsPanel.add(lblCajaCierre);
+        statsPanel.add(Box.createVerticalStrut(8));
+        statsPanel.add(lblSumaDeuda);
 
         statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         top.add(statsPanel);
@@ -919,6 +927,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
         return estadoRopaPanel;
     }
 
+    protected javax.swing.JLabel getLblSumaDeuda() {
+        return lblSumaDeuda;
+    }
+
     private void updateEstadoButtonLabel() {
         // counter removed - no UI update needed
     }
@@ -934,11 +946,129 @@ public class frmConsultarComprobantes extends JInternalFrame {
         chkFechaHoy.setSelected(false); // Desmarcar checkbox fecha hoy
         updateEstadoButtonLabel();
         updateDateStats(); // Limpiar estadísticas cuando se resetea
+        lblSumaDeuda.setText("");
+        lblSumaDeuda.setVisible(false);
     }
 
     private void onEdited() {
         loadPage(currentPage);
         updateDateStats(); // Actualizar estadísticas después de editar
+    }
+
+    protected void calculateSumaDeuda() {
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            if (conn == null) {
+                lblSumaDeuda.setText("");
+                lblSumaDeuda.setVisible(false);
+                return;
+            }
+
+            // Construir WHERE clause con los mismos filtros que loadPage
+            StringBuilder where = new StringBuilder(" WHERE c.activado=1 ");
+            
+            // Pre-filters según el modo
+            if (mode == Mode.DEFAULT) {
+                // DEFAULT: exclude RECOGIDO(4) from estado_ropa, exclude ANULADO(3) from estado_comprobante
+                where.append(" AND c.estado_ropa_id!=4 AND c.estado_comprobante_id!=3 ");
+            }
+
+            List<Object> params = new ArrayList<>();
+
+            // Filter: COD
+            String cod = filterCod.getText().trim();
+            if (!cod.isEmpty()) {
+                where.append(" AND c.cod_comprobante LIKE ? ");
+                params.add('%' + cod + '%');
+            }
+
+            // Filter: CLIENTE
+            String clienteVal = (filterCliente.getEditor().getItem() != null
+                    ? filterCliente.getEditor().getItem().toString().trim()
+                    : "");
+            if (!clienteVal.isEmpty()) {
+                where.append(" AND cl.nombres LIKE ? ");
+                params.add('%' + clienteVal + '%');
+            }
+
+            // Filter: ESTADO ROPA (multi-select checkboxes)
+            List<Integer> selRopa = new ArrayList<>();
+            for (JCheckBox it : estadoRopaItems)
+                if (it.isSelected())
+                    try {
+                        selRopa.add(Integer.parseInt(it.getActionCommand()));
+                    } catch (Exception ignore) {
+                    }
+            List<Integer> selComp = new ArrayList<>();
+            for (JCheckBox it : estadoComprobanteItems)
+                if (it.isSelected())
+                    try {
+                        selComp.add(Integer.parseInt(it.getActionCommand()));
+                    } catch (Exception ignore) {
+                    }
+            if (!selRopa.isEmpty() && !selComp.isEmpty()) {
+                where.append(" AND c.estado_ropa_id IN (");
+                for (int i = 0; i < selRopa.size(); i++) {
+                    where.append(i == 0 ? "?" : ",?");
+                    params.add(selRopa.get(i));
+                }
+                where.append(") ");
+                where.append(" AND c.estado_comprobante_id IN (");
+                for (int i = 0; i < selComp.size(); i++) {
+                    where.append(i == 0 ? "?" : ",?");
+                    params.add(selComp.get(i));
+                }
+                where.append(") ");
+            } else if (!selRopa.isEmpty()) {
+                where.append(" AND c.estado_ropa_id IN (");
+                for (int i = 0; i < selRopa.size(); i++) {
+                    where.append(i == 0 ? "?" : ",?");
+                    params.add(selRopa.get(i));
+                }
+                where.append(") ");
+            } else if (!selComp.isEmpty()) {
+                where.append(" AND c.estado_comprobante_id IN (");
+                for (int i = 0; i < selComp.size(); i++) {
+                    where.append(i == 0 ? "?" : ",?");
+                    params.add(selComp.get(i));
+                }
+                where.append(") ");
+            }
+
+            // Filter: FECHA (date part)
+            Date d = filterFecha.getDate();
+            if (d != null) {
+                where.append(" AND DATE(c.fecha) = ? ");
+                params.add(new java.sql.Date(d.getTime()));
+            }
+
+            // Filtro adicional: solo comprobantes con estado DEBE (1) o ABONO (2)
+            where.append(" AND c.estado_comprobante_id IN (1, 2) ");
+
+            // Query para sumar la deuda
+            String sqlSum = "SELECT COALESCE(SUM(c.costo_total - IFNULL(c.monto_abonado, 0)), 0) as suma_deuda " +
+                    "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id = cl.id" + where;
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlSum)) {
+                for (int i = 0; i < params.size(); i++) {
+                    Object p = params.get(i);
+                    if (p instanceof java.sql.Date)
+                        ps.setDate(i + 1, (java.sql.Date) p);
+                    else
+                        ps.setObject(i + 1, p);
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        double sumaDeuda = rs.getDouble("suma_deuda");
+                        lblSumaDeuda.setText(String.format("DEUDA TOTAL: S/. %.2f", sumaDeuda));
+                        lblSumaDeuda.setVisible(true);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Error calculando suma de deuda: " + ex.getMessage());
+            lblSumaDeuda.setText("");
+            lblSumaDeuda.setVisible(false);
+        }
     }
 
     protected void updateDateStats() {

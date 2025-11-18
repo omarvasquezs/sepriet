@@ -11,6 +11,12 @@ public class frmConsultarComprobantesNoCancelados extends frmConsultarComprobant
     public frmConsultarComprobantesNoCancelados() {
         super(Mode.RECIBIDOS);
         setTitle("Comprobantes NO Cancelados");
+        // Hacer visible el label de suma de deuda desde el inicio
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            if (getLblSumaDeuda() != null) {
+                getLblSumaDeuda().setVisible(true);
+            }
+        });
     }
 
     @Override
@@ -51,6 +57,23 @@ public class frmConsultarComprobantesNoCancelados extends frmConsultarComprobant
                 }
             }
         } catch (Exception ignore) {
+        }
+    }
+
+    @Override
+    protected void loadPage(int page) {
+        super.loadPage(page);
+        // Calcular suma de deuda después de cargar la página
+        calculateSumaDeuda();
+    }
+
+    @Override
+    protected void resetFilters() {
+        super.resetFilters();
+        // Mantener el label visible pero vacío
+        if (getLblSumaDeuda() != null) {
+            getLblSumaDeuda().setText("");
+            getLblSumaDeuda().setVisible(true);
         }
     }
 }
