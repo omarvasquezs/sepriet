@@ -39,6 +39,8 @@ public class frmReporteFinanciero extends JInternalFrame {
     private final JLabel lblEfectivo = new JLabel("EFECTIVO TOTAL: 0.00");
     private final JLabel lblYape = new JLabel("YAPE / PLIN TOTAL: 0.00");
     private final JLabel lblTotalIngresos = new JLabel("INGRESOS TOTALES EN SOLES: 0.00");
+    private final JLabel lblApertura = new JLabel("APERTURA CAJA: -");
+    private final JLabel lblCierre = new JLabel("CIERRE CAJA: -");
 
     private final DefaultTableModel model = new DefaultTableModel(
             new String[] { "COMPROBANTE", "CLIENTE", "FECHA DE ABONO", "METODO DE PAGO", "MONTO ABONADO" }, 0) {
@@ -119,6 +121,7 @@ public class frmReporteFinanciero extends JInternalFrame {
                     } finally {
                         suppressDateChange = false;
                     }
+                    loadPage(1);
                 }
             }
         });
@@ -143,6 +146,7 @@ public class frmReporteFinanciero extends JInternalFrame {
                     } finally {
                         suppressDateChange = false;
                     }
+                    loadPage(1);
                 }
             }
         });
@@ -235,8 +239,10 @@ public class frmReporteFinanciero extends JInternalFrame {
         });
 
         // summary panel under filters
-        JPanel summary = new JPanel(new GridLayout(4, 1, 4, 4));
+        JPanel summary = new JPanel(new GridLayout(6, 1, 4, 4));
         summary.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        summary.add(lblApertura);
+        summary.add(lblCierre);
         summary.add(lblFilas);
         summary.add(lblEfectivo);
         summary.add(lblYape);
@@ -533,6 +539,78 @@ public class frmReporteFinanciero extends JInternalFrame {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error cargando reporte:\n" + ex.getMessage(), "Error",
                     JOptionPane.ERROR_MESSAGE);
+        }
+        updateCajaInfo();
+    }
+
+    private void updateCajaInfo() {
+        // Logic:
+        // 1. If chkMes is selected -> Hide
+        // 2. If range selected (start != end) -> Hide
+        // 3. If single day selected (start == end) -> Show for that day
+        // 4. If no filter (start/end null) -> Show for Today (Default)
+
+        Date targetDate = null;
+
+        if (chkMes.isSelected()) {
+            targetDate = null;
+        } else if (startDate.getDate() != null && endDate.getDate() != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+            String s = sdf.format(startDate.getDate());
+            String e = sdf.format(endDate.getDate());
+            if (s.equals(e)) {
+                targetDate = startDate.getDate();
+            } else {
+                targetDate = null;
+            }
+        } else if (startDate.getDate() == null && endDate.getDate() == null) {
+            // Default to today
+            targetDate = new Date();
+        }
+
+        if (targetDate == null) {
+            lblApertura.setText("APERTURA CAJA: -");
+            lblCierre.setText("CIERRE CAJA: -");
+            return;
+        }
+
+        // Query DB
+        String sql = "SELECT monto_apertura, monto_cierre FROM caja_apertura_cierre " +
+                "WHERE DATE(datetime_apertura) = ? ORDER BY id DESC LIMIT 1";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDate(1, new java.sql.Date(targetDate.getTime()));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    double ap = rs.getDouble("monto_apertura");
+                    double ci = rs.getDouble("monto_cierre");
+                    // Check if cierre is null (it might be 0.00 if primitive, but in DB it is NULL)
+                    // rs.getDouble returns 0.0 if NULL. We should check wasNull.
+
+                    lblApertura.setText("APERTURA CAJA: " + formatNumber(ap));
+
+                    // Check if monto_cierre was actually null in DB
+                    // However, getDouble returns 0 if null.
+                    // Let's check object to be sure or just assume 0 means not closed if we rely on
+                    // logic?
+                    // The DB has NULL for datetime_cierre and monto_cierre.
+                    // Let's retrieve as Object to check null.
+                    Object ciObj = rs.getObject("monto_cierre");
+                    if (ciObj == null) {
+                        lblCierre.setText("CIERRE CAJA: -");
+                    } else {
+                        lblCierre.setText("CIERRE CAJA: " + formatNumber(ci));
+                    }
+                } else {
+                    lblApertura.setText("APERTURA CAJA: 0.00");
+                    lblCierre.setText("CIERRE CAJA: -");
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            lblApertura.setText("APERTURA CAJA: Error");
+            lblCierre.setText("CIERRE CAJA: Error");
         }
     }
 
