@@ -539,7 +539,7 @@ public class DlgEditarComprobante extends JDialog {
                         break;
                     }
                 }
-                if ("LISTO PARA RECOGER".equals(chosenRopaLabel)) {
+                if ("LISTO PARA RECOGER".equals(chosenRopaLabel) || "RECOGIDO".equals(chosenRopaLabel)) {
                     // lookup cod_comprobante and client phone (may be null)
                     String cod = null;
                     String telefonoCliente = null;
@@ -585,8 +585,9 @@ public class DlgEditarComprobante extends JDialog {
                             String msgCode = cod == null ? "" : cod;
                             // Build a multi-line message with details, totals and debt
                             StringBuilder msgSb = new StringBuilder();
-                            msgSb.append("Para informarle que sus prendas ya estan listas para recoger.")
-                                    .append("\n\n");
+                            if ("LISTO PARA RECOGER".equals(chosenRopaLabel)) {
+                                msgSb.append("Para informarle que sus prendas ya estan listas para recoger.")
+                                        .append("\n\n");
                             if (msgCode != null && !msgCode.isBlank()) {
                                 msgSb.append("Comprobante: ").append(msgCode).append("\n\n");
                             }
@@ -725,6 +726,10 @@ public class DlgEditarComprobante extends JDialog {
                             int dias = Forms.ConfigUtils.getMaxDiasRecojo();
                             msgSb.append("*El tiempo máximo para recoger su prenda es de " + dias + " días.*\n");
                             msgSb.append("*Una vez retirada la prenda, no se aceptarán reclamos.*");
+                            } else if ("RECOGIDO".equals(chosenRopaLabel)) {
+                                msgSb.append("Gracias por confiar en nosotros ✨Esperamos que el servicio haya sido de tu total satisfacción.\n");
+                                msgSb.append("¡Será un gusto atenderte nuevamente!");
+                            }
 
                             String message = msgSb.toString();
                             boolean ok = sendWhatsAppViaTextmebot(selectedCountryCode, phone, message);
