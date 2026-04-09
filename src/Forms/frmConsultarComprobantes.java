@@ -30,6 +30,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private boolean hasEstadoRopa = false;
     private boolean hasEstadoComprobante = false;
     private final JDateChooser filterFecha = new JDateChooser();
+    private final JDateChooser filterFechaHasta = new JDateChooser();
     private final JCheckBox chkFechaHoy = new JCheckBox("FECHA HOY DÍA");
     private final JButton btnBuscar = new JButton("Buscar");
     private final JButton btnReset = new JButton("Resetear");
@@ -114,14 +115,17 @@ public class frmConsultarComprobantes extends JInternalFrame {
         filterCliente.setPreferredSize(new Dimension(180, 24));
         filterCliente.setEditable(true);
         filterFecha.setPreferredSize(new Dimension(130, 24));
+        filterFechaHasta.setPreferredSize(new Dimension(130, 24));
         filtersRow.add(new JLabel("Código:"));
         filtersRow.add(filterCod);
         filtersRow.add(new JLabel("Cliente:"));
         filtersRow.add(filterCliente);
         // "Estados:" label removed per request; estadoPanel will be placed on its own
         // line
-        filtersRow.add(new JLabel("Fecha:"));
+        filtersRow.add(new JLabel("Desde:"));
         filtersRow.add(filterFecha);
+        filtersRow.add(new JLabel("Hasta:"));
+        filtersRow.add(filterFechaHasta);
         filtersRow.add(chkFechaHoy);
         filtersRow.add(btnBuscar);
         filtersRow.add(btnReset);
@@ -238,11 +242,13 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 if (chkFechaHoy.isSelected()) {
                     // Establecer fecha de hoy
                     filterFecha.setDate(new java.util.Date());
+                    filterFechaHasta.setDate(new java.util.Date());
                     // Simular clic en buscar
                     btnBuscar.doClick();
                 } else {
                     // Si se desmarca, limpiar la fecha
                     filterFecha.setDate(null);
+                    filterFechaHasta.setDate(null);
                     // Simular clic en buscar para actualizar resultados
                     btnBuscar.doClick();
                 }
@@ -943,6 +949,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         for (JCheckBox it : estadoComprobanteItems)
             it.setSelected(true);
         filterFecha.setDate(null);
+        filterFechaHasta.setDate(null);
         chkFechaHoy.setSelected(false); // Desmarcar checkbox fecha hoy
         updateEstadoButtonLabel();
         updateDateStats(); // Limpiar estadísticas cuando se resetea
@@ -1035,10 +1042,18 @@ public class frmConsultarComprobantes extends JInternalFrame {
             }
 
             // Filter: FECHA (date part)
-            Date d = filterFecha.getDate();
-            if (d != null) {
-                where.append(" AND DATE(c.fecha) = ? ");
-                params.add(new java.sql.Date(d.getTime()));
+            Date d1 = filterFecha.getDate();
+            Date d2 = filterFechaHasta.getDate();
+            if (d1 != null && d2 != null) {
+                where.append(" AND DATE(c.fecha) BETWEEN ? AND ? ");
+                params.add(new java.sql.Date(d1.getTime()));
+                params.add(new java.sql.Date(d2.getTime()));
+            } else if (d1 != null) {
+                where.append(" AND DATE(c.fecha) >= ? ");
+                params.add(new java.sql.Date(d1.getTime()));
+            } else if (d2 != null) {
+                where.append(" AND DATE(c.fecha) <= ? ");
+                params.add(new java.sql.Date(d2.getTime()));
             }
 
             // Filtro adicional: solo comprobantes con estado DEBE (1) o ABONO (2)
@@ -1414,10 +1429,18 @@ public class frmConsultarComprobantes extends JInternalFrame {
             }
 
             // Filter: FECHA (date part)
-            Date d = filterFecha.getDate();
-            if (d != null) {
-                where.append(" AND DATE(c.fecha) = ? ");
-                params.add(new java.sql.Date(d.getTime()));
+            Date d1 = filterFecha.getDate();
+            Date d2 = filterFechaHasta.getDate();
+            if (d1 != null && d2 != null) {
+                where.append(" AND DATE(c.fecha) BETWEEN ? AND ? ");
+                params.add(new java.sql.Date(d1.getTime()));
+                params.add(new java.sql.Date(d2.getTime()));
+            } else if (d1 != null) {
+                where.append(" AND DATE(c.fecha) >= ? ");
+                params.add(new java.sql.Date(d1.getTime()));
+            } else if (d2 != null) {
+                where.append(" AND DATE(c.fecha) <= ? ");
+                params.add(new java.sql.Date(d2.getTime()));
             }
             String sqlCount = "SELECT COUNT(*) FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id" + where;
             try (PreparedStatement ps = conn.prepareStatement(sqlCount)) {
