@@ -373,7 +373,6 @@ public class frmServicios extends JInternalFrame {
         String tipo; // 'k','s','p'
         float precio;
         int habil;
-        int activado; // Nueva columna
     }
 
     private static class ServiciosTableModel extends AbstractTableModel {
@@ -466,7 +465,7 @@ public class frmServicios extends JInternalFrame {
                         s.tipo = rs.getString(3);
                         s.precio = rs.getFloat(4);
                         s.habil = rs.getInt(5);
-                        s.activado = rs.getInt(6);
+                        
                         list.add(s);
                     }
                     model.setRows(list);
