@@ -241,6 +241,14 @@ public class frmMain extends javax.swing.JFrame {
                 dlg.setVisible(true);
             }
         });
+        
+        // Caja - Ver Estado / Egresos
+        menuCajaEstado.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DlgEstadoCaja dlg = new DlgEstadoCaja(frmMain.this, currentUserId);
+                dlg.setVisible(true);
+            }
+        });
     }
 
     /**
@@ -425,6 +433,12 @@ public class frmMain extends javax.swing.JFrame {
         menuCaja = new javax.swing.JMenu();
         menuCaja.setText("Caja");
         menuCaja.setMargin(new java.awt.Insets(3, 8, 3, 8));
+        
+        menuCajaEstado = new javax.swing.JMenuItem();
+        menuCajaEstado.setText("Estado de Caja / Egresos");
+        menuCajaEstado.setMargin(new java.awt.Insets(3, 6, 4, 6));
+        menuCaja.add(menuCajaEstado);
+
         menuCajaCerrar = new javax.swing.JMenuItem();
         menuCajaCerrar.setText("Cerrar Caja");
         menuCajaCerrar.setMargin(new java.awt.Insets(3, 6, 4, 6));
@@ -603,6 +617,7 @@ public class frmMain extends javax.swing.JFrame {
     private javax.swing.JMenuItem menuReportesRecogidosCancelados;
     private javax.swing.JMenu menuSalir;
     private javax.swing.JMenu menuCaja;
+    private javax.swing.JMenuItem menuCajaEstado;
     private javax.swing.JMenuItem menuCajaCerrar;
     // End of variables declaration//GEN-END:variables
 }
