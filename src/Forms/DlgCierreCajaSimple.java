@@ -107,10 +107,34 @@ public class DlgCierreCajaSimple extends JDialog {
                     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
                     String fechaApertura = sdf.format(apertura);
 
+                    // Fetch Sales in Cash
+                    double totalVentasEfectivo = 0;
+                    String sqlVentas = "SELECT SUM(monto_abonado) as total FROM reporte_ingresos r " +
+                                       "JOIN metodo_pago m ON r.metodo_pago_id = m.id " +
+                                       "WHERE r.fecha >= ? AND m.nom_metodo_pago LIKE '%EFECTIVO%'";
+                    try (PreparedStatement psV = conn.prepareStatement(sqlVentas)) {
+                        psV.setTimestamp(1, apertura);
+                        try (ResultSet rsV = psV.executeQuery()) {
+                            if (rsV.next()) totalVentasEfectivo = rsV.getDouble("total");
+                        }
+                    }
+
+                    // Fetch Egresos
+                    double totalEgresos = 0;
+                    String sqlEgresos = "SELECT IFNULL(SUM(monto), 0) as total FROM caja_egresos WHERE id_caja = ?";
+                    try (PreparedStatement psE = conn.prepareStatement(sqlEgresos)) {
+                        psE.setInt(1, cajaId);
+                        try (ResultSet rsE = psE.executeQuery()) {
+                            if (rsE.next()) totalEgresos = rsE.getDouble("total");
+                        }
+                    }
+
+                    double montoTeorico = montoApertura + totalVentasEfectivo - totalEgresos;
+
                     lblInfoApertura.setText(String.format(
-                            "<html>Apertura: %s<br>Monto Inicial: S/. %.2f</html>",
+                            "<html>Apertura: %s<br>Monto Inicial: S/. %.2f<br>+ Ingresos Efectivo: S/. %.2f<br>- Egresos (Gastos): S/. %.2f<br><br><b>Monto Teórico Esperado: S/. %.2f</b></html>",
                             fechaApertura,
-                            montoApertura));
+                            montoApertura, totalVentasEfectivo, totalEgresos, montoTeorico));
                 } else {
                     lblInfoApertura.setText("<html><font color='red'>No hay caja abierta hoy</font></html>");
                     btnAceptar.setEnabled(false);
