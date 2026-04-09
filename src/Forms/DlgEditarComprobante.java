@@ -418,10 +418,31 @@ public class DlgEditarComprobante extends JDialog {
         } else {
             abonadoActualizado = montoAbonadoPrevio + montoNuevo;
         }
+
+        float maxAbono = costoTotal - montoAbonadoPrevio;
+        float defaultEntregado = montoNuevo;
+        boolean forceVuelto = false;
+
         if (abonadoActualizado > costoTotal + 0.001f) {
-            JOptionPane.showMessageDialog(this, "El abono excede el total.", "Validación", JOptionPane.WARNING_MESSAGE);
-            return;
+            boolean isEfectivo = mp != null && mp.label().toUpperCase().contains("EFECTIVO");
+            if (isEfectivo) {
+                int resp = JOptionPane.showConfirmDialog(this, 
+                        "El monto ingresado (S/ " + montoNuevo + ") excede la deuda actual (S/ " + maxAbono + ").\n"
+                        + "¿Desea cobrar solo la deuda y calcular el vuelto asumiendo que el cliente pagó con S/ " + montoNuevo + "?", 
+                        "Ajustar a Deuda", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                if (resp == JOptionPane.YES_OPTION) {
+                    montoNuevo = maxAbono;
+                    abonadoActualizado = costoTotal;
+                    forceVuelto = true;
+                } else {
+                    return;
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "El abono excede el total.", "Validación", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
+        
         try (Connection conn = DatabaseConfig.getConnection()) {
             conn.setAutoCommit(false);
             // Decide final estado: if after applying the new payment the comprobante
@@ -480,6 +501,26 @@ public class DlgEditarComprobante extends JDialog {
                     }
                 }
             }
+            
+            // Calcular vuelto para EFECTIVO
+            boolean isEfectivo = mp != null && mp.label().toUpperCase().contains("EFECTIVO");
+            if ((isEfectivo || forceVuelto) && montoNuevo > 0) {
+                String inputEntregado = JOptionPane.showInputDialog(this, "Pago.\nMonto Abonado (Cobrado): S/ " + montoNuevo + "\n\nIngrese Monto Entregado por el Cliente:", defaultEntregado);
+                if (inputEntregado == null) return;
+                try {
+                    float entregado = Float.parseFloat(inputEntregado);
+                    if (entregado < montoNuevo) {
+                        JOptionPane.showMessageDialog(this, "El monto entregado es menor al monto a abonar (S/ " + montoNuevo + ").", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    float vuelto = entregado - montoNuevo;
+                    JOptionPane.showMessageDialog(this, "Vuelto a entregar al cliente: S/ " + String.format(java.util.Locale.US, "%.2f", vuelto), "Vuelto", JOptionPane.INFORMATION_MESSAGE);
+                } catch(NumberFormatException nfe) {
+                    JOptionPane.showMessageDialog(this, "Monto inválido.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+            
             // Update comprobante (now also persist estado_ropa_id)
             try (PreparedStatement ps = conn.prepareStatement(
                     "UPDATE comprobantes SET estado_comprobante_id=?, metodo_pago_id=?, monto_abonado=?, estado_ropa_id=? WHERE id=?")) {

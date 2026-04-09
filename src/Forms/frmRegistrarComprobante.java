@@ -1825,6 +1825,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
         double total = parseMoneyLabel(jLabel14.getText());
         double montoAbonado;
         String estadoUpper = estadoNombre.toUpperCase();
+        boolean forceVuelto = false;
+        
         if ("ABONO".equals(estadoUpper)) {
             String montoAbonadoStr = txtMontoAbonado.getText().trim();
             if (montoAbonadoStr.isEmpty()) {
@@ -1839,15 +1841,68 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            if (montoAbonado < 0 || montoAbonado > total) {
-                JOptionPane.showMessageDialog(this, "Monto abonado fuera de rango.", "Validación",
-                        JOptionPane.WARNING_MESSAGE);
+            float defaultEntregado = (float) montoAbonado;
+            metodoPagoNombre = (String) cbxMetodoPago.getSelectedItem();
+            
+            if (montoAbonado > total + 0.001) {
+                boolean isEfectivo = metodoPagoNombre != null && metodoPagoNombre.toUpperCase().contains("EFECTIVO");
+                if (isEfectivo) {
+                    int resp = JOptionPane.showConfirmDialog(this, 
+                            "El monto ingresado (S/ " + montoAbonado + ") excede el total a pagar (S/ " + total + ").\n"
+                            + "¿Desea registrar el pedido como CANCELADO (pagado en su totalidad) y asume que el cliente entregó S/ " + montoAbonado + " (para mostrar vuelto)?", 
+                            "Ajustar a Deuda", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    if (resp == JOptionPane.YES_OPTION) {
+                        montoAbonado = total;
+                        estadoNombre = "CANCELADO";
+                        estadoUpper = "CANCELADO";
+                        forceVuelto = true;
+                    } else {
+                        return;
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, "El abono excede el total a pagar.", "Validación", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            } else if (montoAbonado < 0) {
+                JOptionPane.showMessageDialog(this, "Monto abonado negativo.", "Validación", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         } else if ("CANCELADO".equals(estadoUpper) || "PAGADO".equals(estadoUpper)) {
             montoAbonado = total; // fully paid
         } else {
             montoAbonado = 0.0; // pending / other states
+        }
+
+        // Calcular vuelto general
+        metodoPagoNombre = (String) cbxMetodoPago.getSelectedItem();
+        boolean isEfectivo = metodoPagoNombre != null && metodoPagoNombre.toUpperCase().contains("EFECTIVO");
+        if ((isEfectivo || (estadoUpper != null && forceVuelto)) && montoAbonado > 0) {
+            String montoAbonadoStr = txtMontoAbonado.getText().trim();
+            float defaultEntregadoLocal = (float) montoAbonado;
+            if ("ABONO".equals(estadoUpper) || "CANCELADO".equals(estadoNombre)) {
+                try {
+                    float typed = Float.parseFloat(montoAbonadoStr);
+                    if (typed > montoAbonado) {
+                        defaultEntregadoLocal = typed;
+                    }
+                } catch(Exception ignored) {}
+            }
+            float suggestedEntregado = (defaultEntregadoLocal > montoAbonado) ? defaultEntregadoLocal : (float)montoAbonado;
+            
+            String inputEntregado = JOptionPane.showInputDialog(this, "Pago.\nMonto a Cobrar: S/ " + montoAbonado + "\n\nIngrese Monto Entregado por el Cliente:", suggestedEntregado);
+            if (inputEntregado == null) return;
+            try {
+                float entregado = Float.parseFloat(inputEntregado);
+                if (entregado < montoAbonado - 0.001) {
+                    JOptionPane.showMessageDialog(this, "El monto entregado es menor al monto a cobrar (S/ " + montoAbonado + ").", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                float vuelto = entregado - (float)montoAbonado;
+                JOptionPane.showMessageDialog(this, "Vuelto a entregar al cliente: S/ " + String.format(java.util.Locale.US, "%.2f", vuelto), "Vuelto", JOptionPane.INFORMATION_MESSAGE);
+            } catch(NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Monto inválido.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
         }
 
         LocalDateTime fecha = dateTimePicker1.getDateTimePermissive();
