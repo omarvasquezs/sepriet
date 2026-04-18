@@ -1101,15 +1101,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
     }
 
     protected void updateDateStats() {
-        Date selectedDate = filterFecha.getDate();
-        String fechaStr = "";
-        if (selectedDate != null) {
-            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
-            fechaStr = sdf.format(selectedDate);
-        } else {
-            fechaStr = "(sin fecha)";
-        }
-        if (selectedDate == null) {
+        Date d1 = filterFecha.getDate();
+        Date d2 = filterFechaHasta.getDate();
+        if (d1 == null && d2 == null) {
             lblCantidadComprobantes.setText("");
             lblTotalAbonos.setText("");
             lblIngresosHoy.setText("");
@@ -1131,197 +1125,152 @@ public class frmConsultarComprobantes extends JInternalFrame {
             return;
         }
 
+        String fechaStr = "";
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
+        if (d1 != null && d2 != null) {
+            if (sdf.format(d1).equals(sdf.format(d2))) {
+                fechaStr = "el día " + sdf.format(d1);
+            } else {
+                fechaStr = "del " + sdf.format(d1) + " al " + sdf.format(d2);
+            }
+        } else if (d1 != null) {
+            fechaStr = "desde el " + sdf.format(d1);
+        } else if (d2 != null) {
+            fechaStr = "hasta el " + sdf.format(d2);
+        }
+
         try (Connection conn = DatabaseConfig.getConnection()) {
             if (conn == null)
                 return;
 
-            // Convertir Date a formato SQL
-            java.sql.Date sqlDate = new java.sql.Date(selectedDate.getTime());
+            String whereDate = "";
+            java.sql.Date sqlD1 = d1 != null ? new java.sql.Date(d1.getTime()) : null;
+            java.sql.Date sqlD2 = d2 != null ? new java.sql.Date(d2.getTime()) : null;
+            if (d1 != null && d2 != null) {
+                whereDate = "DATE(%s) BETWEEN ? AND ? ";
+            } else if (d1 != null) {
+                whereDate = "DATE(%s) >= ? ";
+            } else {
+                whereDate = "DATE(%s) <= ? ";
+            }
 
-            // Consulta para contar comprobantes, sumar abonos y costo total por fecha
             String sql = "SELECT COUNT(*) as cantidad, " +
                     "COALESCE(SUM(COALESCE(monto_abonado, 0)), 0) as total_abonos, " +
                     "COALESCE(SUM(COALESCE(costo_total, 0)), 0) as suma_costo_total " +
                     "FROM comprobantes " +
-                    "WHERE DATE(fecha) = ? AND activado = 1";
+                    "WHERE " + String.format(whereDate, "fecha") + " AND activado = 1";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setDate(1, sqlDate);
+                int paramIdx = 1;
+                if (d1 != null) ps.setDate(paramIdx++, sqlD1);
+                if (d2 != null) ps.setDate(paramIdx++, sqlD2);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         int cantidad = rs.getInt("cantidad");
                         double totalAbonos = rs.getDouble("total_abonos");
                         double sumaCostoTotal = rs.getDouble("suma_costo_total");
 
-                        // ...ya existe la variable fechaStr declarada antes, no es necesario
-                        // redeclararla aquí...
-
-                        lblCantidadComprobantes
-                                .setText(String.format("Comprobantes generados el día %s: %d", fechaStr, cantidad));
-                        lblTotalAbonos.setText(String.format("Total abonado en los comprobantes el día %s: S/. %.2f",
-                                fechaStr, totalAbonos));
-
-                        // Mostrar SIEMPRE los labels con la fecha seleccionada
-                        // Total abonado del día (desde reporte_ingresos)
-                        String sqlIngresos = "SELECT COALESCE(SUM(COALESCE(monto_abonado,0)),0) as total_ingresos FROM reporte_ingresos WHERE DATE(fecha) = ?";
-                        try (PreparedStatement ps2 = conn.prepareStatement(sqlIngresos)) {
-                            ps2.setDate(1, sqlDate);
-                            try (ResultSet rs2 = ps2.executeQuery()) {
-                                if (rs2.next()) {
-                                    double ingresos = rs2.getDouble("total_ingresos");
-                                    lblIngresosHoy.setText(
-                                            String.format("Total abonado el día %s: S/. %.2f", fechaStr, ingresos));
-                                    lblIngresosHoy.setVisible(true);
-                                } else {
-                                    lblIngresosHoy.setText("");
-                                    lblIngresosHoy.setVisible(false);
-                                }
-                            }
-                        } catch (Exception ex2) {
-                            lblIngresosHoy.setText("");
-                            lblIngresosHoy.setVisible(false);
-                        }
-
-                        // Suma del costo total de comprobantes del día
-                        lblSumaCostoTotal.setText(String.format(
-                                "Suma del costo total de los comprobantes del %s: S/. %.2f", fechaStr, sumaCostoTotal));
+                        lblCantidadComprobantes.setText(String.format("Comprobantes generados %s: %d", fechaStr, cantidad));
+                        lblTotalAbonos.setText(String.format("Total abonado en los comprobantes %s: S/. %.2f", fechaStr, totalAbonos));
+                        lblSumaCostoTotal.setText(String.format("Suma del costo total de los comprobantes %s: S/. %.2f", fechaStr, sumaCostoTotal));
                         lblSumaCostoTotal.setVisible(true);
-
-                        // Consultar totales por método de pago (EFECTIVO id=4, YAPE/PLIN id=1)
-                        String sqlMetodosPago = "SELECT " +
-                                "COALESCE(SUM(CASE WHEN ri.metodo_pago_id = 4 THEN ri.monto_abonado ELSE 0 END), 0) as total_efectivo, "
-                                +
-                                "COALESCE(SUM(CASE WHEN ri.metodo_pago_id = 1 THEN ri.monto_abonado ELSE 0 END), 0) as total_yape_plin "
-                                +
-                                "FROM reporte_ingresos ri WHERE DATE(ri.fecha) = ?";
-                        try (PreparedStatement ps3 = conn.prepareStatement(sqlMetodosPago)) {
-                            ps3.setDate(1, sqlDate);
-                            try (ResultSet rs3 = ps3.executeQuery()) {
-                                if (rs3.next()) {
-                                    double totalEfectivo = rs3.getDouble("total_efectivo");
-                                    double totalYapePlin = rs3.getDouble("total_yape_plin");
-                                    lblTotalEfectivo.setText(String.format("Total abonado en efectivo del %s: S/. %.2f",
-                                            fechaStr, totalEfectivo));
-                                    lblTotalEfectivo.setVisible(true);
-                                    lblTotalYapePlin.setText(String.format(
-                                            "Total abonado en YAPE/PLIN del %s: S/. %.2f", fechaStr, totalYapePlin));
-                                    lblTotalYapePlin.setVisible(true);
-                                } else {
-                                    lblTotalEfectivo.setText("");
-                                    lblTotalEfectivo.setVisible(false);
-                                    lblTotalYapePlin.setText("");
-                                    lblTotalYapePlin.setVisible(false);
-                                }
-                            }
-                        } catch (Exception ex3) {
-                            lblTotalEfectivo.setText("");
-                            lblTotalEfectivo.setVisible(false);
-                            lblTotalYapePlin.setText("");
-                            lblTotalYapePlin.setVisible(false);
-                        }
-
-                        // Consultar totales por método de pago en los comprobantes generados
-                        String sqlComprobantesMetodosPago = "SELECT " +
-                                "COALESCE(SUM(CASE WHEN c.metodo_pago_id = 4 THEN c.monto_abonado ELSE 0 END), 0) as comp_efectivo, "
-                                +
-                                "COALESCE(SUM(CASE WHEN c.metodo_pago_id = 1 THEN c.monto_abonado ELSE 0 END), 0) as comp_yape_plin "
-                                +
-                                "FROM comprobantes c WHERE DATE(c.fecha) = ? AND c.activado = 1";
-                        try (PreparedStatement ps4 = conn.prepareStatement(sqlComprobantesMetodosPago)) {
-                            ps4.setDate(1, sqlDate);
-                            try (ResultSet rs4 = ps4.executeQuery()) {
-                                if (rs4.next()) {
-                                    double compEfectivo = rs4.getDouble("comp_efectivo");
-                                    double compYapePlin = rs4.getDouble("comp_yape_plin");
-                                    lblComprobanteEfectivo.setText(String.format(
-                                            "Total abonado en efectivo en los comprobantes generados del %s: S/. %.2f",
-                                            fechaStr, compEfectivo));
-                                    lblComprobanteEfectivo.setVisible(true);
-                                    lblComprobanteYapePlin.setText(String.format(
-                                            "Total abonado en YAPE/PLIN en los comprobantes generados del %s: S/. %.2f",
-                                            fechaStr, compYapePlin));
-                                    lblComprobanteYapePlin.setVisible(true);
-                                } else {
-                                    lblComprobanteEfectivo.setText("");
-                                    lblComprobanteEfectivo.setVisible(false);
-                                    lblComprobanteYapePlin.setText("");
-                                    lblComprobanteYapePlin.setVisible(false);
-                                }
-                            }
-                        } catch (Exception ex4) {
-                            lblComprobanteEfectivo.setText("");
-                            lblComprobanteEfectivo.setVisible(false);
-                            lblComprobanteYapePlin.setText("");
-                            lblComprobanteYapePlin.setVisible(false);
-                        }
-
-                        // Consultar información de caja del día
-                        String sqlCaja = "SELECT monto_apertura, monto_cierre, " +
-                                "DATE_FORMAT(datetime_apertura, '%H:%i:%s') as hora_apertura, " +
-                                "DATE_FORMAT(datetime_cierre, '%H:%i:%s') as hora_cierre " +
-                                "FROM caja_apertura_cierre " +
-                                "WHERE DATE(datetime_apertura) = ? " +
-                                "ORDER BY datetime_apertura DESC LIMIT 1";
-                        try (PreparedStatement ps5 = conn.prepareStatement(sqlCaja)) {
-                            ps5.setDate(1, sqlDate);
-                            try (ResultSet rs5 = ps5.executeQuery()) {
-                                if (rs5.next()) {
-                                    double montoApertura = rs5.getDouble("monto_apertura");
-                                    double montoCierre = rs5.getDouble("monto_cierre");
-                                    String horaApertura = rs5.getString("hora_apertura");
-                                    String horaCierre = rs5.getString("hora_cierre");
-
-                                    lblCajaApertura.setText(
-                                            String.format("Caja aperturada del %s a las %s con: S/. %.2f", fechaStr,
-                                                    horaApertura != null ? horaApertura : "N/A", montoApertura));
-                                    lblCajaApertura.setVisible(true);
-
-                                    if (horaCierre != null) {
-                                        lblCajaCierre
-                                                .setText(String.format("Caja cerrada del %s a las %s con: S/. %.2f",
-                                                        fechaStr, horaCierre, montoCierre));
-                                        lblCajaCierre.setVisible(true);
-                                    } else {
-                                        lblCajaCierre
-                                                .setText(String.format("Caja aún no ha sido cerrada del %s", fechaStr));
-                                        lblCajaCierre.setVisible(true);
-                                    }
-                                } else {
-                                    lblCajaApertura.setText(String.format("No se ha aperturado caja del %s", fechaStr));
-                                    lblCajaApertura.setVisible(true);
-                                    lblCajaCierre.setText("");
-                                    lblCajaCierre.setVisible(false);
-                                }
-                            }
-                        } catch (Exception ex5) {
-                            lblCajaApertura.setText("");
-                            lblCajaApertura.setVisible(false);
-                            lblCajaCierre.setText("");
-                            lblCajaCierre.setVisible(false);
-                        }
                     }
                 }
             }
+
+            String sqlIngresos = "SELECT COALESCE(SUM(COALESCE(monto_abonado,0)),0) as total_ingresos FROM reporte_ingresos WHERE " + String.format(whereDate, "fecha");
+            try (PreparedStatement ps2 = conn.prepareStatement(sqlIngresos)) {
+                int paramIdx = 1;
+                if (d1 != null) ps2.setDate(paramIdx++, sqlD1);
+                if (d2 != null) ps2.setDate(paramIdx++, sqlD2);
+                try (ResultSet rs2 = ps2.executeQuery()) {
+                    if (rs2.next()) {
+                        double ingresos = rs2.getDouble("total_ingresos");
+                        lblIngresosHoy.setText(String.format("Total abonado %s: S/. %.2f", fechaStr, ingresos));
+                        lblIngresosHoy.setVisible(true);
+                    } else {
+                        lblIngresosHoy.setText(""); lblIngresosHoy.setVisible(false);
+                    }
+                }
+            } catch(Exception e){ lblIngresosHoy.setVisible(false); }
+
+            String sqlMetodosPago = "SELECT " +
+                    "COALESCE(SUM(CASE WHEN ri.metodo_pago_id = 4 THEN ri.monto_abonado ELSE 0 END), 0) as total_efectivo, " +
+                    "COALESCE(SUM(CASE WHEN ri.metodo_pago_id = 1 THEN ri.monto_abonado ELSE 0 END), 0) as total_yape_plin " +
+                    "FROM reporte_ingresos ri WHERE " + String.format(whereDate, "ri.fecha");
+            try (PreparedStatement ps3 = conn.prepareStatement(sqlMetodosPago)) {
+                int paramIdx = 1;
+                if (d1 != null) ps3.setDate(paramIdx++, sqlD1);
+                if (d2 != null) ps3.setDate(paramIdx++, sqlD2);
+                try (ResultSet rs3 = ps3.executeQuery()) {
+                    if (rs3.next()) {
+                        lblTotalEfectivo.setText(String.format("Total abonado en efectivo %s: S/. %.2f", fechaStr, rs3.getDouble("total_efectivo")));
+                        lblTotalEfectivo.setVisible(true);
+                        lblTotalYapePlin.setText(String.format("Total abonado en YAPE/PLIN %s: S/. %.2f", fechaStr, rs3.getDouble("total_yape_plin")));
+                        lblTotalYapePlin.setVisible(true);
+                    } else {
+                        lblTotalEfectivo.setVisible(false); lblTotalYapePlin.setVisible(false);
+                    }
+                }
+            } catch(Exception e){ lblTotalEfectivo.setVisible(false); lblTotalYapePlin.setVisible(false); }
+
+            String sqlComprobantesMetodosPago = "SELECT " +
+                    "COALESCE(SUM(CASE WHEN c.metodo_pago_id = 4 THEN c.monto_abonado ELSE 0 END), 0) as comp_efectivo, " +
+                    "COALESCE(SUM(CASE WHEN c.metodo_pago_id = 1 THEN c.monto_abonado ELSE 0 END), 0) as comp_yape_plin " +
+                    "FROM comprobantes c WHERE " + String.format(whereDate, "c.fecha") + " AND c.activado = 1";
+            try (PreparedStatement ps4 = conn.prepareStatement(sqlComprobantesMetodosPago)) {
+                int paramIdx = 1;
+                if (d1 != null) ps4.setDate(paramIdx++, sqlD1);
+                if (d2 != null) ps4.setDate(paramIdx++, sqlD2);
+                try (ResultSet rs4 = ps4.executeQuery()) {
+                    if (rs4.next()) {
+                        lblComprobanteEfectivo.setText(String.format("Total abonado en efectivo en los comprobantes generados %s: S/. %.2f", fechaStr, rs4.getDouble("comp_efectivo")));
+                        lblComprobanteEfectivo.setVisible(true);
+                        lblComprobanteYapePlin.setText(String.format("Total abonado en YAPE/PLIN en los comprobantes generados %s: S/. %.2f", fechaStr, rs4.getDouble("comp_yape_plin")));
+                        lblComprobanteYapePlin.setVisible(true);
+                    } else {
+                        lblComprobanteEfectivo.setVisible(false); lblComprobanteYapePlin.setVisible(false);
+                    }
+                }
+            } catch(Exception e){ lblComprobanteEfectivo.setVisible(false); lblComprobanteYapePlin.setVisible(false); }
+
+            // Caja logic: only sensible for a single day query.
+            if (d1 != null && d2 != null && !sdf.format(d1).equals(sdf.format(d2))) {
+                lblCajaApertura.setText("Caja: No aplicable por rango de fechas.");
+                lblCajaApertura.setVisible(true);
+                lblCajaCierre.setVisible(false);
+            } else {
+                java.sql.Date sqlCheckDate = d1 != null ? sqlD1 : sqlD2;
+                String sqlCaja = "SELECT monto_apertura, monto_cierre, " +
+                        "DATE_FORMAT(datetime_apertura, '%H:%i:%s') as hora_apertura, " +
+                        "DATE_FORMAT(datetime_cierre, '%H:%i:%s') as hora_cierre " +
+                        "FROM caja_apertura_cierre " +
+                        "WHERE DATE(datetime_apertura) = ? " +
+                        "ORDER BY datetime_apertura DESC LIMIT 1";
+                try (PreparedStatement ps5 = conn.prepareStatement(sqlCaja)) {
+                    ps5.setDate(1, sqlCheckDate);
+                    try (ResultSet rs5 = ps5.executeQuery()) {
+                        if (rs5.next()) {
+                            lblCajaApertura.setText(String.format("Caja aperturada el %s a las %s con: S/. %.2f", fechaStr, rs5.getString("hora_apertura") != null ? rs5.getString("hora_apertura") : "N/A", rs5.getDouble("monto_apertura")));
+                            lblCajaApertura.setVisible(true);
+                            if (rs5.getString("hora_cierre") != null) {
+                                lblCajaCierre.setText(String.format("Caja cerrada el %s a las %s con: S/. %.2f", fechaStr, rs5.getString("hora_cierre"), rs5.getDouble("monto_cierre")));
+                                lblCajaCierre.setVisible(true);
+                            } else {
+                                lblCajaCierre.setText(String.format("Caja aún no ha sido cerrada el %s", fechaStr));
+                                lblCajaCierre.setVisible(true);
+                            }
+                        } else {
+                            lblCajaApertura.setText(String.format("No se ha aperturado caja el %s", fechaStr));
+                            lblCajaApertura.setVisible(true);
+                            lblCajaCierre.setVisible(false);
+                        }
+                    }
+                } catch(Exception e){ lblCajaApertura.setVisible(false); lblCajaCierre.setVisible(false); }
+            }
         } catch (Exception ex) {
             System.err.println("Error calculando estadísticas por fecha: " + ex.getMessage());
-            lblCantidadComprobantes.setText("");
-            lblTotalAbonos.setText("");
-            lblIngresosHoy.setText("");
-            lblIngresosHoy.setVisible(false);
-            lblSumaCostoTotal.setText("");
-            lblSumaCostoTotal.setVisible(false);
-            lblTotalEfectivo.setText("");
-            lblTotalEfectivo.setVisible(false);
-            lblTotalYapePlin.setText("");
-            lblTotalYapePlin.setVisible(false);
-            lblComprobanteEfectivo.setText("");
-            lblComprobanteEfectivo.setVisible(false);
-            lblComprobanteYapePlin.setText("");
-            lblComprobanteYapePlin.setVisible(false);
-            lblCajaApertura.setText("");
-            lblCajaApertura.setVisible(false);
-            lblCajaCierre.setText("");
-            lblCajaCierre.setVisible(false);
+            lblCantidadComprobantes.setVisible(false);
         }
     }
 
