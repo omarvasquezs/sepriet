@@ -1841,7 +1841,7 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            float defaultEntregado = (float) montoAbonado;
+            
             metodoPagoNombre = (String) cbxMetodoPago.getSelectedItem();
             
             if (montoAbonado > total + 0.001) {
