@@ -371,6 +371,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         table.getColumnModel().getColumn(6).setPreferredWidth(100); // DESCUENTO
         table.getColumnModel().getColumn(7).setPreferredWidth(100); // DEUDA
         table.getColumnModel().getColumn(8).setPreferredWidth(150); // FECHA DE REGISTRO
+        table.getColumnModel().getColumn(9).setPreferredWidth(150); // FECHA DE ACTUALIZACIÓN
 
         // Populate cliente names and estados for filters
         SwingUtilities.invokeLater(() -> {
@@ -1429,7 +1430,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
             int offset = (currentPage - 1) * pageSize;
             String sql = "SELECT c.id,c.cod_comprobante,c.tipo_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,ec.nom_estado estado_comprobante,"
                     + "(SELECT GROUP_CONCAT(CONCAT(s.nom_servicio, ' (', cd.peso_kg, ' kg)') SEPARATOR ', ') FROM comprobantes_detalles cd LEFT JOIN servicios s ON cd.servicio_id=s.id WHERE cd.comprobante_id=c.id) AS servicios,"
-                    + "c.costo_total, c.descuento, (c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha "
+                    + "c.costo_total, c.descuento, (c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha,c.fecha_actualizacion "
                     + "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id"
                     + where +
                     " ORDER BY c.fecha DESC LIMIT ? OFFSET ?";
@@ -1467,6 +1468,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
                         r.fecha = ts != null
                                 ? ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm"))
                                 : "";
+                        Timestamp tsActualizacion = rs.getTimestamp("fecha_actualizacion");
+                        r.fechaActualizacion = tsActualizacion != null
+                                ? tsActualizacion.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm"))
+                                : "";
                         rows.add(r);
                     }
                 }
@@ -1494,11 +1499,12 @@ public class frmConsultarComprobantes extends JInternalFrame {
         float descuento;
         float deuda;
         String fecha;
+        String fechaActualizacion;
     }
 
     private static class ComprobantesTableModel extends AbstractTableModel {
         private final String[] cols = { "COD COMPROBANTE", "CLIENTE", "ESTADO ROPA", "ESTADO COMPROBANTE",
-                "SERVICIOS", "COSTO TOTAL (S/.)", "DESCUENTO (%)", "DEUDA (S/.)", "FECHA DE REGISTRO" };
+                "SERVICIOS", "COSTO TOTAL (S/.)", "DESCUENTO (%)", "DEUDA (S/.)", "FECHA DE REGISTRO", "FECHA DE ACTUALIZACIÓN" };
         private List<ComprobanteRow> rows = new ArrayList<>();
 
         public void setRows(List<ComprobanteRow> data) {
@@ -1534,6 +1540,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 case 6 -> row.descuento;
                 case 7 -> row.deuda;
                 case 8 -> row.fecha;
+                case 9 -> row.fechaActualizacion;
                 default -> null;
             };
         }
@@ -1811,4 +1818,6 @@ public class frmConsultarComprobantes extends JInternalFrame {
         return prefix + "-" + newValue;
     }
 }
+
+
 
