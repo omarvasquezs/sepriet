@@ -1957,7 +1957,9 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
             }
             String codComprobante = generateComprobanteCode(conn, tipoComprobante);
             // Insert comprobante
-            String insertComprobanteSql = "INSERT INTO comprobantes (tipo_comprobante, cliente_id, user_id, fecha, metodo_pago_id, num_ruc, razon_social, estado_comprobante_id, estado_ropa_id, local_id, observaciones, monto_abonado, descuento, last_updated_by, cod_comprobante, costo_total) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            String insertComprobanteSql = "INSERT INTO comprobantes " +
+                    "(tipo_comprobante, cliente_id, user_id, fecha, metodo_pago_id, num_ruc, razon_social, estado_comprobante_id, estado_ropa_id, local_id, observaciones, monto_abonado, descuento, last_updated_by, cod_comprobante, costo_total, fecha_actualizacion_estado_comprobante, fecha_actualizacion_estado_ropa) " +
+                    "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)";
             try (PreparedStatement ps = conn.prepareStatement(insertComprobanteSql,
                     PreparedStatement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, String.valueOf(tipoComprobante));

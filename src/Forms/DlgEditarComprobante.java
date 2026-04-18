@@ -521,9 +521,17 @@ public class DlgEditarComprobante extends JDialog {
                 }
             }
             
-            // Update comprobante (now also persist estado_ropa_id)
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "UPDATE comprobantes SET estado_comprobante_id=?, metodo_pago_id=?, monto_abonado=?, estado_ropa_id=? WHERE id=?")) {
+            // Update comprobante (now also persist estado_ropa_id and handle update timestamps)
+            String baseSql = "UPDATE comprobantes SET estado_comprobante_id=?, metodo_pago_id=?, monto_abonado=?, estado_ropa_id=? ";
+            if (finalEstadoId != originalEstadoComprobanteId) {
+                baseSql += ", fecha_actualizacion_estado_comprobante=CURRENT_TIMESTAMP ";
+            }
+            if (finalEstadoRopaId != originalEstadoRopaId) {
+                baseSql += ", fecha_actualizacion_estado_ropa=CURRENT_TIMESTAMP ";
+            }
+            baseSql += "WHERE id=?";
+            
+            try (PreparedStatement ps = conn.prepareStatement(baseSql)) {
                 ps.setInt(1, finalEstadoId);
                 if (mp == null || mp.id() == -1)
                     ps.setNull(2, java.sql.Types.INTEGER);
