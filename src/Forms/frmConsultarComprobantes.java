@@ -84,6 +84,10 @@ public class frmConsultarComprobantes extends JInternalFrame {
         TODOS, RECIBIDOS, CANCELADOS, DEFAULT
     }
 
+    protected String getDateColumnToFilter() {
+        return "fecha";
+    }
+
     public frmConsultarComprobantes(Mode mode) {
         super("Comprobantes", true, true, true, true);
         this.mode = mode;
@@ -1059,14 +1063,14 @@ public class frmConsultarComprobantes extends JInternalFrame {
             Date d1 = filterFecha.getDate();
             Date d2 = filterFechaHasta.getDate();
             if (d1 != null && d2 != null) {
-                where.append(" AND DATE(c.fecha) BETWEEN ? AND ? ");
+                where.append(" AND DATE(c." + getDateColumnToFilter() + ") BETWEEN ? AND ? ");
                 params.add(new java.sql.Date(d1.getTime()));
                 params.add(new java.sql.Date(d2.getTime()));
             } else if (d1 != null) {
-                where.append(" AND DATE(c.fecha) >= ? ");
+                where.append(" AND DATE(c." + getDateColumnToFilter() + ") >= ? ");
                 params.add(new java.sql.Date(d1.getTime()));
             } else if (d2 != null) {
-                where.append(" AND DATE(c.fecha) <= ? ");
+                where.append(" AND DATE(c." + getDateColumnToFilter() + ") <= ? ");
                 params.add(new java.sql.Date(d2.getTime()));
             }
 
@@ -1158,7 +1162,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
                     "COALESCE(SUM(COALESCE(monto_abonado, 0)), 0) as total_abonos, " +
                     "COALESCE(SUM(COALESCE(costo_total, 0)), 0) as suma_costo_total " +
                     "FROM comprobantes " +
-                    "WHERE " + String.format(whereDate, "fecha") + " AND activado = 1";
+                    "WHERE " + String.format(whereDate, getDateColumnToFilter()) + " AND activado = 1";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 int paramIdx = 1;
@@ -1217,7 +1221,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
             String sqlComprobantesMetodosPago = "SELECT " +
                     "COALESCE(SUM(CASE WHEN c.metodo_pago_id = 4 THEN c.monto_abonado ELSE 0 END), 0) as comp_efectivo, " +
                     "COALESCE(SUM(CASE WHEN c.metodo_pago_id = 1 THEN c.monto_abonado ELSE 0 END), 0) as comp_yape_plin " +
-                    "FROM comprobantes c WHERE " + String.format(whereDate, "c.fecha") + " AND c.activado = 1";
+                    "FROM comprobantes c WHERE " + String.format(whereDate, "c." + getDateColumnToFilter()) + " AND c.activado = 1";
             try (PreparedStatement ps4 = conn.prepareStatement(sqlComprobantesMetodosPago)) {
                 int paramIdx = 1;
                 if (d1 != null) ps4.setDate(paramIdx++, sqlD1);
@@ -1395,14 +1399,14 @@ public class frmConsultarComprobantes extends JInternalFrame {
             Date d1 = filterFecha.getDate();
             Date d2 = filterFechaHasta.getDate();
             if (d1 != null && d2 != null) {
-                where.append(" AND DATE(c.fecha) BETWEEN ? AND ? ");
+                where.append(" AND DATE(c." + getDateColumnToFilter() + ") BETWEEN ? AND ? ");
                 params.add(new java.sql.Date(d1.getTime()));
                 params.add(new java.sql.Date(d2.getTime()));
             } else if (d1 != null) {
-                where.append(" AND DATE(c.fecha) >= ? ");
+                where.append(" AND DATE(c." + getDateColumnToFilter() + ") >= ? ");
                 params.add(new java.sql.Date(d1.getTime()));
             } else if (d2 != null) {
-                where.append(" AND DATE(c.fecha) <= ? ");
+                where.append(" AND DATE(c." + getDateColumnToFilter() + ") <= ? ");
                 params.add(new java.sql.Date(d2.getTime()));
             }
             String sqlCount = "SELECT COUNT(*) FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id" + where;
@@ -1807,3 +1811,4 @@ public class frmConsultarComprobantes extends JInternalFrame {
         return prefix + "-" + newValue;
     }
 }
+

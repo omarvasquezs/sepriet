@@ -10,6 +10,11 @@ import javax.swing.JCheckBox;
  */
 public class frmConsultarComprobantesRecogidosCancelados extends frmConsultarComprobantes {
 
+    @Override
+    protected String getDateColumnToFilter() {
+        return "fecha_actualizacion";
+    }
+
     public frmConsultarComprobantesRecogidosCancelados() {
         // Usar Mode.TODOS para evitar los pre-filtros del modo DEFAULT
         // (DEFAULT excluye RECOGIDO id=4 y por eso no devolvía resultados)
@@ -95,3 +100,4 @@ public class frmConsultarComprobantesRecogidosCancelados extends frmConsultarCom
         }
     }
 }
+
