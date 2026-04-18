@@ -360,18 +360,18 @@ public class frmConsultarComprobantes extends JInternalFrame {
         table.setColumnSelectionAllowed(false);
 
         // Configurar anchos preferidos de columnas
-        // Índices: 0=COD_COMPROBANTE, 1=CLIENTE, 2=ESTADO_ROPA, 3=ESTADO_COMPROBANTE,
-        // 4=SERVICIOS, 5=COSTO_TOTAL, 6=DESCUENTO, 7=DEUDA, 8=FECHA
         table.getColumnModel().getColumn(0).setPreferredWidth(120); // COD COMPROBANTE
         table.getColumnModel().getColumn(1).setPreferredWidth(150); // CLIENTE
         table.getColumnModel().getColumn(2).setPreferredWidth(130); // ESTADO ROPA
-        table.getColumnModel().getColumn(3).setPreferredWidth(150); // ESTADO COMPROBANTE
-        table.getColumnModel().getColumn(4).setPreferredWidth(350); // SERVICIOS (más ancha)
-        table.getColumnModel().getColumn(5).setPreferredWidth(110); // COSTO TOTAL
-        table.getColumnModel().getColumn(6).setPreferredWidth(100); // DESCUENTO
-        table.getColumnModel().getColumn(7).setPreferredWidth(100); // DEUDA
-        table.getColumnModel().getColumn(8).setPreferredWidth(150); // FECHA DE REGISTRO
-        table.getColumnModel().getColumn(9).setPreferredWidth(150); // FECHA DE ACTUALIZACIÓN
+        table.getColumnModel().getColumn(3).setPreferredWidth(210); // ACT ROPA
+        table.getColumnModel().getColumn(4).setPreferredWidth(150); // ESTADO COMPROBANTE
+        table.getColumnModel().getColumn(5).setPreferredWidth(230); // ACT COMP
+        table.getColumnModel().getColumn(6).setPreferredWidth(350); // SERVICIOS (más ancha)
+        table.getColumnModel().getColumn(7).setPreferredWidth(110); // COSTO TOTAL
+        table.getColumnModel().getColumn(8).setPreferredWidth(100); // DESCUENTO
+        table.getColumnModel().getColumn(9).setPreferredWidth(100); // DEUDA
+        table.getColumnModel().getColumn(10).setPreferredWidth(150); // FECHA DE REGISTRO
+        table.getColumnModel().getColumn(11).setPreferredWidth(150); // FECHA DE ACTUALIZACIÓN
 
         // Populate cliente names and estados for filters
         SwingUtilities.invokeLater(() -> {
@@ -1428,7 +1428,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
             }
             currentPage = Math.min(page, totalPages);
             int offset = (currentPage - 1) * pageSize;
-            String sql = "SELECT c.id,c.cod_comprobante,c.tipo_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,ec.nom_estado estado_comprobante,"
+            String sql = "SELECT c.id,c.cod_comprobante,c.tipo_comprobante,cl.nombres cliente,er.nom_estado_ropa estado_ropa,c.fecha_actualizacion_estado_ropa,ec.nom_estado estado_comprobante,c.fecha_actualizacion_estado_comprobante,"
                     + "(SELECT GROUP_CONCAT(CONCAT(s.nom_servicio, ' (', cd.peso_kg, ' kg)') SEPARATOR ', ') FROM comprobantes_detalles cd LEFT JOIN servicios s ON cd.servicio_id=s.id WHERE cd.comprobante_id=c.id) AS servicios,"
                     + "c.costo_total, c.descuento, (c.costo_total-IFNULL(c.monto_abonado,0)) deuda,c.fecha,c.fecha_actualizacion "
                     + "FROM comprobantes c LEFT JOIN clientes cl ON c.cliente_id=cl.id LEFT JOIN estado_ropa er ON c.estado_ropa_id=er.id LEFT JOIN estado_comprobantes ec ON c.estado_comprobante_id=ec.id"
@@ -1453,7 +1453,11 @@ public class frmConsultarComprobantes extends JInternalFrame {
                         r.tipoComprobante = rs.getString("tipo_comprobante");
                         r.cliente = rs.getString("cliente");
                         r.estadoRopa = rs.getString("estado_ropa");
+                        java.sql.Timestamp tsa = rs.getTimestamp("fecha_actualizacion_estado_ropa");
+                        r.fechaActRopa = (tsa != null) ? new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(tsa) : "";
                         r.estadoComprobante = rs.getString("estado_comprobante");
+                        java.sql.Timestamp tsc = rs.getTimestamp("fecha_actualizacion_estado_comprobante");
+                        r.fechaActComp = (tsc != null) ? new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(tsc) : "";
                         r.servicios = rs.getString("servicios");
                         if (r.servicios == null)
                             r.servicios = "";
@@ -1493,7 +1497,9 @@ public class frmConsultarComprobantes extends JInternalFrame {
         String tipoComprobante; // 'F' = Factura, 'N' = Nota de Venta, 'B' = Boleta
         String cliente;
         String estadoRopa;
+        String fechaActRopa;
         String estadoComprobante;
+        String fechaActComp;
         String servicios;
         float costoTotal;
         float descuento;
@@ -1503,7 +1509,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
     }
 
     private static class ComprobantesTableModel extends AbstractTableModel {
-        private final String[] cols = { "COD COMPROBANTE", "CLIENTE", "ESTADO ROPA", "ESTADO COMPROBANTE",
+        private final String[] cols = { "COD COMPROBANTE", "CLIENTE", "ESTADO ROPA", "ACTUALIZACION ESTADO ROPA", "ESTADO COMPROBANTE", "ACTUALIZACION ESTADO COMPROBANTE",
                 "SERVICIOS", "COSTO TOTAL (S/.)", "DESCUENTO (%)", "DEUDA (S/.)", "FECHA DE REGISTRO", "FECHA DE ACTUALIZACIÓN" };
         private List<ComprobanteRow> rows = new ArrayList<>();
 
@@ -1534,13 +1540,15 @@ public class frmConsultarComprobantes extends JInternalFrame {
                 case 0 -> row.codComprobante;
                 case 1 -> row.cliente;
                 case 2 -> row.estadoRopa;
-                case 3 -> row.estadoComprobante;
-                case 4 -> row.servicios;
-                case 5 -> row.costoTotal;
-                case 6 -> row.descuento;
-                case 7 -> row.deuda;
-                case 8 -> row.fecha;
-                case 9 -> row.fechaActualizacion;
+                case 3 -> row.fechaActRopa;
+                case 4 -> row.estadoComprobante;
+                case 5 -> row.fechaActComp;
+                case 6 -> row.servicios;
+                case 7 -> row.costoTotal;
+                case 8 -> row.descuento;
+                case 9 -> row.deuda;
+                case 10 -> row.fecha;
+                case 11 -> row.fechaActualizacion;
                 default -> null;
             };
         }
@@ -1548,7 +1556,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         @Override
         public Class<?> getColumnClass(int c) {
             return switch (c) {
-                case 5, 6, 7 -> Float.class;
+                case 7, 8, 9 -> Float.class;
                 default -> String.class;
             };
         }
