@@ -765,7 +765,8 @@ public class DlgEditarComprobante extends JDialog {
 
                             // Footer (WhatsApp bold with single asterisks as requested)
                             int dias = Forms.ConfigUtils.getMaxDiasRecojo();
-                            msgSb.append("*El tiempo máximo para recoger su prenda es de " + dias + " días.*\n");
+                            msgSb.append("*El tiempo máximo para recoger su prenda es de ").append(dias).append(" días.*\n");
+                            msgSb.append("*De no recoger en ").append(dias).append(" días se aplicara penalidad.*\n");
                             msgSb.append("*Una vez retirada la prenda, no se aceptarán reclamos.*");
                             } else if ("RECOGIDO".equals(chosenRopaLabel)) {
                                 msgSb.append("Gracias por confiar en nosotros ✨Esperamos que el servicio haya sido de tu total satisfacción.\n");

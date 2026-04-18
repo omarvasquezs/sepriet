@@ -2310,7 +2310,8 @@ public class frmRegistrarComprobante extends javax.swing.JInternalFrame {
 
                                                                 sbMsg.append("\n");
                                                                 int dias = Forms.ConfigUtils.getMaxDiasRecojo();
-                                                                sbMsg.append("*El tiempo máximo para recoger su prenda es de " + dias + " días.*\n");
+                                                                sbMsg.append("*El tiempo máximo para recoger su prenda es de ").append(dias).append(" días.*\n");
+                                                                sbMsg.append("*De no recoger en ").append(dias).append(" días se aplicara penalidad.*\n");
                                                                 sbMsg.append("*Una vez retirada la prenda, no se aceptarán reclamos.*");
                                 
                                                                 String text = sbMsg.toString().trim();                                if (text.length() > 3000)

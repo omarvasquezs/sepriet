@@ -135,7 +135,7 @@ public class DlgPrintPreview extends JDialog {
             // Both lines wrapped inside <b>...</b> so the entire notice appears bold
             int dias = Forms.ConfigUtils.getMaxDiasRecojo();
             String footerHtml = "<div style=\"margin-top:12px;font-size:11px;line-height:1.2;\"><b>El tiempo máximo para recoger su prenda es de "
-                    + dias + " días.<br/>Una vez retirada la prenda o reparación, no se aceptarán reclamos.</b></div>";
+                    + dias + " días.<br/>De no recoger en " + dias + " días se aplicara penalidad.<br/>Una vez retirada la prenda o reparación, no se aceptarán reclamos.</b></div>";
             String current = editor.getText();
             if (current != null && !current.toUpperCase().contains("TIEMPO MÁXIMO PARA RECOGER")
                     && !current.contains("no se aceptarán reclamos")) {
@@ -440,9 +440,11 @@ public class DlgPrintPreview extends JDialog {
         // Remove any duplicate footer text that may have been included in the
         // HTML-to-text conversion
         message = message.replaceAll("(?i)- El tiempo m[aá]ximo para recoger su prenda es de 15 d[ií]as\\.", "");
+        message = message.replaceAll("(?i)- De no recoger en \\d+ d[ií]as se aplicara penalidad\\.", "");
         message = message.replaceAll("(?i)- Una vez retirada la prenda o reparaci[oó]n, no se aceptar[aá]n reclamos\\.",
                 "");
         message = message.replaceAll("(?i)El tiempo m[aá]ximo para recoger su prenda es de 15 d[ií]as\\.", "");
+        message = message.replaceAll("(?i)De no recoger en \\d+ d[ií]as se aplicara penalidad\\.", "");
         message = message.replaceAll("(?i)Una vez retirada la prenda o reparaci[oó]n, no se aceptar[aá]n reclamos\\.",
                 "");
         // Remove standalone "- Una" and "- vez retirada..." fragments
@@ -477,7 +479,7 @@ public class DlgPrintPreview extends JDialog {
                         // bold
                         int dias = Forms.ConfigUtils.getMaxDiasRecojo();
                         message += "\n\n**El tiempo máximo para recoger su prenda es de " + dias
-                                + " días.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
+                                + " días.**\n**De no recoger en " + dias + " días se aplicara penalidad.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
                     }
                 }
             }
@@ -488,7 +490,7 @@ public class DlgPrintPreview extends JDialog {
         if (!message.contains("tiempo máximo para recoger")) {
             int dias = Forms.ConfigUtils.getMaxDiasRecojo();
             message += "\n\n**El tiempo máximo para recoger su prenda es de " + dias
-                    + " días.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
+                    + " días.**\n**De no recoger en " + dias + " días se aplicara penalidad.**\n**Una vez retirada la prenda o reparación, no se aceptarán reclamos.**";
         }
         message = message.trim();
 
