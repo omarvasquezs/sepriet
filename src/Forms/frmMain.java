@@ -542,6 +542,7 @@ public class frmMain extends javax.swing.JFrame {
         } else {
             frm = new frmConsultarComprobantes(mode);
         }
+        frm.setCurrentUserRole(this.currentUserRole);
         desktopPane.add(frm);
         frm.setVisible(true);
     }
@@ -560,6 +561,7 @@ public class frmMain extends javax.swing.JFrame {
             }
         }
         frmConsultarComprobantesRecogidosCancelados frm = new frmConsultarComprobantesRecogidosCancelados();
+        frm.setCurrentUserRole(this.currentUserRole);
         desktopPane.add(frm);
         frm.setVisible(true);
     }

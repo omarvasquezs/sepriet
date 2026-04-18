@@ -69,6 +69,16 @@ public class frmConsultarComprobantes extends JInternalFrame {
     private int pageSize = 50;
     private final JComboBox<Integer> pageSizeCombo = new JComboBox<>(new Integer[] { 10, 25, 50, 100, 200 });
     private Mode mode;
+    private int currentUserRole = 1;
+
+    public void setCurrentUserRole(int roleId) {
+        this.currentUserRole = roleId;
+        // Role 1 is Admin. Disable delete if not admin
+        if (roleId != 1) {
+            btnDelete.setEnabled(false);
+            btnDelete.setVisible(false); // Can also hide it entirely to remove confusion
+        }
+    }
 
     public enum Mode {
         TODOS, RECIBIDOS, CANCELADOS, DEFAULT
@@ -416,7 +426,11 @@ public class frmConsultarComprobantes extends JInternalFrame {
             public void valueChanged(javax.swing.event.ListSelectionEvent ev) {
                 boolean sel = table.getSelectedRow() >= 0;
                 btnEdit.setEnabled(sel);
-                btnDelete.setEnabled(sel);
+                if (currentUserRole == 1) {
+                    btnDelete.setEnabled(sel);
+                } else {
+                    btnDelete.setEnabled(false);
+                }
 
                 // Enable "Convertir a Boleta" only if selected row is a Nota de Venta ('N')
                 boolean isNotaVenta = false;
