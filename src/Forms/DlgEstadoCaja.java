@@ -21,6 +21,8 @@ public class DlgEstadoCaja extends JDialog {
     private JLabel lblEgresos;
     private JLabel lblVentasYape;
     private JLabel lblEgresosYape;
+    private JLabel lblTotalIngresosGenerales;
+    private JLabel lblTotalEgresosGenerales;
     private JLabel lblTotalTeorico;
 
     private DatePicker dpFiltroDesde;
@@ -42,7 +44,7 @@ public class DlgEstadoCaja extends JDialog {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         // Panel superior (Resumen)
-        JPanel summaryPanel = new JPanel(new GridLayout(7, 1, 5, 5));
+        JPanel summaryPanel = new JPanel(new GridLayout(9, 1, 5, 5));
         summaryPanel.setBorder(BorderFactory.createTitledBorder("Resumen Consolidado (Efectivo y YAPE/PLIN)"));
         lblStatus = new JLabel("Cargando...");
         lblMontoInicial = new JLabel();
@@ -50,6 +52,13 @@ public class DlgEstadoCaja extends JDialog {
         lblEgresos = new JLabel();
         lblVentasYape = new JLabel();
         lblEgresosYape = new JLabel();
+
+        lblTotalIngresosGenerales = new JLabel();
+        lblTotalIngresosGenerales.setFont(lblTotalIngresosGenerales.getFont().deriveFont(Font.BOLD, 13f));
+        
+        lblTotalEgresosGenerales = new JLabel();
+        lblTotalEgresosGenerales.setFont(lblTotalEgresosGenerales.getFont().deriveFont(Font.BOLD, 13f));
+
         lblTotalTeorico = new JLabel();
         lblTotalTeorico.setFont(lblTotalTeorico.getFont().deriveFont(Font.BOLD, 14f));
         
@@ -59,6 +68,8 @@ public class DlgEstadoCaja extends JDialog {
         summaryPanel.add(lblEgresos);
         summaryPanel.add(lblVentasYape);
         summaryPanel.add(lblEgresosYape);
+        summaryPanel.add(lblTotalIngresosGenerales);
+        summaryPanel.add(lblTotalEgresosGenerales);
         summaryPanel.add(lblTotalTeorico);
 
         mainPanel.add(summaryPanel, BorderLayout.NORTH);
@@ -151,6 +162,7 @@ public class DlgEstadoCaja extends JDialog {
 
     private void cargarEstado() {
         lblMontoInicial.setText(""); lblVentas.setText(""); lblEgresos.setText(""); lblVentasYape.setText(""); lblEgresosYape.setText(""); lblTotalTeorico.setText("");
+        lblTotalIngresosGenerales.setText(""); lblTotalEgresosGenerales.setText("");
         modEgresos.setRowCount(0);
         cajaId = -1;
 
@@ -246,6 +258,12 @@ public class DlgEstadoCaja extends JDialog {
             }
             lblEgresos.setText(String.format("3. Total Gastos / Egresos en Efectivo (Filtrados): S/. %.2f", totalEgresosEfectivo));
             lblEgresosYape.setText(String.format("4. Total Gastos / Egresos YAPE / PLIN (Filtrados): S/. %.2f", totalEgresosYape));
+
+            double totalIngresosTodos = totalVentasEfectivo + totalVentasYape;
+            double totalEgresosTodos = totalEgresosEfectivo + totalEgresosYape;
+            
+            lblTotalIngresosGenerales.setText(String.format(">> TOTAL INGRESOS (Día(s) Filtrado(s)): S/. %.2f", totalIngresosTodos));
+            lblTotalEgresosGenerales.setText(String.format(">> TOTAL EGRESOS (Día(s) Filtrado(s)): S/. %.2f", totalEgresosTodos));
 
             if (desde.equals(java.time.LocalDate.now()) && hasta.equals(java.time.LocalDate.now()) && cajaId != -1) {
                 lblMontoInicial.setText(String.format("Monto Inicial (Apertura de Hoy): S/. %.2f", montoInicial));
