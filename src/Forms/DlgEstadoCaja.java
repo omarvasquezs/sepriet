@@ -55,11 +55,31 @@ public class DlgEstadoCaja extends JDialog {
         JPanel egresoPanel = new JPanel(new BorderLayout(5, 5));
         egresoPanel.setBorder(BorderFactory.createTitledBorder("Egresos (Gastos Diarios)"));
         
-        modEgresos = new DefaultTableModel(new Object[]{"Hora", "Descripción", "Monto (S/.)"}, 0) {
+        modEgresos = new DefaultTableModel(new Object[]{"ID", "Hora", "Descripción", "Monto (S/.)", "Imagen"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
         };
         tablaEgresos = new JTable(modEgresos);
+        tablaEgresos.removeColumn(tablaEgresos.getColumnModel().getColumn(0)); // Oculta el ID visualmente
+        
+        tablaEgresos.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = tablaEgresos.rowAtPoint(e.getPoint());
+                int col = tablaEgresos.columnAtPoint(e.getPoint());
+                if (row >= 0 && col >= 0) {
+                    int modelCol = tablaEgresos.convertColumnIndexToModel(col);
+                    if (modelCol == 4) {
+                        String val = (String) modEgresos.getValueAt(tablaEgresos.convertRowIndexToModel(row), 4);
+                        if ("Ver Imagen".equals(val)) {
+                            int id = (int) modEgresos.getValueAt(tablaEgresos.convertRowIndexToModel(row), 0);
+                            verImagen(id);
+                        }
+                    }
+                }
+            }
+        });
+        
         egresoPanel.add(new JScrollPane(tablaEgresos), BorderLayout.CENTER);
 
         JPanel addEgresoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -125,17 +145,19 @@ public class DlgEstadoCaja extends JDialog {
 
             // Retrieve egresos for this caja
             double totalEgresos = 0;
-            String sqlEgresos = "SELECT fecha, descripcion, monto FROM caja_egresos WHERE id_caja = ? ORDER BY fecha";
+            String sqlEgresos = "SELECT id, fecha, descripcion, monto, imagen_path FROM caja_egresos WHERE id_caja = ? ORDER BY fecha";
             SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm");
             try (PreparedStatement psE = conn.prepareStatement(sqlEgresos)) {
                 psE.setInt(1, cajaId);
                 try (ResultSet rsE = psE.executeQuery()) {
                     while (rsE.next()) {
+                        int egId = rsE.getInt("id");
                         String hora = timeFmt.format(rsE.getTimestamp("fecha"));
                         String desc = rsE.getString("descripcion");
                         double val = rsE.getDouble("monto");
+                        String imgPath = rsE.getString("imagen_path");
                         totalEgresos += val;
-                        modEgresos.addRow(new Object[]{hora, desc, String.format("%.2f", val)});
+                        modEgresos.addRow(new Object[]{egId, hora, desc, String.format("%.2f", val), (imgPath != null && !imgPath.isBlank()) ? "Ver Imagen" : "---"});
                     }
                 }
             }
@@ -155,13 +177,28 @@ public class DlgEstadoCaja extends JDialog {
             return;
         }
 
-        JPanel p = new JPanel(new GridLayout(2, 2, 10, 5));
+        JPanel p = new JPanel(new GridLayout(3, 2, 10, 5));
         p.add(new JLabel("Descripción del Gasto:"));
         JTextField txtDesc = new JTextField(15);
         p.add(txtDesc);
         p.add(new JLabel("Monto a retirar (S/.):"));
         JTextField txtMonto = new JTextField(10);
         p.add(txtMonto);
+
+        JButton btnImage = new JButton("Adjuntar Imagen...");
+        JLabel lblImage = new JLabel("Ninguna");
+        p.add(btnImage);
+        p.add(lblImage);
+
+        final java.io.File[] selectedFile = {null};
+        btnImage.addActionListener(e -> {
+            JFileChooser jfc = new JFileChooser();
+            jfc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Imágenes", "jpg", "jpeg", "png"));
+            if (jfc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                selectedFile[0] = jfc.getSelectedFile();
+                lblImage.setText(selectedFile[0].getName());
+            }
+        });
 
         int res = JOptionPane.showConfirmDialog(this, p, "Registrar Egreso / Gasto", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (res == JOptionPane.OK_OPTION) {
@@ -180,17 +217,88 @@ public class DlgEstadoCaja extends JDialog {
             }
 
             try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement("INSERT INTO caja_egresos (id_caja, fecha, descripcion, monto, id_usuario) VALUES (?, NOW(), ?, ?, ?)")) {
+                 PreparedStatement ps = conn.prepareStatement("INSERT INTO caja_egresos (id_caja, fecha, descripcion, monto, id_usuario, imagen_path) VALUES (?, NOW(), ?, ?, ?, ?)")) {
                 ps.setInt(1, cajaId);
                 ps.setString(2, desc);
                 ps.setDouble(3, monto);
                 ps.setInt(4, usuarioId);
+
+                String relativePath = null;
+                if (selectedFile[0] != null) {
+                    try {
+                        String rootFolderName = "imagenes";
+                        java.io.File rootDir = new java.io.File(rootFolderName);
+                        if (!rootDir.exists()) rootDir.mkdirs();
+
+                        String yearMonth = new SimpleDateFormat("yyyyMM").format(new java.util.Date());
+                        java.io.File monthDir = new java.io.File(rootDir, yearMonth);
+                        if (!monthDir.exists()) monthDir.mkdirs();
+
+                        // Generar un nombre unico seguro para evitar reemplazos de archivos con el mismo nombre
+                        String originalName = selectedFile[0].getName();
+                        String extension = originalName.substring(originalName.lastIndexOf('.'));
+                        String safeName = System.currentTimeMillis() + extension;
+
+                        java.io.File destinationFile = new java.io.File(monthDir, safeName);
+                        // Copiar fisicamente el archivo
+                        java.nio.file.Files.copy(selectedFile[0].toPath(), destinationFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                        // La ruta relativa que se guarda en BD
+                        relativePath = rootFolderName + "/" + yearMonth + "/" + safeName;
+                    } catch (Exception copyEx) {
+                        JOptionPane.showMessageDialog(this, "No se pudo copiar la imagen al directorio, el registro continuará sin imagen.\n" + copyEx.getMessage(), "Advertencia", JOptionPane.WARNING_MESSAGE);
+                    }
+                }
+
+                if (relativePath != null) {
+                    ps.setString(5, relativePath);
+                } else {
+                    ps.setNull(5, java.sql.Types.VARCHAR);
+                }
+
                 ps.executeUpdate();
                 JOptionPane.showMessageDialog(this, "Egreso registrado correctamente.");
                 cargarEstado(); // Refresh info
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error al guardar el egreso: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private void verImagen(int id) {
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT imagen_path FROM caja_egresos WHERE id = ?")) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String path = rs.getString("imagen_path");
+                    if (path != null && !path.isBlank()) {
+                        java.io.File imgFile = new java.io.File(path);
+                        if (!imgFile.exists()) {
+                            JOptionPane.showMessageDialog(this, "El archivo local no existe o fue movido: " + path, "Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        ImageIcon icon = new ImageIcon(imgFile.getAbsolutePath());
+                        if (icon.getIconWidth() > 800 || icon.getIconHeight() > 600) {
+                            Image img = icon.getImage();
+                            int newWidth = 800;
+                            int newHeight = (newWidth * icon.getIconHeight()) / icon.getIconWidth();
+                            if (newHeight > 600) {
+                                newHeight = 600;
+                                newWidth = (newHeight * icon.getIconWidth()) / icon.getIconHeight();
+                            }
+                            icon = new ImageIcon(img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH));
+                        }
+                        JLabel lbl = new JLabel(icon);
+                        JOptionPane.showMessageDialog(this, new JScrollPane(lbl), "Imagen del Egreso", JOptionPane.PLAIN_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Este egreso no contiene ninguna imagen registrada.", "Error", JOptionPane.WARNING_MESSAGE);
+                    }
+                }
+            }
+        } catch(Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar la imagen: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
