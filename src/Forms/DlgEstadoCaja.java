@@ -1,5 +1,6 @@
 package Forms;
 
+import com.github.lgooddatepicker.components.DatePicker;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -10,6 +11,7 @@ import java.text.SimpleDateFormat;
 
 public class DlgEstadoCaja extends JDialog {
     private final int usuarioId;
+    private boolean isAdmin;
     private int cajaId = -1;
     private java.sql.Timestamp aperturaDate;
 
@@ -21,14 +23,18 @@ public class DlgEstadoCaja extends JDialog {
     private JLabel lblEgresosYape;
     private JLabel lblTotalTeorico;
 
+    private DatePicker dpFiltroDesde;
+    private DatePicker dpFiltroHasta;
+
     private JTable tablaEgresos;
     private DefaultTableModel modEgresos;
 
     public DlgEstadoCaja(Frame parent, int usuarioId) {
         super(parent, "Estado de Caja y Egresos", true);
         this.usuarioId = usuarioId;
+        checkAdminRole();
 
-        setSize(550, 450);
+        setSize(750, 550);
         setLocationRelativeTo(parent);
         setResizable(false);
 
@@ -37,7 +43,7 @@ public class DlgEstadoCaja extends JDialog {
 
         // Panel superior (Resumen)
         JPanel summaryPanel = new JPanel(new GridLayout(7, 1, 5, 5));
-        summaryPanel.setBorder(BorderFactory.createTitledBorder("Resumen de Caja (Efectivo y YAPE/PLIN)"));
+        summaryPanel.setBorder(BorderFactory.createTitledBorder("Resumen Consolidado (Efectivo y YAPE/PLIN)"));
         lblStatus = new JLabel("Cargando...");
         lblMontoInicial = new JLabel();
         lblVentas = new JLabel();
@@ -59,9 +65,23 @@ public class DlgEstadoCaja extends JDialog {
 
         // Panel central (Tabla y añadir egreso)
         JPanel egresoPanel = new JPanel(new BorderLayout(5, 5));
-        egresoPanel.setBorder(BorderFactory.createTitledBorder("Egresos (Gastos Diarios)"));
+        egresoPanel.setBorder(BorderFactory.createTitledBorder("Detalle de Gastos / Egresos"));
         
-        modEgresos = new DefaultTableModel(new Object[]{"ID", "Hora", "Descripción", "Monto (S/.)", "Método", "Imagen"}, 0) {
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filterPanel.add(new JLabel("Desde:"));
+        dpFiltroDesde = new DatePicker();
+        dpFiltroDesde.setDateToToday();
+        filterPanel.add(dpFiltroDesde);
+        filterPanel.add(new JLabel("Hasta:"));
+        dpFiltroHasta = new DatePicker();
+        dpFiltroHasta.setDateToToday();
+        filterPanel.add(dpFiltroHasta);
+        JButton btnFiltrar = new JButton("Filtrar");
+        btnFiltrar.addActionListener(_ -> cargarEstado());
+        filterPanel.add(btnFiltrar);
+        egresoPanel.add(filterPanel, BorderLayout.NORTH);
+
+        modEgresos = new DefaultTableModel(new Object[]{"ID", "Fecha/Hora", "Descripción", "Monto (S/.)", "Método", "Imagen"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -93,6 +113,12 @@ public class DlgEstadoCaja extends JDialog {
         btnAddEgreso.addActionListener(_ -> registrarEgreso());
         addEgresoPanel.add(btnAddEgreso);
 
+        if (isAdmin) {
+            JButton btnEditEgreso = new JButton("Editar Seleccionado");
+            btnEditEgreso.addActionListener(_ -> editarEgreso());
+            addEgresoPanel.add(btnEditEgreso);
+        }
+
         egresoPanel.add(addEgresoPanel, BorderLayout.SOUTH);
         mainPanel.add(egresoPanel, BorderLayout.CENTER);
 
@@ -106,6 +132,21 @@ public class DlgEstadoCaja extends JDialog {
         setContentPane(mainPanel);
         
         cargarEstado();
+    }
+
+    private void checkAdminRole() {
+        isAdmin = false;
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT role_id FROM users WHERE id = ?")) {
+            ps.setInt(1, usuarioId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt("role_id") == 1) {
+                    isAdmin = true;
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Error checking role: " + ex.getMessage());
+        }
     }
 
     private void cargarEstado() {
@@ -127,53 +168,62 @@ public class DlgEstadoCaja extends JDialog {
                     montoInicial = rs.getDouble("monto_apertura");
                     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
                     lblStatus.setText("Caja Abierta desde: " + sdf.format(aperturaDate));
-                    lblMontoInicial.setText(String.format("1. Monto Inicial (Apertura): S/. %.2f", montoInicial));
                 } else {
                     lblStatus.setText("No hay caja abierta para el día de hoy.");
-                    return; // Cannot continue without an open box
                 }
             }
+            
+            java.time.LocalDate desde = dpFiltroDesde.getDate();
+            java.time.LocalDate hasta = dpFiltroHasta.getDate();
+            if (desde == null) desde = java.time.LocalDate.now();
+            if (hasta == null) hasta = desde;
 
-            // Retrieve sales specifically in Cash since opening
+            java.sql.Date sqlDesde = java.sql.Date.valueOf(desde);
+            java.sql.Date sqlHasta = java.sql.Date.valueOf(hasta);
+
+            // Retrieve sales specifically in Cash for the period
             double totalVentasEfectivo = 0;
             String sqlVentas = "SELECT SUM(monto_abonado) as total FROM reporte_ingresos r " +
                                "JOIN metodo_pago m ON r.metodo_pago_id = m.id " +
-                               "WHERE r.fecha >= ? AND m.nom_metodo_pago LIKE '%EFECTIVO%'";
+                               "WHERE DATE(r.fecha) >= ? AND DATE(r.fecha) <= ? AND m.nom_metodo_pago LIKE '%EFECTIVO%'";
             try (PreparedStatement psV = conn.prepareStatement(sqlVentas)) {
-                psV.setTimestamp(1, aperturaDate);
+                psV.setDate(1, sqlDesde);
+                psV.setDate(2, sqlHasta);
                 try (ResultSet rsV = psV.executeQuery()) {
                     if (rsV.next()) {
                         totalVentasEfectivo = rsV.getDouble("total");
                     }
                 }
             }
-            lblVentas.setText(String.format("2. Total Ingresos en Efectivo: S/. %.2f", totalVentasEfectivo));
+            lblVentas.setText(String.format("1. Total Ingresos Efectivo (Filtrados): S/. %.2f", totalVentasEfectivo));
 
-            // Retrieve sales specifically in YAPE / PLIN since opening
+            // Retrieve sales specifically in YAPE / PLIN for the period
             double totalVentasYape = 0;
             String sqlVentasYape = "SELECT SUM(monto_abonado) as total FROM reporte_ingresos r " +
                                "JOIN metodo_pago m ON r.metodo_pago_id = m.id " +
-                               "WHERE r.fecha >= ? AND m.nom_metodo_pago LIKE '%YAPE%'";
+                               "WHERE DATE(r.fecha) >= ? AND DATE(r.fecha) <= ? AND m.nom_metodo_pago LIKE '%YAPE%'";
             try (PreparedStatement psV = conn.prepareStatement(sqlVentasYape)) {
-                psV.setTimestamp(1, aperturaDate);
+                psV.setDate(1, sqlDesde);
+                psV.setDate(2, sqlHasta);
                 try (ResultSet rsV = psV.executeQuery()) {
                     if (rsV.next()) {
                         totalVentasYape = rsV.getDouble("total");
                     }
                 }
             }
-            lblVentasYape.setText(String.format("4. Total Ingresos YAPE / PLIN: S/. %.2f", totalVentasYape));
+            lblVentasYape.setText(String.format("2. Total Ingresos YAPE/PLIN (Filtrados): S/. %.2f", totalVentasYape));
 
-            // Retrieve egresos for this caja
+            // Retrieve egresos
             double totalEgresosEfectivo = 0;
             double totalEgresosYape = 0;
             String sqlEgresos = "SELECT c.id, c.fecha, c.descripcion, c.monto, c.imagen_path, m.nom_metodo_pago, c.id_metodo_pago " +
                                 "FROM caja_egresos c " +
-                                "JOIN metodo_pago m ON c.id_metodo_pago = m.id " +
-                                "WHERE c.id_caja = ? ORDER BY c.fecha";
-            SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm");
+                                "LEFT JOIN metodo_pago m ON c.id_metodo_pago = m.id " +
+                                "WHERE DATE(c.fecha) >= ? AND DATE(c.fecha) <= ? ORDER BY c.fecha";
+            SimpleDateFormat timeFmt = new SimpleDateFormat("dd/MM/yyyy HH:mm");
             try (PreparedStatement psE = conn.prepareStatement(sqlEgresos)) {
-                psE.setInt(1, cajaId);
+                psE.setDate(1, sqlDesde);
+                psE.setDate(2, sqlHasta);
                 try (ResultSet rsE = psE.executeQuery()) {
                     while (rsE.next()) {
                         int egId = rsE.getInt("id");
@@ -190,15 +240,21 @@ public class DlgEstadoCaja extends JDialog {
                             totalEgresosEfectivo += val;
                         }
                         
-                        modEgresos.addRow(new Object[]{egId, hora, desc, String.format("%.2f", val), metodo, (imgPath != null && !imgPath.isBlank()) ? "Ver Imagen" : "---"});
+                        modEgresos.addRow(new Object[]{egId, hora, desc, String.format("%.2f", val), metodo != null ? metodo : "N/D", (imgPath != null && !imgPath.isBlank()) ? "Ver Imagen" : "---"});
                     }
                 }
             }
-            lblEgresos.setText(String.format("3. Total Gastos / Egresos en Efectivo: S/. %.2f", totalEgresosEfectivo));
-            lblEgresosYape.setText(String.format("5. Total Gastos / Egresos YAPE / PLIN: S/. %.2f", totalEgresosYape));
+            lblEgresos.setText(String.format("3. Total Gastos / Egresos en Efectivo (Filtrados): S/. %.2f", totalEgresosEfectivo));
+            lblEgresosYape.setText(String.format("4. Total Gastos / Egresos YAPE / PLIN (Filtrados): S/. %.2f", totalEgresosYape));
 
-            double totalTeorico = montoInicial + totalVentasEfectivo - totalEgresosEfectivo;
-            lblTotalTeorico.setText(String.format("Monto Teórico Actual en Caja (Solo Efectivo): S/. %.2f", totalTeorico));
+            if (desde.equals(java.time.LocalDate.now()) && hasta.equals(java.time.LocalDate.now()) && cajaId != -1) {
+                lblMontoInicial.setText(String.format("Monto Inicial (Apertura de Hoy): S/. %.2f", montoInicial));
+                double totalTeorico = montoInicial + totalVentasEfectivo - totalEgresosEfectivo;
+                lblTotalTeorico.setText(String.format("Monto Teórico Actual en Caja (Solo Efectivo): S/. %.2f", totalTeorico));
+            } else {
+                lblMontoInicial.setText("Monto Inicial: N/D (Filtro por fechas)");
+                lblTotalTeorico.setText("Consolidado: Diferencia de días");
+            }
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error cargando estado: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -206,12 +262,21 @@ public class DlgEstadoCaja extends JDialog {
     }
 
     private void registrarEgreso() {
-        if (cajaId == -1) {
+        if (cajaId == -1 && !isAdmin) {
             JOptionPane.showMessageDialog(this, "No puede registrar un gasto sin una caja abierta.", "Validación", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        JPanel p = new JPanel(new GridLayout(4, 2, 10, 5));
+        JPanel p = new JPanel(new GridLayout(isAdmin ? 5 : 4, 2, 10, 5));
+        
+        DatePicker dpFechaEgreso = null;
+        if (isAdmin) {
+            p.add(new JLabel("Fecha del Gasto:"));
+            dpFechaEgreso = new DatePicker();
+            dpFechaEgreso.setDateToToday();
+            p.add(dpFechaEgreso);
+        }
+
         p.add(new JLabel("Descripción del Gasto:"));
         JTextField txtDesc = new JTextField(15);
         p.add(txtDesc);
@@ -257,13 +322,24 @@ public class DlgEstadoCaja extends JDialog {
             
             int idMetodoPago = cmbMetodo.getSelectedIndex() == 0 ? 4 : 1; // 4 = Efectivo, 1 = Yape/Plin
 
+            java.sql.Timestamp fechaGuardar = new java.sql.Timestamp(System.currentTimeMillis());
+            if (isAdmin && dpFechaEgreso != null && dpFechaEgreso.getDate() != null) {
+                if (!dpFechaEgreso.getDate().equals(java.time.LocalDate.now())) {
+                    fechaGuardar = java.sql.Timestamp.valueOf(dpFechaEgreso.getDate().atStartOfDay());
+                }
+            }
+
+            int cajaIdTemp = cajaId;
+            if (cajaId == -1 && isAdmin) cajaIdTemp = 1; // Fallback or logic needed if saving past without box. We assume admin can bypass.
+
             try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement("INSERT INTO caja_egresos (id_caja, fecha, descripcion, monto, id_metodo_pago, id_usuario, imagen_path) VALUES (?, NOW(), ?, ?, ?, ?, ?)")) {
-                ps.setInt(1, cajaId);
-                ps.setString(2, desc);
-                ps.setDouble(3, monto);
-                ps.setInt(4, idMetodoPago);
-                ps.setInt(5, usuarioId);
+                 PreparedStatement ps = conn.prepareStatement("INSERT INTO caja_egresos (id_caja, fecha, descripcion, monto, id_metodo_pago, id_usuario, imagen_path) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                ps.setInt(1, cajaIdTemp);
+                ps.setTimestamp(2, fechaGuardar);
+                ps.setString(3, desc);
+                ps.setDouble(4, monto);
+                ps.setInt(5, idMetodoPago);
+                ps.setInt(6, usuarioId);
 
                 String relativePath = null;
                 if (selectedFile[0] != null) {
@@ -293,9 +369,9 @@ public class DlgEstadoCaja extends JDialog {
                 }
 
                 if (relativePath != null) {
-                    ps.setString(6, relativePath);
+                    ps.setString(7, relativePath);
                 } else {
-                    ps.setNull(6, java.sql.Types.VARCHAR);
+                    ps.setNull(7, java.sql.Types.VARCHAR);
                 }
 
                 ps.executeUpdate();
@@ -303,6 +379,75 @@ public class DlgEstadoCaja extends JDialog {
                 cargarEstado(); // Refresh info
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error al guardar el egreso: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void editarEgreso() {
+        int row = tablaEgresos.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione un egreso para editar.", "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int id = (int) modEgresos.getValueAt(tablaEgresos.convertRowIndexToModel(row), 0);
+
+        JPanel p = new JPanel(new GridLayout(4, 2, 10, 5));
+        
+        p.add(new JLabel("Fecha del Gasto:"));
+        DatePicker dpFechaEgreso = new DatePicker();
+        p.add(dpFechaEgreso);
+
+        p.add(new JLabel("Descripción del Gasto:"));
+        JTextField txtDesc = new JTextField(15);
+        p.add(txtDesc);
+        
+        p.add(new JLabel("Monto a retirar (S/.):"));
+        JTextField txtMonto = new JTextField(10);
+        p.add(txtMonto);
+
+        p.add(new JLabel("Método de Pago:"));
+        JComboBox<String> cmbMetodo = new JComboBox<>(new String[]{"EFECTIVO", "YAPE / PLIN"});
+        p.add(cmbMetodo);
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT fecha, descripcion, monto, id_metodo_pago FROM caja_egresos WHERE id = ?")) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    dpFechaEgreso.setDate(rs.getDate("fecha").toLocalDate());
+                    txtDesc.setText(rs.getString("descripcion"));
+                    txtMonto.setText(String.valueOf(rs.getDouble("monto")));
+                    cmbMetodo.setSelectedIndex(rs.getInt("id_metodo_pago") == 4 ? 0 : 1);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        int res = JOptionPane.showConfirmDialog(this, p, "Editar Egreso / Gasto", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (res == JOptionPane.OK_OPTION) {
+            String desc = txtDesc.getText().trim();
+            if (desc.isEmpty()) return;
+            double monto = 0;
+            try {
+                monto = Double.parseDouble(txtMonto.getText().trim());
+            } catch (Exception ex) { return; }
+            int idMetodoPago = cmbMetodo.getSelectedIndex() == 0 ? 4 : 1;
+            
+            java.sql.Timestamp fechaGuardar = java.sql.Timestamp.valueOf(dpFechaEgreso.getDate().atStartOfDay());
+
+            try (Connection conn = DatabaseConfig.getConnection();
+                 PreparedStatement ps = conn.prepareStatement("UPDATE caja_egresos SET fecha = ?, descripcion = ?, monto = ?, id_metodo_pago = ? WHERE id = ?")) {
+                ps.setTimestamp(1, fechaGuardar);
+                ps.setString(2, desc);
+                ps.setDouble(3, monto);
+                ps.setInt(4, idMetodoPago);
+                ps.setInt(5, id);
+                ps.executeUpdate();
+                JOptionPane.showMessageDialog(this, "Egreso actualizado correctamente.");
+                cargarEstado();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error al actualizar el egreso: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
