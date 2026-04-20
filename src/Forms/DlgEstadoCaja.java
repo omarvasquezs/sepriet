@@ -17,6 +17,8 @@ public class DlgEstadoCaja extends JDialog {
     private JLabel lblMontoInicial;
     private JLabel lblVentas;
     private JLabel lblEgresos;
+    private JLabel lblVentasYape;
+    private JLabel lblEgresosYape;
     private JLabel lblTotalTeorico;
 
     private JTable tablaEgresos;
@@ -34,12 +36,14 @@ public class DlgEstadoCaja extends JDialog {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         // Panel superior (Resumen)
-        JPanel summaryPanel = new JPanel(new GridLayout(5, 1, 5, 5));
-        summaryPanel.setBorder(BorderFactory.createTitledBorder("Resumen de Caja en Efectivo"));
+        JPanel summaryPanel = new JPanel(new GridLayout(7, 1, 5, 5));
+        summaryPanel.setBorder(BorderFactory.createTitledBorder("Resumen de Caja (Efectivo y YAPE/PLIN)"));
         lblStatus = new JLabel("Cargando...");
         lblMontoInicial = new JLabel();
         lblVentas = new JLabel();
         lblEgresos = new JLabel();
+        lblVentasYape = new JLabel();
+        lblEgresosYape = new JLabel();
         lblTotalTeorico = new JLabel();
         lblTotalTeorico.setFont(lblTotalTeorico.getFont().deriveFont(Font.BOLD, 14f));
         
@@ -47,6 +51,8 @@ public class DlgEstadoCaja extends JDialog {
         summaryPanel.add(lblMontoInicial);
         summaryPanel.add(lblVentas);
         summaryPanel.add(lblEgresos);
+        summaryPanel.add(lblVentasYape);
+        summaryPanel.add(lblEgresosYape);
         summaryPanel.add(lblTotalTeorico);
 
         mainPanel.add(summaryPanel, BorderLayout.NORTH);
@@ -55,7 +61,7 @@ public class DlgEstadoCaja extends JDialog {
         JPanel egresoPanel = new JPanel(new BorderLayout(5, 5));
         egresoPanel.setBorder(BorderFactory.createTitledBorder("Egresos (Gastos Diarios)"));
         
-        modEgresos = new DefaultTableModel(new Object[]{"ID", "Hora", "Descripción", "Monto (S/.)", "Imagen"}, 0) {
+        modEgresos = new DefaultTableModel(new Object[]{"ID", "Hora", "Descripción", "Monto (S/.)", "Método", "Imagen"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -69,8 +75,8 @@ public class DlgEstadoCaja extends JDialog {
                 int col = tablaEgresos.columnAtPoint(e.getPoint());
                 if (row >= 0 && col >= 0) {
                     int modelCol = tablaEgresos.convertColumnIndexToModel(col);
-                    if (modelCol == 4) {
-                        String val = (String) modEgresos.getValueAt(tablaEgresos.convertRowIndexToModel(row), 4);
+                    if (modelCol == 5) {
+                        String val = (String) modEgresos.getValueAt(tablaEgresos.convertRowIndexToModel(row), 5);
                         if ("Ver Imagen".equals(val)) {
                             int id = (int) modEgresos.getValueAt(tablaEgresos.convertRowIndexToModel(row), 0);
                             verImagen(id);
@@ -103,7 +109,7 @@ public class DlgEstadoCaja extends JDialog {
     }
 
     private void cargarEstado() {
-        lblMontoInicial.setText(""); lblVentas.setText(""); lblEgresos.setText(""); lblTotalTeorico.setText("");
+        lblMontoInicial.setText(""); lblVentas.setText(""); lblEgresos.setText(""); lblVentasYape.setText(""); lblEgresosYape.setText(""); lblTotalTeorico.setText("");
         modEgresos.setRowCount(0);
         cajaId = -1;
 
@@ -143,9 +149,28 @@ public class DlgEstadoCaja extends JDialog {
             }
             lblVentas.setText(String.format("2. Total Ingresos en Efectivo: S/. %.2f", totalVentasEfectivo));
 
+            // Retrieve sales specifically in YAPE / PLIN since opening
+            double totalVentasYape = 0;
+            String sqlVentasYape = "SELECT SUM(monto_abonado) as total FROM reporte_ingresos r " +
+                               "JOIN metodo_pago m ON r.metodo_pago_id = m.id " +
+                               "WHERE r.fecha >= ? AND m.nom_metodo_pago LIKE '%YAPE%'";
+            try (PreparedStatement psV = conn.prepareStatement(sqlVentasYape)) {
+                psV.setTimestamp(1, aperturaDate);
+                try (ResultSet rsV = psV.executeQuery()) {
+                    if (rsV.next()) {
+                        totalVentasYape = rsV.getDouble("total");
+                    }
+                }
+            }
+            lblVentasYape.setText(String.format("4. Total Ingresos YAPE / PLIN: S/. %.2f", totalVentasYape));
+
             // Retrieve egresos for this caja
-            double totalEgresos = 0;
-            String sqlEgresos = "SELECT id, fecha, descripcion, monto, imagen_path FROM caja_egresos WHERE id_caja = ? ORDER BY fecha";
+            double totalEgresosEfectivo = 0;
+            double totalEgresosYape = 0;
+            String sqlEgresos = "SELECT c.id, c.fecha, c.descripcion, c.monto, c.imagen_path, m.nom_metodo_pago, c.id_metodo_pago " +
+                                "FROM caja_egresos c " +
+                                "JOIN metodo_pago m ON c.id_metodo_pago = m.id " +
+                                "WHERE c.id_caja = ? ORDER BY c.fecha";
             SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm");
             try (PreparedStatement psE = conn.prepareStatement(sqlEgresos)) {
                 psE.setInt(1, cajaId);
@@ -156,15 +181,24 @@ public class DlgEstadoCaja extends JDialog {
                         String desc = rsE.getString("descripcion");
                         double val = rsE.getDouble("monto");
                         String imgPath = rsE.getString("imagen_path");
-                        totalEgresos += val;
-                        modEgresos.addRow(new Object[]{egId, hora, desc, String.format("%.2f", val), (imgPath != null && !imgPath.isBlank()) ? "Ver Imagen" : "---"});
+                        String metodo = rsE.getString("nom_metodo_pago");
+                        int idMetodo = rsE.getInt("id_metodo_pago");
+                        
+                        if (idMetodo == 1) { // YAPE / PLIN
+                            totalEgresosYape += val;
+                        } else {
+                            totalEgresosEfectivo += val;
+                        }
+                        
+                        modEgresos.addRow(new Object[]{egId, hora, desc, String.format("%.2f", val), metodo, (imgPath != null && !imgPath.isBlank()) ? "Ver Imagen" : "---"});
                     }
                 }
             }
-            lblEgresos.setText(String.format("3. Total Gastos / Egresos: S/. %.2f", totalEgresos));
+            lblEgresos.setText(String.format("3. Total Gastos / Egresos en Efectivo: S/. %.2f", totalEgresosEfectivo));
+            lblEgresosYape.setText(String.format("5. Total Gastos / Egresos YAPE / PLIN: S/. %.2f", totalEgresosYape));
 
-            double totalTeorico = montoInicial + totalVentasEfectivo - totalEgresos;
-            lblTotalTeorico.setText(String.format("Monto Teórico Actual en Caja: S/. %.2f", totalTeorico));
+            double totalTeorico = montoInicial + totalVentasEfectivo - totalEgresosEfectivo;
+            lblTotalTeorico.setText(String.format("Monto Teórico Actual en Caja (Solo Efectivo): S/. %.2f", totalTeorico));
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error cargando estado: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -177,13 +211,18 @@ public class DlgEstadoCaja extends JDialog {
             return;
         }
 
-        JPanel p = new JPanel(new GridLayout(3, 2, 10, 5));
+        JPanel p = new JPanel(new GridLayout(4, 2, 10, 5));
         p.add(new JLabel("Descripción del Gasto:"));
         JTextField txtDesc = new JTextField(15);
         p.add(txtDesc);
+        
         p.add(new JLabel("Monto a retirar (S/.):"));
         JTextField txtMonto = new JTextField(10);
         p.add(txtMonto);
+
+        p.add(new JLabel("Método de Pago:"));
+        JComboBox<String> cmbMetodo = new JComboBox<>(new String[]{"EFECTIVO", "YAPE / PLIN"});
+        p.add(cmbMetodo);
 
         JButton btnImage = new JButton("Adjuntar Imagen...");
         JLabel lblImage = new JLabel("Ninguna");
@@ -215,13 +254,16 @@ public class DlgEstadoCaja extends JDialog {
                 JOptionPane.showMessageDialog(this, "El monto debe ser un número válido mayor a cero.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+            
+            int idMetodoPago = cmbMetodo.getSelectedIndex() == 0 ? 4 : 1; // 4 = Efectivo, 1 = Yape/Plin
 
             try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement("INSERT INTO caja_egresos (id_caja, fecha, descripcion, monto, id_usuario, imagen_path) VALUES (?, NOW(), ?, ?, ?, ?)")) {
+                 PreparedStatement ps = conn.prepareStatement("INSERT INTO caja_egresos (id_caja, fecha, descripcion, monto, id_metodo_pago, id_usuario, imagen_path) VALUES (?, NOW(), ?, ?, ?, ?, ?)")) {
                 ps.setInt(1, cajaId);
                 ps.setString(2, desc);
                 ps.setDouble(3, monto);
-                ps.setInt(4, usuarioId);
+                ps.setInt(4, idMetodoPago);
+                ps.setInt(5, usuarioId);
 
                 String relativePath = null;
                 if (selectedFile[0] != null) {
@@ -251,9 +293,9 @@ public class DlgEstadoCaja extends JDialog {
                 }
 
                 if (relativePath != null) {
-                    ps.setString(5, relativePath);
+                    ps.setString(6, relativePath);
                 } else {
-                    ps.setNull(5, java.sql.Types.VARCHAR);
+                    ps.setNull(6, java.sql.Types.VARCHAR);
                 }
 
                 ps.executeUpdate();
