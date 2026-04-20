@@ -69,3 +69,5 @@ nbproject/genfiles.properties
 *.bat
 *.cmd
 *.run/imagenes/
+
+imagenes/*
