@@ -391,7 +391,7 @@ public class DlgEstadoCaja extends JDialog {
         }
         int id = (int) modEgresos.getValueAt(tablaEgresos.convertRowIndexToModel(row), 0);
 
-        JPanel p = new JPanel(new GridLayout(4, 2, 10, 5));
+        JPanel p = new JPanel(new GridLayout(5, 2, 10, 5));
         
         p.add(new JLabel("Fecha del Gasto:"));
         DatePicker dpFechaEgreso = new DatePicker();
@@ -409,8 +409,23 @@ public class DlgEstadoCaja extends JDialog {
         JComboBox<String> cmbMetodo = new JComboBox<>(new String[]{"EFECTIVO", "YAPE / PLIN"});
         p.add(cmbMetodo);
 
+        JButton btnImage = new JButton("Cambiar Imagen...");
+        JLabel lblImage = new JLabel("Misma Imagen");
+        p.add(btnImage);
+        p.add(lblImage);
+
+        final java.io.File[] selectedFile = {null};
+        btnImage.addActionListener(e -> {
+            JFileChooser jfc = new JFileChooser();
+            jfc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Imágenes", "jpg", "jpeg", "png"));
+            if (jfc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                selectedFile[0] = jfc.getSelectedFile();
+                lblImage.setText(selectedFile[0].getName());
+            }
+        });
+
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT fecha, descripcion, monto, id_metodo_pago FROM caja_egresos WHERE id = ?")) {
+             PreparedStatement ps = conn.prepareStatement("SELECT fecha, descripcion, monto, id_metodo_pago, imagen_path FROM caja_egresos WHERE id = ?")) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -418,6 +433,12 @@ public class DlgEstadoCaja extends JDialog {
                     txtDesc.setText(rs.getString("descripcion"));
                     txtMonto.setText(String.valueOf(rs.getDouble("monto")));
                     cmbMetodo.setSelectedIndex(rs.getInt("id_metodo_pago") == 4 ? 0 : 1);
+                    String curImg = rs.getString("imagen_path");
+                    if (curImg == null || curImg.isBlank()) {
+                        lblImage.setText("Sin imagen. Adjuntar...");
+                    } else {
+                        lblImage.setText("Ya tiene imagen.");
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -436,13 +457,45 @@ public class DlgEstadoCaja extends JDialog {
             
             java.sql.Timestamp fechaGuardar = java.sql.Timestamp.valueOf(dpFechaEgreso.getDate().atStartOfDay());
 
+            String extraSql = "";
+            String relativePath = null;
+            if (selectedFile[0] != null) {
+                try {
+                    String rootFolderName = "imagenes";
+                    java.io.File rootDir = new java.io.File(rootFolderName);
+                    if (!rootDir.exists()) rootDir.mkdirs();
+
+                    String yearMonth = new java.text.SimpleDateFormat("yyyyMM").format(new java.util.Date());
+                    java.io.File monthDir = new java.io.File(rootDir, yearMonth);
+                    if (!monthDir.exists()) monthDir.mkdirs();
+
+                    String originalName = selectedFile[0].getName();
+                    String extension = originalName.substring(originalName.lastIndexOf('.'));
+                    String safeName = System.currentTimeMillis() + extension;
+
+                    java.io.File destinationFile = new java.io.File(monthDir, safeName);
+                    java.nio.file.Files.copy(selectedFile[0].toPath(), destinationFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                    relativePath = rootFolderName + "/" + yearMonth + "/" + safeName;
+                    extraSql = ", imagen_path = ?";
+                } catch (Exception copyEx) {
+                    JOptionPane.showMessageDialog(this, "No se pudo copiar la nueva imagen, conservará la anterior.\n" + copyEx.getMessage(), "Advertencia", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+
             try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement("UPDATE caja_egresos SET fecha = ?, descripcion = ?, monto = ?, id_metodo_pago = ? WHERE id = ?")) {
+                 PreparedStatement ps = conn.prepareStatement("UPDATE caja_egresos SET fecha = ?, descripcion = ?, monto = ?, id_metodo_pago = ?" + extraSql + " WHERE id = ?")) {
                 ps.setTimestamp(1, fechaGuardar);
                 ps.setString(2, desc);
                 ps.setDouble(3, monto);
                 ps.setInt(4, idMetodoPago);
-                ps.setInt(5, id);
+                if (relativePath != null) {
+                    ps.setString(5, relativePath);
+                    ps.setInt(6, id);
+                } else {
+                    ps.setInt(5, id);
+                }
+                
                 ps.executeUpdate();
                 JOptionPane.showMessageDialog(this, "Egreso actualizado correctamente.");
                 cargarEstado();
