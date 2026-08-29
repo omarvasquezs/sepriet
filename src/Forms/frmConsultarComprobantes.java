@@ -1490,7 +1490,6 @@ public class frmConsultarComprobantes extends JInternalFrame {
         }
     }
 
-    @SuppressWarnings("unused")
     private static class ComprobanteRow {
         int id;
         String codComprobante;
