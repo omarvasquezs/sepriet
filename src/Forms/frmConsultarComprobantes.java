@@ -727,7 +727,7 @@ public class frmConsultarComprobantes extends JInternalFrame {
         Integer id = getSelectedId();
         if (id == null)
             return;
-        DlgEditarComprobante dlg = new DlgEditarComprobante(SwingUtilities.getWindowAncestor(this), id, this::onEdited);
+        DlgEditarComprobante dlg = new DlgEditarComprobante(SwingUtilities.getWindowAncestor(this), id, this::onEdited, this.currentUserRole);
         dlg.setLocationRelativeTo(this);
         dlg.setVisible(true);
     }

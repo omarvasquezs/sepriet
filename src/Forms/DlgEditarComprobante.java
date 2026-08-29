@@ -19,6 +19,7 @@ public class DlgEditarComprobante extends JDialog {
     private final JComboBox<Item> cboMetodoPago = new JComboBox<>();
     private final JLabel lblMetodoPago = new JLabel("Método de pago:");
     private final JTextField txtMontoAbonar = new JTextField();
+    private final JLabel lblFechaOperacion = new JLabel("Fecha de operación:");
     private final DateTimePicker dtpFechaOperacion = new DateTimePicker();
     private final JLabel lblInfo = new JLabel(" ");
     private final JTextArea txtAbonos = new JTextArea(5, 30);
@@ -26,6 +27,7 @@ public class DlgEditarComprobante extends JDialog {
     private float costoTotal = 0f;
     private float descuento = 0f; // descuento en porcentaje
     private float montoAbonadoPrevio = 0f;
+    private int currentUserRole = 1;
     // original estado at dialog open (used to prevent backward transitions)
     private int originalEstadoComprobanteId = -1;
     private String originalEstadoComprobanteLabel = null;
@@ -40,10 +42,19 @@ public class DlgEditarComprobante extends JDialog {
     }
 
     public DlgEditarComprobante(Window owner, int id, Runnable onSaved) {
+        this(owner, id, onSaved, 1);
+    }
+
+    public DlgEditarComprobante(Window owner, int id, Runnable onSaved, int userRole) {
         super(owner, "Editar Comprobante", ModalityType.APPLICATION_MODAL);
         this.comprobanteId = id;
         this.onSaved = onSaved;
-        setSize(530, 480);
+        this.currentUserRole = userRole;
+        if (this.currentUserRole == 1) {
+            setSize(530, 480);
+        } else {
+            setSize(530, 440);
+        }
         setResizable(false);
         buildUI();
         loadData();
@@ -51,6 +62,11 @@ public class DlgEditarComprobante extends JDialog {
 
     private void buildUI() {
         dtpFechaOperacion.setDateTimePermissive(LocalDateTime.now());
+        boolean isAdmin = (this.currentUserRole == 1);
+        lblFechaOperacion.setVisible(isAdmin);
+        dtpFechaOperacion.setVisible(isAdmin);
+        dtpFechaOperacion.setEnabled(isAdmin);
+
         JPanel form = new JPanel(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(6, 6, 6, 6);
@@ -61,7 +77,9 @@ public class DlgEditarComprobante extends JDialog {
         addRow(form, c, r++, new JLabel("ESTADO COMPROBANTE :"), cboEstado);
         addRow(form, c, r++, lblMetodoPago, cboMetodoPago);
         addRow(form, c, r++, new JLabel("Monto a abonar (incremental):"), txtMontoAbonar);
-        addRow(form, c, r++, new JLabel("Fecha de operación:"), dtpFechaOperacion);
+        if (isAdmin) {
+            addRow(form, c, r++, lblFechaOperacion, dtpFechaOperacion);
+        }
 
         // Add info row
         c.gridy = r++;
@@ -526,9 +544,14 @@ public class DlgEditarComprobante extends JDialog {
                 }
             }
             
-            // Get selected operation timestamp
-            LocalDateTime fechaOp = dtpFechaOperacion.getDateTimePermissive();
-            if (fechaOp == null) {
+            // Get selected operation timestamp (allowed only for ADMIN role_id == 1)
+            LocalDateTime fechaOp;
+            if (this.currentUserRole == 1) {
+                fechaOp = dtpFechaOperacion.getDateTimePermissive();
+                if (fechaOp == null) {
+                    fechaOp = LocalDateTime.now();
+                }
+            } else {
                 fechaOp = LocalDateTime.now();
             }
             Timestamp tsOperacion = Timestamp.valueOf(fechaOp);
