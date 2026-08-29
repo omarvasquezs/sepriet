@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.sql.*;
+import java.time.LocalDateTime;
+import com.github.lgooddatepicker.components.DateTimePicker;
 
 /**
  * Simple dialog to edit estado_comprobante, metodo_pago and add a new
@@ -17,6 +19,7 @@ public class DlgEditarComprobante extends JDialog {
     private final JComboBox<Item> cboMetodoPago = new JComboBox<>();
     private final JLabel lblMetodoPago = new JLabel("Método de pago:");
     private final JTextField txtMontoAbonar = new JTextField();
+    private final DateTimePicker dtpFechaOperacion = new DateTimePicker();
     private final JLabel lblInfo = new JLabel(" ");
     private final JTextArea txtAbonos = new JTextArea(5, 30);
     private final JLabel lblTotalAbonado = new JLabel(" ");
@@ -40,13 +43,14 @@ public class DlgEditarComprobante extends JDialog {
         super(owner, "Editar Comprobante", ModalityType.APPLICATION_MODAL);
         this.comprobanteId = id;
         this.onSaved = onSaved;
-        setSize(520, 450);
+        setSize(530, 480);
         setResizable(false);
         buildUI();
         loadData();
     }
 
     private void buildUI() {
+        dtpFechaOperacion.setDateTimePermissive(LocalDateTime.now());
         JPanel form = new JPanel(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(6, 6, 6, 6);
@@ -57,6 +61,7 @@ public class DlgEditarComprobante extends JDialog {
         addRow(form, c, r++, new JLabel("ESTADO COMPROBANTE :"), cboEstado);
         addRow(form, c, r++, lblMetodoPago, cboMetodoPago);
         addRow(form, c, r++, new JLabel("Monto a abonar (incremental):"), txtMontoAbonar);
+        addRow(form, c, r++, new JLabel("Fecha de operación:"), dtpFechaOperacion);
 
         // Add info row
         c.gridy = r++;
@@ -521,28 +526,44 @@ public class DlgEditarComprobante extends JDialog {
                 }
             }
             
+            // Get selected operation timestamp
+            LocalDateTime fechaOp = dtpFechaOperacion.getDateTimePermissive();
+            if (fechaOp == null) {
+                fechaOp = LocalDateTime.now();
+            }
+            Timestamp tsOperacion = Timestamp.valueOf(fechaOp);
+
             // Update comprobante (now also persist estado_ropa_id and handle update timestamps)
             String baseSql = "UPDATE comprobantes SET estado_comprobante_id=?, metodo_pago_id=?, monto_abonado=?, estado_ropa_id=? ";
-            if (finalEstadoId != originalEstadoComprobanteId && finalEstadoId == 4) {
-                baseSql += ", fecha_actualizacion_estado_comprobante=CURRENT_TIMESTAMP ";
+            boolean updateFechaEstadoComp = (finalEstadoId != originalEstadoComprobanteId && finalEstadoId == 4);
+            boolean updateFechaEstadoRopa = (finalEstadoRopaId != originalEstadoRopaId && finalEstadoRopaId == 4);
+            if (updateFechaEstadoComp) {
+                baseSql += ", fecha_actualizacion_estado_comprobante=? ";
             }
-            if (finalEstadoRopaId != originalEstadoRopaId && finalEstadoRopaId == 4) {
-                baseSql += ", fecha_actualizacion_estado_ropa=CURRENT_TIMESTAMP ";
+            if (updateFechaEstadoRopa) {
+                baseSql += ", fecha_actualizacion_estado_ropa=? ";
             }
             baseSql += "WHERE id=?";
             
             try (PreparedStatement ps = conn.prepareStatement(baseSql)) {
-                ps.setInt(1, finalEstadoId);
+                int paramIdx = 1;
+                ps.setInt(paramIdx++, finalEstadoId);
                 if (mp == null || mp.id() == -1)
-                    ps.setNull(2, java.sql.Types.INTEGER);
+                    ps.setNull(paramIdx++, java.sql.Types.INTEGER);
                 else
-                    ps.setInt(2, mp.id());
-                ps.setFloat(3, abonadoActualizado);
+                    ps.setInt(paramIdx++, mp.id());
+                ps.setFloat(paramIdx++, abonadoActualizado);
                 if (finalEstadoRopaId != -1)
-                    ps.setInt(4, finalEstadoRopaId);
+                    ps.setInt(paramIdx++, finalEstadoRopaId);
                 else
-                    ps.setNull(4, java.sql.Types.INTEGER);
-                ps.setInt(5, comprobanteId);
+                    ps.setNull(paramIdx++, java.sql.Types.INTEGER);
+                if (updateFechaEstadoComp) {
+                    ps.setTimestamp(paramIdx++, tsOperacion);
+                }
+                if (updateFechaEstadoRopa) {
+                    ps.setTimestamp(paramIdx++, tsOperacion);
+                }
+                ps.setInt(paramIdx++, comprobanteId);
                 ps.executeUpdate();
             }
             if (montoNuevo > 0) {
@@ -564,7 +585,7 @@ public class DlgEditarComprobante extends JDialog {
                                     ins.setNull(3, java.sql.Types.INTEGER);
                                 else
                                     ins.setInt(3, mp.id());
-                                ins.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
+                                ins.setTimestamp(4, tsOperacion);
                                 ins.setFloat(5, montoNuevo);
                                 ins.setFloat(6, costo);
                                 ins.executeUpdate();
